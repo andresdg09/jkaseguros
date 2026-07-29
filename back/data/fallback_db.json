@@ -374,7 +374,7 @@
       "suma_asegurada": 156,
       "deducible": 0,
       "prima_anual": null,
-      "estado": "negociacion",
+      "estado": "vigente",
       "pago_estado": "pendiente",
       "created_at": "2026-07-23T15:42:44.817Z"
     },
@@ -1512,5 +1512,32 @@
       "prima": 280,
       "created_at": "2026-07-17T18:13:46.153Z"
     }
-  ]
+  ],
+  "trazabilidad": [
+    {
+      "id": 1,
+      "usuario_id": 2,
+      "rol": "asesor",
+      "accion": "Inicio de sesión",
+      "detalles": "El usuario inició sesión en el portal",
+      "created_at": "2026-07-28T14:31:00.100Z"
+    },
+    {
+      "id": 2,
+      "usuario_id": 2,
+      "rol": "asesor",
+      "accion": "Actualización de estado de póliza",
+      "detalles": "Cambió estado de la póliza POL-989798 (ID: 1) a vigente",
+      "created_at": "2026-07-28T14:31:09.343Z"
+    },
+    {
+      "id": 3,
+      "usuario_id": 2,
+      "rol": "asesor",
+      "accion": "Actualización de estado de póliza",
+      "detalles": "Cambió estado de la póliza POL-143457 (ID: 2) a vigente",
+      "created_at": "2026-07-28T14:31:55.605Z"
+    }
+  ],
+  "recordatorios": []
 }

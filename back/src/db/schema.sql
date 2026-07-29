@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS datos_personales (
     estado_civil VARCHAR(50) NOT NULL, -- 'Soltero', 'Casado', 'Divorciado', 'Viudo'
     codigo_area VARCHAR(10) NOT NULL, -- '0412', '0414', etc.
     numero_celular VARCHAR(50) NOT NULL,
+    asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -114,5 +115,15 @@ CREATE TABLE IF NOT EXISTS tarifas (
     edad_max INT NOT NULL,
     suma_asegurada NUMERIC NOT NULL,
     prima NUMERIC NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Tabla de Logs de Actividad (Trazabilidad)
+CREATE TABLE IF NOT EXISTS logs_actividad (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    correo_usuario VARCHAR(150),
+    accion VARCHAR(100) NOT NULL,
+    descripcion TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

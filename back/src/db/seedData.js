@@ -317,3 +317,56 @@ export const tarifasSemilla = [
   { compania: "Seguros Hispanas", tipo_cobertura: "individual", edad_min: 60, edad_max: 65, suma_asegurada: 5000, prima: 280 },
   { compania: "Seguros Hispanas", tipo_cobertura: "individual", edad_min: 66, edad_max: 89, suma_asegurada: 5000, prima: 280 }
 ];
+
+// Asesores Semilla
+export const asesoresSemilla = [
+  { nombre: "Juan Pérez (Asesor)", codigo: "ASE-001", correo: "asesor@jkaseguros.com", telefono: "0412-1234567" },
+  { nombre: "María Delgado", codigo: "ASE-002", correo: "maria.delgado@jkaseguros.com", telefono: "0414-9876543" },
+  { nombre: "Carlos Gómez", codigo: "ASE-003", correo: "carlos.gomez@jkaseguros.com", telefono: "0424-5556677" }
+];
+
+// Clientes Semilla (Usuarios y Datos Personales)
+export const clientesSemilla = [
+  {
+    correo: "roberto.mendoza@gmail.com",
+    primer_nombre: "Roberto",
+    segundo_nombre: "José",
+    primer_apellido: "Mendoza",
+    segundo_apellido: "Alvarado",
+    fecha_nacimiento: "1994-05-15",
+    tipo_documento: "Venezolano",
+    nro_documento: "15123456",
+    genero: "Masculino",
+    estado_civil: "Casado",
+    codigo_area: "0412",
+    numero_celular: "5551122"
+  },
+  {
+    correo: "lucia.rivas@gmail.com",
+    primer_nombre: "Lucía",
+    segundo_nombre: "Beatriz",
+    primer_apellido: "Rivas",
+    segundo_apellido: "Silva",
+    fecha_nacimiento: "1996-08-22",
+    tipo_documento: "Venezolano",
+    nro_documento: "18987654",
+    genero: "Femenino",
+    estado_civil: "Soltero",
+    codigo_area: "0414",
+    numero_celular: "7773344"
+  },
+  {
+    correo: "alejandro.torres@gmail.com",
+    primer_nombre: "Alejandro",
+    segundo_nombre: "",
+    primer_apellido: "Torres",
+    segundo_apellido: "Flores",
+    fecha_nacimiento: "2000-01-10",
+    tipo_documento: "Venezolano",
+    nro_documento: "22333444",
+    genero: "Masculino",
+    estado_civil: "Soltero",
+    codigo_area: "0416",
+    numero_celular: "8889900"
+  }
+];
