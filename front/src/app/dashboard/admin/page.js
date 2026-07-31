@@ -464,10 +464,30 @@ export default function AdminDashboard() {
 
         <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderLeft: '4px solid var(--primary)' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Asesores / Clientes</span>
-          <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)', margin: '0.5rem 0' }}>
-            {advisors.length} <span style={{ fontSize: '1rem', fontWeight: '400', color: 'var(--text-muted)' }}>/ {clients.length}</span>
-          </span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Registrados en el sistema</span>
+          <div style={{ display: 'flex', gap: '1.5rem', margin: '0.5rem 0' }}>
+            <div>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>
+                {advisors.length} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>perf.</span>
+              </span>
+              <br />
+              <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent)' }}>
+                {users.filter(u => u.rango === 'asesor').length} <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>ctas.</span>
+              </span>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Asesores</div>
+            </div>
+            <div style={{ width: '1px', backgroundColor: 'var(--border)', height: '40px', alignSelf: 'center' }}></div>
+            <div>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>
+                {clients.length} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>perf.</span>
+              </span>
+              <br />
+              <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent)' }}>
+                {users.filter(u => u.rango === 'cliente').length} <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>ctas.</span>
+              </span>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Clientes</div>
+            </div>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Perfiles / Cuentas creadas</span>
         </div>
       </div>
 
@@ -521,29 +541,46 @@ export default function AdminDashboard() {
                 />
               </div>
               <div className="table-container">
-                <table className="table">
+                <table className="table" style={{ fontSize: '0.8rem' }}>
                   <thead>
                     <tr>
+                      <th>ID</th>
                       <th>Cliente</th>
                       <th>Documento</th>
+                      <th>Correo</th>
                       <th>Teléfono</th>
-                      <th>Pólizas Asociadas</th>
+                      <th>Nacimiento (Edad)</th>
+                      <th>Género</th>
+                      <th>Edo. Civil</th>
+                      <th>Pólizas</th>
                       <th>Total Aportado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredClients.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="10" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
                     ) : (
-                      filteredClients.map((c) => (
-                        <tr key={c.id_cliente}>
-                          <td><strong>{c.nombre}</strong></td>
-                          <td>{c.nro_documento}</td>
-                          <td>{c.telefono}</td>
-                          <td><span className="badge badge-vigente" style={{ background: 'var(--secondary)', color: 'var(--primary)' }}>{c.polizas}</span></td>
-                          <td><strong style={{ color: '#10b981' }}>{c.historial_pagos}</strong></td>
-                        </tr>
-                      ))
+                      filteredClients.map((c) => {
+                        const birthYear = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).getFullYear() : null;
+                        const age = birthYear ? new Date().getFullYear() - birthYear : 'N/A';
+                        const formattedBirth = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).toLocaleDateString('es-VE', { timeZone: 'UTC' }) : 'N/A';
+                        return (
+                          <tr key={c.id_cliente}>
+                            <td>{c.id_cliente}</td>
+                            <td>
+                              <strong>{c.primer_nombre} {c.segundo_nombre ? c.segundo_nombre + ' ' : ''}{c.primer_apellido} {c.segundo_apellido ? c.segundo_apellido : ''}</strong>
+                            </td>
+                            <td>{c.tipo_documento ? `${c.tipo_documento}-${c.nro_documento}` : c.nro_documento}</td>
+                            <td>{c.correo || 'N/A'}</td>
+                            <td>{c.telefono}</td>
+                            <td>{formattedBirth} ({age} años)</td>
+                            <td>{c.genero || 'N/A'}</td>
+                            <td>{c.estado_civil || 'N/A'}</td>
+                            <td><span className="badge badge-vigente" style={{ background: 'var(--secondary)', color: 'var(--primary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>{c.polizas}</span></td>
+                            <td><strong style={{ color: '#10b981' }}>{c.historial_pagos}</strong></td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -595,7 +632,7 @@ export default function AdminDashboard() {
                             <td>
                               <input
                                 type="number"
-                                value={p.suma_asegurada}
+                                value={p.suma_asegurada ?? ''}
                                 onChange={(e) => handlePolicyCellChange(p.id, 'suma_asegurada', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '105px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem' }}
                               />
@@ -603,7 +640,7 @@ export default function AdminDashboard() {
                             <td>
                               <input
                                 type="number"
-                                value={p.prima_anual}
+                                value={p.prima_anual ?? ''}
                                 onChange={(e) => handlePolicyCellChange(p.id, 'prima_anual', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '90px', outline: 'none', borderBottom: '1px dashed var(--border)', fontWeight: 'bold', padding: '0.2rem' }}
                               />
@@ -889,7 +926,7 @@ export default function AdminDashboard() {
                             <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
                               <input
                                 type="number"
-                                value={t.edad_min}
+                                value={t.edad_min ?? ''}
                                 onChange={(e) => handleCellChange(t.id, 'edad_min', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', textAlign: 'center' }}
                               />
@@ -899,7 +936,7 @@ export default function AdminDashboard() {
                             <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
                               <input
                                 type="number"
-                                value={t.edad_max}
+                                value={t.edad_max ?? ''}
                                 onChange={(e) => handleCellChange(t.id, 'edad_max', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', textAlign: 'center' }}
                               />
@@ -909,7 +946,7 @@ export default function AdminDashboard() {
                             <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
                               <input
                                 type="number"
-                                value={t.suma_asegurada}
+                                value={t.suma_asegurada ?? ''}
                                 onChange={(e) => handleCellChange(t.id, 'suma_asegurada', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', fontWeight: 600 }}
                               />
@@ -919,7 +956,7 @@ export default function AdminDashboard() {
                             <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
                               <input
                                 type="number"
-                                value={t.prima}
+                                value={t.prima ?? ''}
                                 onChange={(e) => handleCellChange(t.id, 'prima', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', fontWeight: 'bold', color: 'var(--accent)' }}
                               />

@@ -292,6 +292,7 @@ try {
   const client = await pool.connect();
   console.log('✅ Conexión establecida con PostgreSQL.');
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL;');
+  await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS numero_hijos INT DEFAULT 0;');
   client.release();
 } catch (err) {
   pool = null;
@@ -370,51 +371,49 @@ function fallbackQuery(text, params = []) {
     return { rows: details };
   }
 
-  // 7. INSERT INTO datos_personales
+  // 7. INSERT INTO datos_personales (columnas leídas dinámicamente del SQL para soportar distintos llamadores)
   if (cleanSql.startsWith('INSERT INTO datos_personales')) {
-    const [
-      usuario_id, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-      fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular, asesor_id
-    ] = params;
-    
+    const colMatch = cleanSql.match(/INSERT INTO datos_personales\s*\(([^)]+)\)/i);
+    const columns = colMatch ? colMatch[1].split(',').map(c => c.trim()) : [];
+
     const newId = fallbackData.datos_personales.length ? Math.max(...fallbackData.datos_personales.map(d => d.id)) + 1 : 1;
-    const newPerson = {
-      id: newId,
-      usuario_id: usuario_id ? parseInt(usuario_id) : null,
-      primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-      fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular,
-      asesor_id: asesor_id ? parseInt(asesor_id) : null,
-      created_at: new Date().toISOString()
-    };
-    
+    const newPerson = { id: newId, created_at: new Date().toISOString() };
+
+    columns.forEach((col, i) => {
+      let val = params[i];
+      if (col === 'usuario_id' || col === 'asesor_id') val = val ? parseInt(val) : null;
+      if (col === 'numero_hijos') val = (val !== undefined && val !== null && val !== '') ? parseInt(val) : 0;
+      newPerson[col] = val;
+    });
+
     // Si ya existe uno con este usuario_id, lo quitamos
-    if (usuario_id) {
-      fallbackData.datos_personales = fallbackData.datos_personales.filter(d => d.usuario_id !== parseInt(usuario_id));
+    if (newPerson.usuario_id) {
+      fallbackData.datos_personales = fallbackData.datos_personales.filter(d => d.usuario_id !== newPerson.usuario_id);
     }
-    
+
     fallbackData.datos_personales.push(newPerson);
     saveFallback();
     return { rows: [newPerson] };
   }
 
-  // 8. UPDATE datos_personales
+  // 8. UPDATE datos_personales (columnas y WHERE leídos dinámicamente del SQL)
   if (cleanSql.startsWith('UPDATE datos_personales SET')) {
-    // Para simplificar, si es un update, buscaremos por usuario_id
-    const usuario_id = parseInt(params[params.length - 1]); // Asumimos que usuario_id es el último parámetro en la query
+    const setMatch = cleanSql.match(/UPDATE datos_personales SET (.+) WHERE usuario_id = \$(\d+)/i);
+    if (!setMatch) return { rows: [] };
+
+    const whereParamIdx = parseInt(setMatch[2]) - 1;
+    const usuario_id = parseInt(params[whereParamIdx]);
     const idx = fallbackData.datos_personales.findIndex(d => d.usuario_id === usuario_id);
     if (idx !== -1) {
-      // Reemplazamos/actualizamos los campos del perfil
-      const [
-        primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-        fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular
-      ] = params;
-      
-      fallbackData.datos_personales[idx] = {
-        ...fallbackData.datos_personales[idx],
-        primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-        fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular
-      };
-      
+      const assignments = setMatch[1].split(',').map(s => s.trim());
+      assignments.forEach(assignment => {
+        const [col, placeholder] = assignment.split('=').map(s => s.trim());
+        const paramIdx = parseInt(placeholder.replace('$', '')) - 1;
+        let val = params[paramIdx];
+        if (col === 'numero_hijos') val = (val !== undefined && val !== null && val !== '') ? parseInt(val) : 0;
+        fallbackData.datos_personales[idx][col] = val;
+      });
+
       saveFallback();
       return { rows: [fallbackData.datos_personales[idx]] };
     }
@@ -431,6 +430,36 @@ function fallbackQuery(text, params = []) {
   if (cleanSql.includes('FROM asesores ORDER BY id ASC LIMIT 1') || cleanSql.startsWith('SELECT id FROM asesores')) {
     const sorted = [...fallbackData.asesores].sort((a, b) => a.id - b.id);
     return { rows: sorted.length > 0 ? [{ id: sorted[0].id }] : [] };
+  }
+
+  if (cleanSql.includes('COALESCE(a.id, u.id)') || cleanSql.includes("u.rango = 'asesor'")) {
+    const list = fallbackData.usuarios
+      .filter(u => u.rango === 'asesor')
+      .map(u => {
+        const a = fallbackData.asesores.find(adv => adv.usuario_id === u.id);
+        const dp = fallbackData.datos_personales.find(d => d.usuario_id === u.id);
+        let nombre = u.correo;
+        if (a && a.nombre) {
+          nombre = a.nombre;
+        } else if (dp && dp.primer_nombre) {
+          nombre = `${dp.primer_nombre} ${dp.primer_apellido}`;
+        }
+        let tel = 'N/A';
+        if (a && a.telefono) {
+          tel = a.telefono;
+        } else if (dp && dp.numero_celular) {
+          tel = `${dp.codigo_area}-${dp.numero_celular}`;
+        }
+        return {
+          id: a ? a.id : u.id,
+          nombre,
+          codigo_asesor: a ? a.codigo_asesor : `ASE-${u.id}`,
+          telefono: tel,
+          correo: u.correo
+        };
+      });
+    list.sort((x, y) => x.nombre.localeCompare(y.nombre));
+    return { rows: list };
   }
 
   if (cleanSql.startsWith('SELECT * FROM asesores')) {

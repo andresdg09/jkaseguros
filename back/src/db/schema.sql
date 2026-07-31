@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS datos_personales (
     estado_civil VARCHAR(50) NOT NULL, -- 'Soltero', 'Casado', 'Divorciado', 'Viudo'
     codigo_area VARCHAR(10) NOT NULL, -- '0412', '0414', etc.
     numero_celular VARCHAR(50) NOT NULL,
+    numero_hijos INT DEFAULT 0,
     asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

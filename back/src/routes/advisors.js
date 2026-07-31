@@ -9,7 +9,20 @@ const router = express.Router();
 // 1. Obtener todos los asesores (Público, para dropdown del cotizador con contacto)
 router.get('/public/advisors', async (req, res) => {
   try {
-    const advRes = await db.query('SELECT id, nombre, codigo_asesor, telefono, correo FROM asesores ORDER BY nombre ASC');
+    const q = `
+      SELECT 
+        COALESCE(a.id, u.id) as id,
+        COALESCE(a.nombre, dp.primer_nombre || ' ' || dp.primer_apellido, u.correo) as nombre,
+        COALESCE(a.codigo_asesor, 'ASE-' || u.id) as codigo_asesor,
+        COALESCE(a.telefono, dp.codigo_area || '-' || dp.numero_celular, 'N/A') as telefono,
+        u.correo
+      FROM usuarios u
+      LEFT JOIN asesores a ON u.id = a.usuario_id
+      LEFT JOIN datos_personales dp ON u.id = dp.usuario_id
+      WHERE u.rango = 'asesor'
+      ORDER BY nombre ASC
+    `;
+    const advRes = await db.query(q);
     res.json(advRes.rows);
   } catch (err) {
     console.error('Error al listar asesores públicos:', err);

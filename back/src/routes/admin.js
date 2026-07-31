@@ -17,20 +17,29 @@ router.get('/clients', authenticateToken, async (req, res) => {
     const clientsRes = await db.query('SELECT * FROM datos_personales');
     const polsRes = await db.query('SELECT * FROM polizas');
     const paysRes = await db.query('SELECT * FROM pagos');
+    const usersRes = await db.query('SELECT id, correo FROM usuarios');
 
     const mapped = clientsRes.rows.map(c => {
       const cliPols = polsRes.rows.filter(p => p.cliente_id === c.id);
       const cliPolIds = cliPols.map(p => p.id);
       const cliPays = paysRes.rows.filter(pa => cliPolIds.includes(pa.poliza_id) && pa.estado_pago === 'pagado');
       const totalPagado = cliPays.reduce((sum, p) => sum + parseFloat(p.monto), 0);
+      const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
 
       return {
         id_cliente: c.id,
         nombre: `${c.primer_nombre} ${c.primer_apellido}`,
         primer_nombre: c.primer_nombre,
+        segundo_nombre: c.segundo_nombre || '',
         primer_apellido: c.primer_apellido,
+        segundo_apellido: c.segundo_apellido || '',
+        fecha_nacimiento: c.fecha_nacimiento,
+        genero: c.genero,
+        estado_civil: c.estado_civil,
+        tipo_documento: c.tipo_documento,
         nro_documento: c.nro_documento,
         telefono: `${c.codigo_area}-${c.numero_celular}`,
+        correo: userObj ? userObj.correo : 'N/A',
         polizas: cliPols.map(p => p.codigo_poliza).join(', ') || 'Ninguna',
         historial_pagos: `$${totalPagado.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
       };

@@ -64,6 +64,7 @@ router.post('/register', async (req, res) => {
     estado_civil,
     codigo_area,
     numero_celular,
+    numero_hijos,
     rango
   } = req.body;
 
@@ -94,11 +95,12 @@ router.post('/register', async (req, res) => {
     const personalRes = await db.query(
       `INSERT INTO datos_personales (
         usuario_id, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-        fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+        fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular, numero_hijos
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
         userId, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-        fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil || 'Soltero', codigo_area, numero_celular
+        fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil || 'Soltero', codigo_area, numero_celular,
+        numero_hijos ? parseInt(numero_hijos) : 0
       ]
     );
 

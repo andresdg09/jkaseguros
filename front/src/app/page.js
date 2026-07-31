@@ -16,20 +16,20 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [quotingResults, setQuotingResults] = useState(null);
   const [advisorsList, setAdvisorsList] = useState([]);
+  const [step, setStep] = useState(1); // 1: Datos de contacto, 2: Datos personales
 
   // --- ESTADO DEL FORMULARIO ---
+  // tipo_documento, genero y tipo_cobertura ya no se piden en el formulario: se usan valores por defecto fijos
   const [quoteForm, setQuoteForm] = useState({
     fecha_nacimiento: '',
     tipo_documento: 'Venezolano',
     nro_documento: '',
     primer_nombre: '',
-    segundo_nombre: '',
     primer_apellido: '',
-    segundo_apellido: '',
     genero: 'Masculino',
     estado_civil: 'Soltero',
+    numero_hijos: '',
     correo: '',
-    confirmar_correo: '',
     codigo_area: '0412',
     numero_celular: '',
     tipo_cobertura: 'colectivo',
@@ -61,13 +61,11 @@ export default function Home() {
         tipo_documento: cliente.tipo_documento || 'Venezolano',
         nro_documento: cliente.nro_documento || '',
         primer_nombre: cliente.primer_nombre || '',
-        segundo_nombre: cliente.segundo_nombre || '',
         primer_apellido: cliente.primer_apellido || '',
-        segundo_apellido: cliente.segundo_apellido || '',
         genero: cliente.genero || 'Masculino',
         estado_civil: cliente.estado_civil || 'Soltero',
+        numero_hijos: cliente.numero_hijos ?? prev.numero_hijos,
         correo: user?.correo || '',
-        confirmar_correo: user?.correo || '',
         codigo_area: cliente.codigo_area || '0412',
         numero_celular: cliente.numero_celular || '',
         asesor_id: prev.asesor_id || ''
@@ -134,17 +132,24 @@ export default function Home() {
     }
   };
 
-  // Botón "Cotizar" del formulario de inicio
-  const handleQuoteSubmit = async (e) => {
+  // Paso 1: Datos de contacto -> avanza al paso 2
+  const handleContinueStep1 = (e) => {
     e.preventDefault();
-    
-    // Validar campos obligatorios
-    if (!quoteForm.primer_nombre || !quoteForm.primer_apellido || !quoteForm.fecha_nacimiento || !quoteForm.nro_documento || !quoteForm.numero_celular || !quoteForm.correo || !quoteForm.asesor_id) {
-      return showToast('Por favor, rellene todos los campos obligatorios, incluyendo el asesor.', 'error');
+
+    if (!quoteForm.fecha_nacimiento || !quoteForm.correo || !quoteForm.numero_celular) {
+      return showToast('Por favor, rellene todos los campos obligatorios.', 'error');
     }
 
-    if (quoteForm.correo !== quoteForm.confirmar_correo) {
-      return showToast('Los correos electrónicos no coinciden.', 'error');
+    setStep(2);
+  };
+
+  // Paso 2: Datos personales -> botón "Cotizar Seguros" del formulario
+  const handleQuoteSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validar campos obligatorios
+    if (!quoteForm.primer_nombre || !quoteForm.primer_apellido || !quoteForm.nro_documento || !quoteForm.asesor_id) {
+      return showToast('Por favor, rellene todos los campos obligatorios, incluyendo el asesor.', 'error');
     }
 
     if (!isLoggedIn) {
@@ -197,52 +202,6 @@ export default function Home() {
         telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`
       };
       ejecutarCotizacion(activeCli, quoteForm.tipo_cobertura);
-    }
-  };
-
-  // Descargar PDF de cotización comparativa
-  const downloadPdf = async () => {
-    const activeCli = cliente || {
-      primer_nombre: quoteForm.primer_nombre,
-      primer_apellido: quoteForm.primer_apellido,
-      fecha_nacimiento: quoteForm.fecha_nacimiento,
-      tipo_documento: quoteForm.tipo_documento,
-      nro_documento: quoteForm.nro_documento,
-      genero: quoteForm.genero,
-      estado_civil: quoteForm.estado_civil,
-      correo: quoteForm.correo,
-      telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`
-    };
-
-    if (!quotingResults || !activeCli || !activeCli.fecha_nacimiento) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/quote/pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cliente: activeCli,
-          edad: quotingResults.edad,
-          tipo_cobertura: quotingResults.tipo_cobertura,
-          comparativas: quotingResults.comparativa
-        })
-      });
-
-      if (!res.ok) throw new Error('Error al descargar el PDF');
-      
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cotizacion_jka_${activeCli.nro_documento}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast('PDF de cotización descargado con éxito.');
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -346,219 +305,178 @@ export default function Home() {
         </p>
       </div>
 
-      {/* FORMULARIO DE COTIZACIÓN */}
+      {/* FORMULARIO DE COTIZACIÓN (POR PASOS) */}
       <div className="card">
-        <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Indica tus datos para cotizar</h3>
-        
-        <form onSubmit={handleQuoteSubmit}>
-          <div className="form-grid">
-            
-            {/* Fecha de nacimiento */}
-            <div className="form-group">
-              <label className="form-label">Fecha de nacimiento *</label>
-              <input 
-                type="date" 
-                className="form-input" 
-                value={quoteForm.fecha_nacimiento} 
-                onChange={e => setQuoteForm({...quoteForm, fecha_nacimiento: e.target.value})} 
-                required
-              />
+        <h3 className="card-title" style={{ marginBottom: '0.25rem' }}>Indica tus datos para cotizar</h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+          Paso {step} de 2: {step === 1 ? 'Datos de contacto' : 'Datos personales'}
+        </p>
+
+        {step === 1 && (
+          <form onSubmit={handleContinueStep1}>
+            <div className="form-grid">
+
+              {/* Fecha de nacimiento */}
+              <div className="form-group">
+                <label className="form-label">Fecha de nacimiento *</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={quoteForm.fecha_nacimiento}
+                  onChange={e => setQuoteForm({...quoteForm, fecha_nacimiento: e.target.value})}
+                  required
+                />
+              </div>
+
+              {/* Correo */}
+              <div className="form-group">
+                <label className="form-label">Correo electrónico *</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="correo@ejemplo.com"
+                  value={quoteForm.correo}
+                  onChange={e => setQuoteForm({...quoteForm, correo: e.target.value})}
+                  required
+                />
+              </div>
+
+              {/* Teléfono: Código de Área */}
+              <div className="form-group">
+                <label className="form-label">Código de área *</label>
+                <select
+                  className="form-input"
+                  value={quoteForm.codigo_area}
+                  onChange={e => setQuoteForm({...quoteForm, codigo_area: e.target.value})}
+                >
+                  <option value="0412">0412</option>
+                  <option value="0414">0414</option>
+                  <option value="0424">0424</option>
+                  <option value="0416">0416</option>
+                  <option value="0426">0426</option>
+                </select>
+              </div>
+
+              {/* Teléfono: Número */}
+              <div className="form-group">
+                <label className="form-label">Número de teléfono *</label>
+                <input
+                  type="tel"
+                  className="form-input"
+                  placeholder="1234567"
+                  value={quoteForm.numero_celular}
+                  onChange={e => setQuoteForm({...quoteForm, numero_celular: e.target.value})}
+                  required
+                />
+              </div>
+
             </div>
 
-            {/* Tipo de documento */}
-            <div className="form-group">
-              <label className="form-label">Tipo de documento *</label>
-              <select 
-                className="form-input" 
-                value={quoteForm.tipo_documento} 
-                onChange={e => setQuoteForm({...quoteForm, tipo_documento: e.target.value})}
-              >
-                <option value="Venezolano">Venezolano</option>
-                <option value="Extranjero">Extranjero</option>
-                <option value="Juridico">Jurídico</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
+            <button type="submit" className="btn btn-accent btn-center" style={{ marginTop: '2rem', display: 'block', width: '200px' }}>
+              Continuar
+            </button>
+          </form>
+        )}
+
+        {step === 2 && (
+          <form onSubmit={handleQuoteSubmit}>
+            <div className="form-grid">
+
+              {/* Primer nombre */}
+              <div className="form-group">
+                <label className="form-label">Nombre *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={quoteForm.primer_nombre}
+                  onChange={e => setQuoteForm({...quoteForm, primer_nombre: e.target.value})}
+                  required
+                />
+              </div>
+
+              {/* Primer apellido */}
+              <div className="form-group">
+                <label className="form-label">Apellido *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={quoteForm.primer_apellido}
+                  onChange={e => setQuoteForm({...quoteForm, primer_apellido: e.target.value})}
+                  required
+                />
+              </div>
+
+              {/* Cédula */}
+              <div className="form-group">
+                <label className="form-label">Cédula *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ej: 12345678"
+                  value={quoteForm.nro_documento}
+                  onChange={e => setQuoteForm({...quoteForm, nro_documento: e.target.value})}
+                  required
+                />
+              </div>
+
+              {/* Estado civil */}
+              <div className="form-group">
+                <label className="form-label">Estado civil</label>
+                <select
+                  className="form-input"
+                  value={quoteForm.estado_civil}
+                  onChange={e => setQuoteForm({...quoteForm, estado_civil: e.target.value})}
+                >
+                  <option value="Soltero">Soltero/a</option>
+                  <option value="Casado">Casado/a</option>
+                  <option value="Divorciado">Divorciado/a</option>
+                  <option value="Viudo">Viudo/a</option>
+                </select>
+              </div>
+
+              {/* Número de hijos */}
+              <div className="form-group">
+                <label className="form-label">Número de hijos</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="form-input"
+                  placeholder="0"
+                  value={quoteForm.numero_hijos}
+                  onChange={e => setQuoteForm({...quoteForm, numero_hijos: e.target.value})}
+                />
+              </div>
+
+              {/* Asesor / Compañía */}
+              <div className="form-group">
+                <label className="form-label">Asesor JKA Seleccionado *</label>
+                <select
+                  className="form-input"
+                  value={quoteForm.asesor_id}
+                  onChange={e => setQuoteForm({...quoteForm, asesor_id: e.target.value})}
+                  required
+                >
+                  <option value="">Selecciona un asesor...</option>
+                  {advisorsList.map(adv => (
+                    <option key={adv.id} value={adv.id}>
+                      {adv.nombre} ({adv.codigo_asesor})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
             </div>
 
-            {/* Nro de documento */}
-            <div className="form-group">
-              <label className="form-label">Nro. Documento *</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Ej: 12345678"
-                value={quoteForm.nro_documento} 
-                onChange={e => setQuoteForm({...quoteForm, nro_documento: e.target.value})} 
-                required
-              />
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+              <button type="button" className="btn btn-secondary" style={{ width: '150px' }} onClick={() => setStep(1)} disabled={loading}>
+                Atrás
+              </button>
+              <button type="submit" className="btn btn-accent" style={{ width: '200px' }} disabled={loading}>
+                {loading ? 'Calculando...' : 'Cotizar Seguros'}
+              </button>
             </div>
-
-            {/* Primer nombre */}
-            <div className="form-group">
-              <label className="form-label">Primer nombre *</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={quoteForm.primer_nombre} 
-                onChange={e => setQuoteForm({...quoteForm, primer_nombre: e.target.value})} 
-                required
-              />
-            </div>
-
-            {/* Segundo nombre */}
-            <div className="form-group">
-              <label className="form-label">Segundo nombre</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={quoteForm.segundo_nombre || ''} 
-                onChange={e => setQuoteForm({...quoteForm, segundo_nombre: e.target.value})} 
-              />
-            </div>
-
-            {/* Primer apellido */}
-            <div className="form-group">
-              <label className="form-label">Primer apellido *</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={quoteForm.primer_apellido} 
-                onChange={e => setQuoteForm({...quoteForm, primer_apellido: e.target.value})} 
-                required
-              />
-            </div>
-
-            {/* Segundo apellido */}
-            <div className="form-group">
-              <label className="form-label">Segundo apellido</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={quoteForm.segundo_apellido || ''} 
-                onChange={e => setQuoteForm({...quoteForm, segundo_apellido: e.target.value})} 
-              />
-            </div>
-
-            {/* Género */}
-            <div className="form-group">
-              <label className="form-label">Género *</label>
-              <select 
-                className="form-input" 
-                value={quoteForm.genero} 
-                onChange={e => setQuoteForm({...quoteForm, genero: e.target.value})}
-              >
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
-              </select>
-            </div>
-
-            {/* Estado civil */}
-            <div className="form-group">
-              <label className="form-label">Estado civil</label>
-              <select 
-                className="form-input" 
-                value={quoteForm.estado_civil} 
-                onChange={e => setQuoteForm({...quoteForm, estado_civil: e.target.value})}
-              >
-                <option value="Soltero">Soltero/a</option>
-                <option value="Casado">Casado/a</option>
-                <option value="Divorciado">Divorciado/a</option>
-                <option value="Viudo">Viudo/a</option>
-              </select>
-            </div>
-
-            {/* Correo */}
-            <div className="form-group">
-              <label className="form-label">Correo electrónico *</label>
-              <input 
-                type="email" 
-                className="form-input" 
-                placeholder="correo@ejemplo.com"
-                value={quoteForm.correo} 
-                onChange={e => setQuoteForm({...quoteForm, correo: e.target.value})} 
-                required
-              />
-            </div>
-
-            {/* Confirmar correo */}
-            <div className="form-group">
-              <label className="form-label">Confirmar correo *</label>
-              <input 
-                type="email" 
-                className="form-input" 
-                placeholder="correo@ejemplo.com"
-                value={quoteForm.confirmar_correo} 
-                onChange={e => setQuoteForm({...quoteForm, confirmar_correo: e.target.value})} 
-                required
-              />
-            </div>
-
-            {/* Tipo de cobertura */}
-            <div className="form-group">
-              <label className="form-label">Modalidad de Póliza *</label>
-              <select 
-                className="form-input" 
-                value={quoteForm.tipo_cobertura} 
-                onChange={e => setQuoteForm({...quoteForm, tipo_cobertura: e.target.value})}
-              >
-                <option value="colectivo">Colectivo (Póliza Grupal)</option>
-                <option value="individual">Individual (Póliza Particular)</option>
-              </select>
-            </div>
-
-            {/* Celular: Código de Área */}
-            <div className="form-group">
-              <label className="form-label">Código de área *</label>
-              <select 
-                className="form-input" 
-                value={quoteForm.codigo_area} 
-                onChange={e => setQuoteForm({...quoteForm, codigo_area: e.target.value})}
-              >
-                <option value="0412">0412</option>
-                <option value="0414">0414</option>
-                <option value="0424">0424</option>
-                <option value="0416">0416</option>
-                <option value="0426">0426</option>
-              </select>
-            </div>
-
-            {/* Celular: Número */}
-            <div className="form-group">
-              <label className="form-label">Número celular *</label>
-              <input 
-                type="tel" 
-                className="form-input" 
-                placeholder="1234567"
-                value={quoteForm.numero_celular} 
-                onChange={e => setQuoteForm({...quoteForm, numero_celular: e.target.value})} 
-                required
-              />
-            </div>
-
-            {/* Asesor / Compañía */}
-            <div className="form-group">
-              <label className="form-label">Asesor JKA Seleccionado *</label>
-              <select 
-                className="form-input"
-                value={quoteForm.asesor_id}
-                onChange={e => setQuoteForm({...quoteForm, asesor_id: e.target.value})}
-                required
-              >
-                <option value="">Selecciona un asesor...</option>
-                {advisorsList.map(adv => (
-                  <option key={adv.id} value={adv.id}>
-                    {adv.nombre} ({adv.codigo_asesor})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-          </div>
-
-          <button type="submit" className="btn btn-accent btn-center" style={{ marginTop: '2rem', display: 'block', width: '200px' }} disabled={loading}>
-            {loading ? 'Calculando...' : 'Cotizar Seguros'}
-          </button>
-        </form>
+          </form>
+        )}
       </div>
 
       {/* --- COMPARATIVA DE RESULTADOS DE COTIZACIÓN --- */}
@@ -574,9 +492,6 @@ export default function Home() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn btn-secondary" onClick={downloadPdf} disabled={loading}>
-                Descargar PDF
-              </button>
               <button className="btn btn-secondary" onClick={sendEmailPdf} disabled={loading}>
                 Enviar por Correo
               </button>
