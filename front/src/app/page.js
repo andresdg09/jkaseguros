@@ -16,10 +16,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [quotingResults, setQuotingResults] = useState(null);
   const [advisorsList, setAdvisorsList] = useState([]);
+  const [sumsList, setSumsList] = useState([]);
   const [step, setStep] = useState(1); // 1: Datos de contacto, 2: Datos personales
 
   // --- ESTADO DEL FORMULARIO ---
-  // tipo_documento, genero y tipo_cobertura ya no se piden en el formulario: se usan valores por defecto fijos
+  // tipo_documento y genero ya no se piden en el formulario: se usan valores por defecto fijos
   const [quoteForm, setQuoteForm] = useState({
     fecha_nacimiento: '',
     tipo_documento: 'Venezolano',
@@ -32,7 +33,7 @@ export default function Home() {
     correo: '',
     codigo_area: '0412',
     numero_celular: '',
-    tipo_cobertura: 'colectivo',
+    suma_asegurada: '',
     asesor_id: ''
   });
 
@@ -50,6 +51,22 @@ export default function Home() {
       }
     };
     fetchAdvisors();
+  }, []);
+
+  // Cargar sumas aseguradas disponibles en la matriz de tarifas
+  useEffect(() => {
+    const fetchSums = async () => {
+      try {
+        const res = await fetch(`${API_URL}/quote/sums`);
+        if (res.ok) {
+          const data = await res.json();
+          setSumsList(data);
+        }
+      } catch (err) {
+        console.error('Error al cargar sumas aseguradas:', err);
+      }
+    };
+    fetchSums();
   }, []);
 
   // Rellenar formulario cuando cambia el estado de cliente
@@ -84,14 +101,14 @@ export default function Home() {
 
         if (isLoggedIn && cliente) {
           showToast('Sesión iniciada. Procesando tu cotización pendiente...');
-          ejecutarCotizacion(cliente, parsed.tipo_cobertura);
+          ejecutarCotizacion(cliente, parsed.suma_asegurada);
         }
       }
     }
   }, [hydrated, isLoggedIn, cliente]);
 
   // Ejecutar llamada a API de cotización
-  const ejecutarCotizacion = async (clienteActivo, tipoCobertura) => {
+  const ejecutarCotizacion = async (clienteActivo, sumaAsegurada) => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/quote`, {
@@ -99,26 +116,28 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fecha_nacimiento: clienteActivo.fecha_nacimiento,
-          tipo_cobertura: tipoCobertura || quoteForm.tipo_cobertura
+          suma_asegurada: sumaAsegurada || quoteForm.suma_asegurada
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cotizar');
-      
+
       setQuotingResults(data);
       showToast('Cotización calculada con éxito.');
 
       // Enviar cotización comparativa por correo de forma automática en segundo plano
       try {
+        const selectedAdvisor = advisorsList.find(a => String(a.id) === String(quoteForm.asesor_id));
         fetch(`${API_URL}/quote/email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             cliente: clienteActivo,
             edad: data.edad,
-            tipo_cobertura: data.tipo_cobertura,
+            suma_asegurada: data.suma_asegurada,
             comparativas: data.comparativa,
-            email: quoteForm.correo || clienteActivo.correo
+            email: quoteForm.correo || clienteActivo.correo,
+            asesor: selectedAdvisor || null
           })
         });
         showToast('Enviamos el cuadro comparativo a tu correo electrónico.');
@@ -148,8 +167,8 @@ export default function Home() {
     e.preventDefault();
 
     // Validar campos obligatorios
-    if (!quoteForm.primer_nombre || !quoteForm.primer_apellido || !quoteForm.nro_documento || !quoteForm.asesor_id) {
-      return showToast('Por favor, rellene todos los campos obligatorios, incluyendo el asesor.', 'error');
+    if (!quoteForm.primer_nombre || !quoteForm.primer_apellido || !quoteForm.nro_documento || !quoteForm.suma_asegurada || !quoteForm.asesor_id) {
+      return showToast('Por favor, rellene todos los campos obligatorios, incluyendo la suma asegurada y el asesor.', 'error');
     }
 
     if (!isLoggedIn) {
@@ -201,7 +220,7 @@ export default function Home() {
         correo: quoteForm.correo,
         telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`
       };
-      ejecutarCotizacion(activeCli, quoteForm.tipo_cobertura);
+      ejecutarCotizacion(activeCli, quoteForm.suma_asegurada);
     }
   };
 
@@ -222,15 +241,17 @@ export default function Home() {
     if (!quotingResults || !activeCli || !activeCli.fecha_nacimiento) return;
     setLoading(true);
     try {
+      const selectedAdvisor = advisorsList.find(a => String(a.id) === String(quoteForm.asesor_id));
       const res = await fetch(`${API_URL}/quote/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cliente: activeCli,
           edad: quotingResults.edad,
-          tipo_cobertura: quotingResults.tipo_cobertura,
+          suma_asegurada: quotingResults.suma_asegurada,
           comparativas: quotingResults.comparativa,
-          email: quoteForm.correo || activeCli.correo
+          email: quoteForm.correo || activeCli.correo,
+          asesor: selectedAdvisor || null
         })
       });
 
@@ -257,8 +278,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           compania_id: compania.id,
-          tipo_cobertura: quoteForm.tipo_cobertura,
-          suma_asegurada: compania.suma_asegurada_tarifa || 5000,
+          plan: compania.plan,
+          suma_asegurada: compania.suma_asegurada || quoteForm.suma_asegurada,
           prima_anual: compania.prima,
           asesor_id: quoteForm.asesor_id
         })
@@ -283,9 +304,9 @@ export default function Home() {
     
     const docText = `${quoteForm.tipo_documento} ${quoteForm.nro_documento}`;
     const userAge = quotingResults ? quotingResults.edad : 'No calculada';
-    const coverageType = quoteForm.tipo_cobertura === 'colectivo' ? 'Colectivo' : 'Individual';
+    const planText = compania.plan ? ` (Plan ${compania.plan})` : '';
 
-    const mensaje = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${compania.nombre}* (${coverageType}) con una prima anual de *$${compania.prima}* para mí (edad: ${userAge} años). Mi nombre es *${quoteForm.primer_nombre} ${quoteForm.primer_apellido}* y mi documento de identidad es ${docText}. ¡Espero su respuesta!`;
+    const mensaje = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${compania.nombre}*${planText} con una prima anual de *$${compania.prima}* para mí (edad: ${userAge} años). Mi nombre es *${quoteForm.primer_nombre} ${quoteForm.primer_apellido}* y mi documento de identidad es ${docText}. ¡Espero su respuesta!`;
     
     const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(mensaje)}`;
     window.open(waUrl, '_blank');
@@ -447,6 +468,22 @@ export default function Home() {
                 />
               </div>
 
+              {/* Suma Asegurada */}
+              <div className="form-group">
+                <label className="form-label">Suma Asegurada Deseada *</label>
+                <select
+                  className="form-input"
+                  value={quoteForm.suma_asegurada}
+                  onChange={e => setQuoteForm({...quoteForm, suma_asegurada: e.target.value})}
+                  required
+                >
+                  <option value="">Selecciona una suma asegurada...</option>
+                  {sumsList.map(s => (
+                    <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Asesor / Compañía */}
               <div className="form-group">
                 <label className="form-label">Asesor JKA Seleccionado *</label>
@@ -488,7 +525,7 @@ export default function Home() {
                 Cuadro Comparativo de Opciones Encontradas
               </h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Edad cotizada: <strong>{quotingResults.edad} años</strong> | Cobertura: <strong>{quotingResults.tipo_cobertura.toUpperCase()}</strong>
+                Edad cotizada: <strong>{quotingResults.edad} años</strong> | Suma Asegurada: <strong>${Number(quotingResults.suma_asegurada).toLocaleString('en-US')}</strong>
               </p>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -543,42 +580,32 @@ export default function Home() {
 
                   <div className="result-features" style={{ margin: '1.5rem 0' }}>
                     <div className="result-feature">
-                      <span className="result-feature-label">Suma Salud:</span>
-                      <span className="result-feature-value">
-                        {quotingResults.tipo_cobertura === 'colectivo' ? comp.col_suma_salud : comp.ind_suma_salud}
-                      </span>
-                    </div>
-                    <div className="result-feature">
-                      <span className="result-feature-label">Deducible:</span>
-                      <span className="result-feature-value">
-                        {quotingResults.tipo_cobertura === 'colectivo' ? comp.col_deducible : comp.ind_deducible}
-                      </span>
+                      <span className="result-feature-label">Plan:</span>
+                      <span className="result-feature-value">{comp.plan || 'N/A'}</span>
                     </div>
                     <div className="result-feature">
                       <span className="result-feature-label">Maternidad:</span>
                       <span className="result-feature-value">
-                        {quotingResults.tipo_cobertura === 'colectivo' ? comp.col_maternidad : comp.ind_maternidad}
+                        {comp.maternidad_suma ? `${comp.maternidad_suma}${comp.maternidad_costo ? ` (+${comp.maternidad_costo}/año)` : ''}` : 'No incluida'}
                       </span>
                     </div>
-                    {quotingResults.tipo_cobertura === 'colectivo' && comp.col_suma_maternidad && (
-                      <div className="result-feature">
-                        <span className="result-feature-label">Límite Maternidad:</span>
-                        <span className="result-feature-value">{comp.col_suma_maternidad}</span>
-                      </div>
-                    )}
                     <div className="result-feature">
-                      <span className="result-feature-label">Plazo Espera:</span>
+                      <span className="result-feature-label">Asistencia Internacional:</span>
                       <span className="result-feature-value">
-                        {quotingResults.tipo_cobertura === 'colectivo' ? comp.col_espera_inicial : comp.ind_espera_vzla}
+                        {comp.asist_intl_suma ? `${comp.asist_intl_suma}${comp.asist_intl_costo ? ` (+${comp.asist_intl_costo}/año)` : ''}` : 'No incluida'}
+                      </span>
+                    </div>
+                    <div className="result-feature">
+                      <span className="result-feature-label">Funeral:</span>
+                      <span className="result-feature-value">
+                        {comp.funeral_suma ? `${comp.funeral_suma}${comp.funeral_costo ? ` (+${comp.funeral_costo}/año)` : ''}` : 'No incluido'}
                       </span>
                     </div>
                     <div className="result-feature">
                       <span className="result-feature-label">Condición Pago:</span>
-                      <span className="result-feature-value">
-                        {quotingResults.tipo_cobertura === 'colectivo' ? comp.col_condiciones_pago : comp.ind_condiciones_pago}
-                      </span>
+                      <span className="result-feature-value">{comp.pago || 'Consultar'}</span>
                     </div>
-                    
+
                     {/* Mostrar puntuación técnica */}
                     <div className="result-feature" style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
                       <span className="result-feature-label" style={{ fontWeight: '600' }}>Score de Cobertura:</span>

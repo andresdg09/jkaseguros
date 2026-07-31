@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import { db } from '../db/db.js';
 import { authenticateToken } from './auth.js';
 import { registrarAccion } from '../db/logger.js';
@@ -73,9 +74,9 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // Crear una póliza (Solicitud tras cotizar o creación directa por Admin/Asesor)
 router.post('/', authenticateToken, async (req, res) => {
-  const { compania_id, tipo_cobertura, suma_asegurada, prima_anual, asesor_id, cliente_id } = req.body;
+  const { compania_id, plan, suma_asegurada, prima_anual, asesor_id, cliente_id } = req.body;
 
-  if (!compania_id || !tipo_cobertura || !suma_asegurada || !prima_anual) {
+  if (!compania_id || !suma_asegurada || !prima_anual) {
     return res.status(400).json({ error: 'Faltan detalles de la póliza para proceder.' });
   }
 
@@ -108,13 +109,13 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const q = `
       INSERT INTO polizas (
-        codigo_poliza, cliente_id, asesor_id, compania_id, tipo_cobertura,
+        codigo_poliza, cliente_id, asesor_id, compania_id, plan,
         area, suma_asegurada, deducible, prima_anual, estado, pago_estado
       ) VALUES ($1, $2, $3, $4, $5, 'Salud', $6, 0, $7, $8, 'pendiente')
       RETURNING *
     `;
     const newPolRes = await db.query(q, [
-      codPoliza, finalClienteId, finalAsesorId, parseInt(compania_id), tipo_cobertura,
+      codPoliza, finalClienteId, finalAsesorId, parseInt(compania_id), plan || null,
       parseFloat(suma_asegurada), parseFloat(prima_anual), initialStatus
     ]);
 
@@ -216,14 +217,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'No autorizado.' });
   }
   const { id } = req.params;
-  const { asesor_id, compania_id, tipo_cobertura, suma_asegurada, prima_anual, estado } = req.body;
+  const { asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado } = req.body;
 
   try {
     if (db.isFallback()) {
       const fallbackFilePath = './data/fallback_db.json';
       const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
       const fData = JSON.parse(fileContent);
-      
+
       const idx = fData.polizas.findIndex(p => p.id === parseInt(id));
       if (idx === -1) return res.status(404).json({ error: 'Póliza no encontrada.' });
 
@@ -233,7 +234,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         ...fData.polizas[idx],
         asesor_id: asesor_id ? parseInt(asesor_id) : null,
         compania_id: parseInt(compania_id),
-        tipo_cobertura,
+        plan,
         suma_asegurada: parseFloat(suma_asegurada),
         prima_anual: parseFloat(prima_anual),
         estado
@@ -267,12 +268,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
       const oldStatus = oldRes.rows[0].estado;
 
       const q = `
-        UPDATE polizas 
-        SET asesor_id = $1, compania_id = $2, tipo_cobertura = $3, suma_asegurada = $4, prima_anual = $5, estado = $6 
+        UPDATE polizas
+        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6
         WHERE id = $7
       `;
       await db.query(q, [
-        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), tipo_cobertura, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, parseInt(id)
+        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, parseInt(id)
       ]);
 
       if (estado === 'vigente' && oldStatus !== 'vigente') {

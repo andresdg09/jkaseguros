@@ -182,29 +182,36 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
 
     console.log(`Cargando masivamente ${parsedData.length} tarifas...`);
 
+    const BENEFIT_FIELDS = [
+      'plan', 'pago', 'maternidad_suma', 'maternidad_costo', 'asist_intl_suma', 'asist_intl_costo',
+      'funeral_suma', 'funeral_costo', 'at_situ_medicamentos', 'consultas_medicas',
+      'examenes_lab_imagenologia', 'ambulancia'
+    ];
+
     if (db.isFallback()) {
       const compMap = {};
       const fallbackFilePath = './data/fallback_db.json';
-      
+
       const fallbackFileContent = fs.readFileSync(fallbackFilePath, 'utf8');
       const fData = JSON.parse(fallbackFileContent);
-      
+
       fData.companias_seguros.forEach(c => {
         compMap[c.nombre] = c.id;
       });
 
       const nuevasTarifas = parsedData.map((t, idx) => {
         const cId = compMap[t.compania];
-        return {
+        const row = {
           id: idx + 1,
           compania_id: cId || 1,
-          tipo_cobertura: t.tipo_cobertura || 'colectivo',
           edad_min: parseInt(t.edad_min),
           edad_max: parseInt(t.edad_max),
           suma_asegurada: parseFloat(t.suma_asegurada),
           prima: parseFloat(t.prima),
           created_at: new Date().toISOString()
         };
+        BENEFIT_FIELDS.forEach(f => { row[f] = t[f] || ''; });
+        return row;
       });
 
       fData.tarifas = nuevasTarifas;
@@ -220,10 +227,18 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
       for (const t of parsedData) {
         const cId = compMap[t.compania];
         if (!cId) continue;
-        
+
         await db.query(
-          `INSERT INTO tarifas (compania_id, tipo_cobertura, edad_min, edad_max, suma_asegurada, prima) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [cId, t.tipo_cobertura, parseInt(t.edad_min), parseInt(t.edad_max), parseFloat(t.suma_asegurada), parseFloat(t.prima)]
+          `INSERT INTO tarifas (
+            compania_id, edad_min, edad_max, suma_asegurada, prima,
+            plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+            funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+          [
+            cId, parseInt(t.edad_min), parseInt(t.edad_max), parseFloat(t.suma_asegurada), parseFloat(t.prima),
+            t.plan || '', t.pago || '', t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
+            t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || '', t.consultas_medicas || '', t.examenes_lab_imagenologia || '', t.ambulancia || ''
+          ]
         );
       }
     }
@@ -244,10 +259,10 @@ router.get('/tariffs', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
   try {
     const q = `
-      SELECT t.*, c.nombre AS compania_nombre 
-      FROM tarifas t 
-      LEFT JOIN companias_seguros c ON t.compania_id = c.id 
-      ORDER BY c.nombre ASC, t.tipo_cobertura ASC, t.edad_min ASC, t.suma_asegurada ASC
+      SELECT t.*, c.nombre AS compania_nombre
+      FROM tarifas t
+      LEFT JOIN companias_seguros c ON t.compania_id = c.id
+      ORDER BY t.edad_min ASC, t.suma_asegurada ASC, c.nombre ASC
     `;
     const result = await db.query(q);
     res.json(result.rows);
@@ -257,12 +272,19 @@ router.get('/tariffs', authenticateToken, async (req, res) => {
   }
 });
 
+// Campos de beneficios de una tarifa (texto libre: montos, "INCL", "NO", frecuencias, etc.)
+const TARIFF_BENEFIT_FIELDS = [
+  'plan', 'pago', 'maternidad_suma', 'maternidad_costo', 'asist_intl_suma', 'asist_intl_costo',
+  'funeral_suma', 'funeral_costo', 'at_situ_medicamentos', 'consultas_medicas',
+  'examenes_lab_imagenologia', 'ambulancia'
+];
+
 // 8. Crear una tarifa individual
 router.post('/tariffs', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
-  const { compania_id, tipo_cobertura, edad_min, edad_max, suma_asegurada, prima } = req.body;
-  
-  if (!compania_id || !tipo_cobertura || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
+  const { compania_id, edad_min, edad_max, suma_asegurada, prima } = req.body;
+
+  if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
     return res.status(400).json({ error: 'Faltan campos numéricos requeridos.' });
   }
 
@@ -271,30 +293,35 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
       const fallbackFilePath = './data/fallback_db.json';
       const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
       const fData = JSON.parse(fileContent);
-      
+
       const newId = fData.tarifas.length > 0 ? Math.max(...fData.tarifas.map(t => t.id)) + 1 : 1;
-      fData.tarifas.push({
+      const row = {
         id: newId,
         compania_id: parseInt(compania_id),
-        tipo_cobertura,
         edad_min: parseInt(edad_min),
         edad_max: parseInt(edad_max),
         suma_asegurada: parseFloat(suma_asegurada),
         prima: parseFloat(prima),
         created_at: new Date().toISOString()
-      });
+      };
+      TARIFF_BENEFIT_FIELDS.forEach(f => { row[f] = req.body[f] || ''; });
+      fData.tarifas.push(row);
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       const q = `
-        INSERT INTO tarifas (compania_id, tipo_cobertura, edad_min, edad_max, suma_asegurada, prima) 
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO tarifas (
+          compania_id, edad_min, edad_max, suma_asegurada, prima,
+          plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+          funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       `;
       await db.query(q, [
-        parseInt(compania_id), tipo_cobertura, parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima)
+        parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+        ...TARIFF_BENEFIT_FIELDS.map(f => req.body[f] || '')
       ]);
     }
 
-    await registrarAccion(req.user.id, req.user.correo, 'CREACION_TARIFA', `Nueva tarifa agregada para Compañía ID ${compania_id} (${tipo_cobertura})`);
+    await registrarAccion(req.user.id, req.user.correo, 'CREACION_TARIFA', `Nueva tarifa agregada para Compañía ID ${compania_id} (plan ${req.body.plan || 'N/A'})`);
     res.json({ message: 'Tarifa creada correctamente.' });
   } catch (err) {
     console.error(err);
@@ -306,9 +333,9 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
 router.put('/tariffs/:id', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
   const { id } = req.params;
-  const { compania_id, tipo_cobertura, edad_min, edad_max, suma_asegurada, prima } = req.body;
+  const { compania_id, edad_min, edad_max, suma_asegurada, prima } = req.body;
 
-  if (!compania_id || !tipo_cobertura || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
+  if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
     return res.status(400).json({ error: 'Faltan campos numéricos requeridos.' });
   }
 
@@ -317,28 +344,34 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
       const fallbackFilePath = './data/fallback_db.json';
       const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
       const fData = JSON.parse(fileContent);
-      
+
       const idx = fData.tarifas.findIndex(t => t.id === parseInt(id));
       if (idx === -1) return res.status(404).json({ error: 'Tarifa no encontrada.' });
 
-      fData.tarifas[idx] = {
+      const updated = {
         ...fData.tarifas[idx],
         compania_id: parseInt(compania_id),
-        tipo_cobertura,
         edad_min: parseInt(edad_min),
         edad_max: parseInt(edad_max),
         suma_asegurada: parseFloat(suma_asegurada),
         prima: parseFloat(prima)
       };
+      TARIFF_BENEFIT_FIELDS.forEach(f => { updated[f] = req.body[f] ?? updated[f] ?? ''; });
+      fData.tarifas[idx] = updated;
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       const q = `
-        UPDATE tarifas 
-        SET compania_id = $1, tipo_cobertura = $2, edad_min = $3, edad_max = $4, suma_asegurada = $5, prima = $6 
-        WHERE id = $7
+        UPDATE tarifas
+        SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, prima = $5,
+            plan = $6, pago = $7, maternidad_suma = $8, maternidad_costo = $9, asist_intl_suma = $10, asist_intl_costo = $11,
+            funeral_suma = $12, funeral_costo = $13, at_situ_medicamentos = $14, consultas_medicas = $15,
+            examenes_lab_imagenologia = $16, ambulancia = $17
+        WHERE id = $18
       `;
       const resUp = await db.query(q, [
-        parseInt(compania_id), tipo_cobertura, parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima), parseInt(id)
+        parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+        ...TARIFF_BENEFIT_FIELDS.map(f => req.body[f] || ''),
+        parseInt(id)
       ]);
       if (resUp.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
     }

@@ -66,14 +66,11 @@ function seedFallback() {
   // Agregar Tarifas
   fallbackData.tarifas = tarifasSemilla.map((t, i) => {
     const comp = fallbackData.companias_seguros.find(c => c.nombre === t.compania);
+    const { compania, ...rest } = t;
     return {
       id: i + 1,
       compania_id: comp ? comp.id : null,
-      tipo_cobertura: t.tipo_cobertura,
-      edad_min: t.edad_min,
-      edad_max: t.edad_max,
-      suma_asegurada: t.suma_asegurada,
-      prima: t.prima,
+      ...rest,
       created_at: new Date().toISOString()
     };
   });
@@ -145,8 +142,8 @@ function seedFallback() {
     codigo_poliza: 'POL-882731',
     cliente_id: 1,
     asesor_id: 1,
-    compania_id: 1, // Seguros Pirámides
-    tipo_cobertura: 'colectivo',
+    compania_id: 1, // Mercantil Seguros
+    plan: 'PLATINO',
     area: 'Salud',
     suma_asegurada: 5000,
     deducible: 0,
@@ -173,10 +170,10 @@ function seedFallback() {
     codigo_poliza: 'POL-449201',
     cliente_id: 2,
     asesor_id: 2,
-    compania_id: 3, // Mercantil Seguros
-    tipo_cobertura: 'individual',
+    compania_id: 2, // Seguros Caracas
+    plan: 'SALUD INDIVIDUAL',
     area: 'Salud',
-    suma_asegurada: 3000,
+    suma_asegurada: 30000,
     deducible: 0,
     prima_anual: 340,
     estado: 'negociacion',
@@ -201,10 +198,10 @@ function seedFallback() {
     codigo_poliza: 'POL-102938',
     cliente_id: 3,
     asesor_id: 3,
-    compania_id: 5, // Seguros Caracas
-    tipo_cobertura: 'colectivo',
+    compania_id: 3, // Seguros Venezuela
+    plan: 'BRONCE',
     area: 'Salud',
-    suma_asegurada: 10000,
+    suma_asegurada: 50000,
     deducible: 0,
     prima_anual: 450,
     estado: 'vencido',
@@ -293,6 +290,36 @@ try {
   console.log('✅ Conexión establecida con PostgreSQL.');
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL;');
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS numero_hijos INT DEFAULT 0;');
+
+  // Migración de la Matriz de Tarifas: nueva estructura por plan/edad/suma asegurada con beneficios
+  await client.query('ALTER TABLE tarifas DROP CONSTRAINT IF EXISTS tarifas_tipo_cobertura_check;');
+  await client.query('ALTER TABLE tarifas DROP COLUMN IF EXISTS tipo_cobertura;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago VARCHAR(100);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_costo VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl_costo VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS funeral_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS funeral_costo VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS at_situ_medicamentos VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas_medicas VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS examenes_lab_imagenologia VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ambulancia VARCHAR(50);');
+
+  // Pólizas: la modalidad colectivo/individual se reemplaza por el nombre de plan contratado
+  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check;');
+  await client.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='polizas' AND column_name='tipo_cobertura') THEN
+        ALTER TABLE polizas RENAME COLUMN tipo_cobertura TO plan;
+      END IF;
+    END $$;
+  `);
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
+  await client.query('ALTER TABLE polizas ALTER COLUMN plan DROP NOT NULL;');
+
   client.release();
 } catch (err) {
   pool = null;
@@ -466,9 +493,11 @@ function fallbackQuery(text, params = []) {
     return { rows: fallbackData.asesores };
   }
 
-  // 10. SELECT * FROM companias_seguros
-  if (cleanSql.startsWith('SELECT * FROM companias_seguros')) {
-    return { rows: fallbackData.companias_seguros };
+  // 10. SELECT ... FROM companias_seguros (con o sin columnas explícitas / ORDER BY)
+  if (cleanSql.includes('FROM companias_seguros')) {
+    const sorted = [...fallbackData.companias_seguros];
+    if (cleanSql.includes('ORDER BY nombre')) sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return { rows: sorted };
   }
 
   // 11. SELECT * FROM tarifas
@@ -512,27 +541,47 @@ function fallbackQuery(text, params = []) {
     return { rows: result };
   }
 
-  // 13. INSERT INTO polizas
+  // 13. INSERT INTO polizas (columnas y VALUES leídos del SQL: algunos valores son placeholders $n, otros literales)
   if (cleanSql.startsWith('INSERT INTO polizas')) {
-    const [codigo_poliza, cliente_id, asesor_id, compania_id, tipo_cobertura, area, suma_asegurada, deducible, prima_anual, estado, pago_estado] = params;
+    const colMatch = cleanSql.match(/INSERT INTO polizas\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i);
+    const columns = colMatch[1].split(',').map(c => c.trim());
+    const valueExprs = colMatch[2].split(',').map(v => v.trim());
+
+    const row = {};
+    columns.forEach((col, i) => {
+      const expr = valueExprs[i];
+      const placeholderMatch = expr.match(/^\$(\d+)$/);
+      let val;
+      if (placeholderMatch) {
+        val = params[parseInt(placeholderMatch[1]) - 1];
+      } else if (/^'.*'$/.test(expr)) {
+        val = expr.slice(1, -1);
+      } else if (!isNaN(parseFloat(expr))) {
+        val = parseFloat(expr);
+      } else {
+        val = expr;
+      }
+      row[col] = val;
+    });
+
     const newId = fallbackData.polizas.length ? Math.max(...fallbackData.polizas.map(p => p.id)) + 1 : 1;
     const newPol = {
       id: newId,
-      codigo_poliza,
-      cliente_id: parseInt(cliente_id),
-      asesor_id: asesor_id ? parseInt(asesor_id) : null,
-      compania_id: parseInt(compania_id),
-      tipo_cobertura,
-      area: area || 'Salud',
-      suma_asegurada: parseFloat(suma_asegurada),
-      deducible: parseFloat(deducible || 0),
-      prima_anual: parseFloat(prima_anual),
-      estado: estado || 'negociacion',
-      pago_estado: pago_estado || 'pendiente',
+      codigo_poliza: row.codigo_poliza,
+      cliente_id: parseInt(row.cliente_id),
+      asesor_id: row.asesor_id ? parseInt(row.asesor_id) : null,
+      compania_id: parseInt(row.compania_id),
+      plan: row.plan || null,
+      area: row.area || 'Salud',
+      suma_asegurada: parseFloat(row.suma_asegurada),
+      deducible: parseFloat(row.deducible || 0),
+      prima_anual: parseFloat(row.prima_anual),
+      estado: row.estado || 'negociacion',
+      pago_estado: row.pago_estado || 'pendiente',
       created_at: new Date().toISOString()
     };
     fallbackData.polizas.push(newPol);
-    
+
     // Crear un pago automático pendiente para esta póliza
     const payId = fallbackData.pagos.length ? Math.max(...fallbackData.pagos.map(pa => pa.id)) + 1 : 1;
     const nextMonth = new Date();
@@ -540,7 +589,7 @@ function fallbackQuery(text, params = []) {
     fallbackData.pagos.push({
       id: payId,
       poliza_id: newId,
-      monto: parseFloat(prima_anual),
+      monto: newPol.prima_anual,
       fecha_pago: new Date().toISOString().split('T')[0],
       estado_pago: 'pendiente',
       referencia: null,

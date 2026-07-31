@@ -166,7 +166,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           asesor_id: policy.asesor_id ? parseInt(policy.asesor_id) : null,
           compania_id: parseInt(policy.compania_id),
-          tipo_cobertura: policy.tipo_cobertura,
+          plan: policy.plan,
           suma_asegurada: parseFloat(policy.suma_asegurada),
           prima_anual: parseFloat(policy.prima_anual),
           estado: policy.estado
@@ -254,11 +254,22 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({
           compania_id: parseInt(tariff.compania_id),
-          tipo_cobertura: tariff.tipo_cobertura,
           edad_min: parseInt(tariff.edad_min),
           edad_max: parseInt(tariff.edad_max),
           suma_asegurada: parseFloat(tariff.suma_asegurada),
-          prima: parseFloat(tariff.prima)
+          prima: parseFloat(tariff.prima),
+          plan: tariff.plan || '',
+          pago: tariff.pago || '',
+          maternidad_suma: tariff.maternidad_suma || '',
+          maternidad_costo: tariff.maternidad_costo || '',
+          asist_intl_suma: tariff.asist_intl_suma || '',
+          asist_intl_costo: tariff.asist_intl_costo || '',
+          funeral_suma: tariff.funeral_suma || '',
+          funeral_costo: tariff.funeral_costo || '',
+          at_situ_medicamentos: tariff.at_situ_medicamentos || '',
+          consultas_medicas: tariff.consultas_medicas || '',
+          examenes_lab_imagenologia: tariff.examenes_lab_imagenologia || '',
+          ambulancia: tariff.ambulancia || ''
         })
       });
       const data = await res.json();
@@ -311,11 +322,22 @@ export default function AdminDashboard() {
     const newRow = {
       id: tempId,
       compania_id: defaultCompanyId,
-      tipo_cobertura: 'colectivo',
+      plan: '',
+      pago: '',
       edad_min: 30,
       edad_max: 39,
       suma_asegurada: 5000,
-      prima: 200
+      prima: 200,
+      maternidad_suma: '',
+      maternidad_costo: '',
+      asist_intl_suma: '',
+      asist_intl_costo: '',
+      funeral_suma: '',
+      funeral_costo: '',
+      at_situ_medicamentos: '',
+      consultas_medicas: '',
+      examenes_lab_imagenologia: '',
+      ambulancia: ''
     };
     setTariffs(prev => [...prev, newRow]);
     setModifiedRows(prev => ({ ...prev, [tempId]: true }));
@@ -411,12 +433,44 @@ export default function AdminDashboard() {
     const compName = companies.find(c => c.id === parseInt(t.compania_id))?.nombre || t.compania_nombre || '';
     return (
       compName.toLowerCase().includes(q) ||
-      t.tipo_cobertura?.toLowerCase().includes(q) ||
+      t.plan?.toLowerCase().includes(q) ||
       String(t.edad_min).includes(q) ||
       String(t.edad_max).includes(q) ||
       String(t.suma_asegurada).includes(q) ||
       String(t.prima).includes(q)
     );
+  });
+
+  // Sumas aseguradas disponibles (según la matriz del excel de tarifas)
+  const SUMA_ASEGURADA_OPTIONS = [5000, 10000, 30000, 50000, 100000, 200000];
+
+  // Matriz pivote: una fila por (rango de edad, suma asegurada), con la oferta más económica de cada aseguradora
+  const pivotRows = (() => {
+    const map = new Map();
+    tariffs.forEach(t => {
+      const key = `${t.edad_min}-${t.edad_max}|${t.suma_asegurada}`;
+      if (!map.has(key)) {
+        map.set(key, { edad_min: t.edad_min, edad_max: t.edad_max, suma_asegurada: parseFloat(t.suma_asegurada), byCompany: {} });
+      }
+      const row = map.get(key);
+      const compId = parseInt(t.compania_id);
+      const existing = row.byCompany[compId];
+      if (!existing || parseFloat(t.prima) < parseFloat(existing.prima)) {
+        row.byCompany[compId] = t;
+      }
+    });
+    return [...map.values()].sort((a, b) => a.edad_min - b.edad_min || a.suma_asegurada - b.suma_asegurada);
+  })();
+
+  const filteredPivotRows = pivotRows.filter(row => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
+    return companies.some(c => {
+      const cell = row.byCompany[c.id];
+      if (!cell) return false;
+      return c.nombre.toLowerCase().includes(q) || cell.plan?.toLowerCase().includes(q) || String(cell.prima).includes(q);
+    });
   });
 
   return (
@@ -609,7 +663,7 @@ export default function AdminDashboard() {
                       <th>Código</th>
                       <th>Cliente</th>
                       <th>Aseguradora</th>
-                      <th>Tipo</th>
+                      <th>Plan</th>
                       <th>Suma Asegurada ($)</th>
                       <th>Prima Anual ($)</th>
                       <th>Asesor Asignado</th>
@@ -628,7 +682,14 @@ export default function AdminDashboard() {
                             <td><strong>{p.codigo_poliza}</strong></td>
                             <td>{p.cliente_nombre || 'Asociado'}</td>
                             <td>{p.compania_nombre || 'Seguros'}</td>
-                            <td>{p.tipo_cobertura === 'colectivo' ? 'Colectivo' : 'Individual'}</td>
+                            <td>
+                              <input
+                                type="text"
+                                value={p.plan || ''}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'plan', e.target.value)}
+                                style={{ border: 'none', background: 'transparent', width: '110px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem' }}
+                              />
+                            </td>
                             <td>
                               <input
                                 type="number"
@@ -828,24 +889,27 @@ export default function AdminDashboard() {
           {/* --- CARGA Y EDICIÓN DE TARIFAS --- */}
           {activeTab === 'tarifas' && (
             <div className="card">
-              <h3 className="card-title" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', border: 'none' }}>
+              <h3 className="card-title" style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', border: 'none' }}>
                 <span>Matriz de Tarifas (Planilla Interactiva)</span>
                 <button onClick={handleAddTariffRow} className="btn btn-accent" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>
                   + Agregar Fila
                 </button>
               </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                Por cada rango de edad y suma asegurada se muestra la oferta más económica de cada aseguradora. Los campos vacíos indican que esa aseguradora no ofrece esa combinación.
+              </p>
 
               {/* Buscador de planilla */}
               <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <input
                   type="text"
-                  placeholder="🔍 Buscar por aseguradora, cobertura, edad o prima..."
+                  placeholder="🔍 Buscar por aseguradora, plan, edad, suma o prima..."
                   className="form-input"
                   style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                
+
                 {/* Botón secundario para mostrar panel de carga masiva JSON */}
                 <details style={{ background: 'var(--secondary)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border)' }}>
                   <summary style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--primary)', userSelect: 'none' }}>Opciones de Carga Masiva JSON</summary>
@@ -854,8 +918,8 @@ export default function AdminDashboard() {
                       Sube un archivo JSON estructurado para sobreescribir y actualizar masivamente la matriz.
                     </p>
                     <form onSubmit={handleBulkUpload} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         id="file-upload-input"
                         accept=".json"
                         onChange={e => setFileToUpload(e.target.files[0])}
@@ -869,131 +933,248 @@ export default function AdminDashboard() {
                 </details>
               </div>
 
-              {/* SpreadSheet Grid */}
+              {/* MATRIZ COMPARATIVA (Edad | Suma Asegurada | por cada Aseguradora) */}
               <div className="table-container" style={{ maxHeight: '600px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
                 <table className="table" style={{ borderCollapse: 'collapse', width: '100%' }}>
                   <thead>
                     <tr style={{ background: 'var(--secondary)' }}>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem' }}>Aseguradora</th>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '130px' }}>Cobertura</th>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Edad Mín</th>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Edad Máx</th>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '130px' }}>Suma Asegurada ($)</th>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '110px' }}>Prima ($)</th>
-                      <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '145px', textAlign: 'center' }}>Acciones</th>
+                      <th rowSpan={2} style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Rango Edad</th>
+                      <th rowSpan={2} style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '110px' }}>Suma Asegurada ($)</th>
+                      {companies.map(c => (
+                        <th key={c.id} colSpan={4} style={{ border: '1px solid var(--border)', padding: '0.5rem', textAlign: 'center' }}>{c.nombre}</th>
+                      ))}
+                    </tr>
+                    <tr style={{ background: 'var(--secondary)' }}>
+                      {companies.map(c => (
+                        <React.Fragment key={c.id}>
+                          <th style={{ border: '1px solid var(--border)', padding: '0.4rem', fontSize: '0.75rem', width: '90px' }}>Plan</th>
+                          <th style={{ border: '1px solid var(--border)', padding: '0.4rem', fontSize: '0.75rem', width: '90px' }}>Prima ($)</th>
+                          <th style={{ border: '1px solid var(--border)', padding: '0.4rem', fontSize: '0.75rem', width: '110px' }}>Maternidad</th>
+                          <th style={{ border: '1px solid var(--border)', padding: '0.4rem', fontSize: '0.75rem', width: '110px' }}>Asist. Intl / Funeral</th>
+                        </React.Fragment>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTariffs.length === 0 ? (
+                    {filteredPivotRows.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                        <td colSpan={2 + companies.length * 4} className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                           No hay tarifas registradas en la planilla.
                         </td>
                       </tr>
                     ) : (
-                      filteredTariffs.map((t) => {
-                        const isModified = !!modifiedRows[t.id];
-                        const isNew = String(t.id).startsWith('new-');
-                        
-                        return (
-                          <tr key={t.id} style={{ background: isNew ? '#f0fff4' : isModified ? '#fffaf0' : 'transparent' }}>
-                            {/* Aseguradora Select */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
-                              <select
-                                value={t.compania_id || ''}
-                                onChange={(e) => handleCellChange(t.id, 'compania_id', e.target.value)}
-                                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'inherit', fontWeight: 'bold', padding: '0.25rem' }}
-                              >
-                                {companies.map(c => (
-                                  <option key={c.id} value={c.id}>{c.nombre}</option>
-                                ))}
-                              </select>
-                            </td>
-
-                            {/* Cobertura Select */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
-                              <select
-                                value={t.tipo_cobertura}
-                                onChange={(e) => handleCellChange(t.id, 'tipo_cobertura', e.target.value)}
-                                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'inherit', padding: '0.25rem' }}
-                              >
-                                <option value="colectivo">Colectivo</option>
-                                <option value="individual">Individual</option>
-                              </select>
-                            </td>
-
-                            {/* Edad Mín Input */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
-                              <input
-                                type="number"
-                                value={t.edad_min ?? ''}
-                                onChange={(e) => handleCellChange(t.id, 'edad_min', e.target.value)}
-                                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', textAlign: 'center' }}
-                              />
-                            </td>
-
-                            {/* Edad Máx Input */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
-                              <input
-                                type="number"
-                                value={t.edad_max ?? ''}
-                                onChange={(e) => handleCellChange(t.id, 'edad_max', e.target.value)}
-                                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', textAlign: 'center' }}
-                              />
-                            </td>
-
-                            {/* Suma Asegurada Input */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
-                              <input
-                                type="number"
-                                value={t.suma_asegurada ?? ''}
-                                onChange={(e) => handleCellChange(t.id, 'suma_asegurada', e.target.value)}
-                                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', fontWeight: 600 }}
-                              />
-                            </td>
-
-                            {/* Prima Input */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
-                              <input
-                                type="number"
-                                value={t.prima ?? ''}
-                                onChange={(e) => handleCellChange(t.id, 'prima', e.target.value)}
-                                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', fontWeight: 'bold', color: 'var(--accent)' }}
-                              />
-                            </td>
-
-                            {/* Acciones */}
-                            <td style={{ border: '1px solid var(--border)', padding: '0.25rem', textAlign: 'center' }}>
-                              <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                                <button
-                                  onClick={() => handleSaveTariff(t)}
-                                  className="btn btn-primary"
-                                  style={{ 
-                                    padding: '0.25rem 0.5rem', 
-                                    fontSize: '0.75rem', 
-                                    visibility: (isModified || isNew) ? 'visible' : 'hidden' 
-                                  }}
-                                  disabled={loading}
-                                >
-                                  {isNew ? 'Crear' : 'Guardar'}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTariff(t.id)}
-                                  className="btn"
-                                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca', cursor: 'pointer' }}
-                                  disabled={loading}
-                                >
-                                  Eliminar
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
+                      filteredPivotRows.map((row, idx) => (
+                        <tr key={`${row.edad_min}-${row.edad_max}-${row.suma_asegurada}`} style={{ background: idx % 2 === 0 ? 'transparent' : 'var(--secondary)' }}>
+                          <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', fontWeight: 600 }}>
+                            {row.edad_min}-{row.edad_max}
+                          </td>
+                          <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', fontWeight: 600 }}>
+                            ${row.suma_asegurada.toLocaleString('en-US')}
+                          </td>
+                          {companies.map(c => {
+                            const cell = row.byCompany[c.id];
+                            const isModified = cell && !!modifiedRows[cell.id];
+                            if (!cell) {
+                              return (
+                                <React.Fragment key={c.id}>
+                                  <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', color: 'var(--text-muted)' }}>—</td>
+                                  <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', color: 'var(--text-muted)' }}>—</td>
+                                  <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', color: 'var(--text-muted)' }}>—</td>
+                                  <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', color: 'var(--text-muted)' }}>—</td>
+                                </React.Fragment>
+                              );
+                            }
+                            return (
+                              <React.Fragment key={c.id}>
+                                <td style={{ border: '1px solid var(--border)', padding: '0.3rem', textAlign: 'center', fontSize: '0.8rem' }}>{cell.plan || 'N/A'}</td>
+                                <td style={{ border: '1px solid var(--border)', padding: '0.2rem', background: isModified ? '#fffaf0' : 'transparent' }}>
+                                  <input
+                                    type="number"
+                                    value={cell.prima ?? ''}
+                                    onChange={(e) => handleCellChange(cell.id, 'prima', e.target.value)}
+                                    style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', textAlign: 'center', fontWeight: 'bold', color: 'var(--accent)', padding: '0.2rem' }}
+                                  />
+                                  {isModified && (
+                                    <button
+                                      onClick={() => handleSaveTariff(cell)}
+                                      className="btn btn-primary"
+                                      style={{ display: 'block', margin: '0.2rem auto 0', padding: '0.1rem 0.4rem', fontSize: '0.65rem' }}
+                                      disabled={loading}
+                                    >
+                                      Guardar
+                                    </button>
+                                  )}
+                                </td>
+                                <td style={{ border: '1px solid var(--border)', padding: '0.3rem', textAlign: 'center', fontSize: '0.75rem' }}>
+                                  {cell.maternidad_suma ? `${cell.maternidad_suma}${cell.maternidad_costo ? ` (+${cell.maternidad_costo})` : ''}` : <span style={{ color: 'var(--text-muted)' }}>No incluida</span>}
+                                </td>
+                                <td style={{ border: '1px solid var(--border)', padding: '0.3rem', textAlign: 'center', fontSize: '0.75rem' }}>
+                                  {cell.asist_intl_suma || <span style={{ color: 'var(--text-muted)' }}>—</span>} / {cell.funeral_suma || <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                                </td>
+                              </React.Fragment>
+                            );
+                          })}
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>
               </div>
+
+              {/* PLANILLA DETALLADA (Edición completa por tarifa individual) */}
+              <details style={{ marginTop: '2rem' }}>
+                <summary style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--primary)', userSelect: 'none', cursor: 'pointer' }}>
+                  Ver / editar todas las tarifas en detalle ({filteredTariffs.length})
+                </summary>
+                <div className="table-container" style={{ maxHeight: '600px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px', marginTop: '1rem' }}>
+                  <table className="table" style={{ borderCollapse: 'collapse', width: '100%' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--secondary)' }}>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '140px' }}>Aseguradora</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '110px' }}>Plan</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '130px' }}>Forma de Pago</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '80px' }}>Edad Mín</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '80px' }}>Edad Máx</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '110px' }}>Suma Asegurada ($)</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Prima ($)</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '100px' }}>Maternidad Suma</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Maternidad Costo</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '100px' }}>Asist. Intl Suma</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Asist. Intl Costo</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Funeral Suma</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Funeral Costo</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '100px' }}>At. Situ + Medic.</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '100px' }}>Consultas Médicas</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '100px' }}>Exám. Lab/Imag.</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '90px' }}>Ambulancia</th>
+                        <th style={{ border: '1px solid var(--border)', padding: '0.5rem', width: '145px', textAlign: 'center' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTariffs.length === 0 ? (
+                        <tr>
+                          <td colSpan="18" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                            No hay tarifas registradas en la planilla.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredTariffs.map((t) => {
+                          const isModified = !!modifiedRows[t.id];
+                          const isNew = String(t.id).startsWith('new-');
+                          const textField = (field, width) => (
+                            <input
+                              type="text"
+                              value={t[field] ?? ''}
+                              onChange={(e) => handleCellChange(t.id, field, e.target.value)}
+                              style={{ border: 'none', background: 'transparent', width: width || '100%', outline: 'none', padding: '0.25rem' }}
+                            />
+                          );
+
+                          return (
+                            <tr key={t.id} style={{ background: isNew ? '#f0fff4' : isModified ? '#fffaf0' : 'transparent' }}>
+                              {/* Aseguradora Select */}
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
+                                <select
+                                  value={t.compania_id || ''}
+                                  onChange={(e) => handleCellChange(t.id, 'compania_id', e.target.value)}
+                                  style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'inherit', fontWeight: 'bold', padding: '0.25rem' }}
+                                >
+                                  {companies.map(c => (
+                                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                                  ))}
+                                </select>
+                              </td>
+
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('plan')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('pago')}</td>
+
+                              {/* Edad Mín Input */}
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
+                                <input
+                                  type="number"
+                                  value={t.edad_min ?? ''}
+                                  onChange={(e) => handleCellChange(t.id, 'edad_min', e.target.value)}
+                                  style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', textAlign: 'center' }}
+                                />
+                              </td>
+
+                              {/* Edad Máx Input */}
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
+                                <input
+                                  type="number"
+                                  value={t.edad_max ?? ''}
+                                  onChange={(e) => handleCellChange(t.id, 'edad_max', e.target.value)}
+                                  style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', textAlign: 'center' }}
+                                />
+                              </td>
+
+                              {/* Suma Asegurada Select (según las sumas disponibles en el excel) */}
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
+                                <select
+                                  value={t.suma_asegurada ?? ''}
+                                  onChange={(e) => handleCellChange(t.id, 'suma_asegurada', e.target.value)}
+                                  style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'inherit', fontWeight: 600, padding: '0.25rem' }}
+                                >
+                                  {SUMA_ASEGURADA_OPTIONS.map(s => (
+                                    <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
+                                  ))}
+                                </select>
+                              </td>
+
+                              {/* Prima Input */}
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>
+                                <input
+                                  type="number"
+                                  value={t.prima ?? ''}
+                                  onChange={(e) => handleCellChange(t.id, 'prima', e.target.value)}
+                                  style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: '0.25rem', fontWeight: 'bold', color: 'var(--accent)' }}
+                                />
+                              </td>
+
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('maternidad_suma')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('maternidad_costo')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('asist_intl_suma')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('asist_intl_costo')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('funeral_suma')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('funeral_costo')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('at_situ_medicamentos')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('consultas_medicas')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('examenes_lab_imagenologia')}</td>
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem' }}>{textField('ambulancia')}</td>
+
+                              {/* Acciones */}
+                              <td style={{ border: '1px solid var(--border)', padding: '0.25rem', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                                  <button
+                                    onClick={() => handleSaveTariff(t)}
+                                    className="btn btn-primary"
+                                    style={{
+                                      padding: '0.25rem 0.5rem',
+                                      fontSize: '0.75rem',
+                                      visibility: (isModified || isNew) ? 'visible' : 'hidden'
+                                    }}
+                                    disabled={loading}
+                                  >
+                                    {isNew ? 'Crear' : 'Guardar'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteTariff(t.id)}
+                                    className="btn"
+                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca', cursor: 'pointer' }}
+                                    disabled={loading}
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             </div>
           )}
 

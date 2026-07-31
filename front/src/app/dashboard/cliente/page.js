@@ -215,7 +215,7 @@ export default function ClienteDashboard() {
                       filteredPolicies.map((p) => (
                         <tr key={p.id}>
                           <td><strong>{p.codigo_poliza}</strong></td>
-                          <td>{p.tipo_cobertura === 'colectivo' ? 'Colectivo (Grupo)' : 'Individual (Particular)'}</td>
+                          <td>{p.plan || 'N/A'}</td>
                           <td>{p.area}</td>
                           <td>${parseFloat(p.suma_asegurada).toLocaleString('en-US')}</td>
                           <td>${parseFloat(p.prima_anual).toLocaleString('en-US')}</td>

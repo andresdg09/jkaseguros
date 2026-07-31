@@ -40,41 +40,10 @@ CREATE TABLE IF NOT EXISTS asesores (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Tabla de Compañías de Seguros (Características Generales)
+-- 4. Tabla de Compañías de Seguros
 CREATE TABLE IF NOT EXISTS companias_seguros (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) UNIQUE NOT NULL,
-    
-    -- Colectivos
-    col_suma_salud VARCHAR(255),
-    col_deducible VARCHAR(255),
-    col_maternidad VARCHAR(255),
-    col_suma_maternidad VARCHAR(255),
-    col_cobertura_inmediata VARCHAR(255),
-    col_examenes VARCHAR(255),
-    col_espera_inicial VARCHAR(255),
-    col_cantidad_minima VARCHAR(255),
-    col_admisibilidad VARCHAR(255),
-    col_preexistencias VARCHAR(255),
-    col_admisibilidad_nuevas VARCHAR(255),
-    col_preexistencias_nuevas VARCHAR(255),
-    col_espera_nuevas VARCHAR(255),
-    col_cobertura_geografica VARCHAR(255),
-    col_asistencia_internacional VARCHAR(255),
-    col_condiciones_pago VARCHAR(255),
-    
-    -- Individuales
-    ind_admisibilidad VARCHAR(255),
-    ind_suma_salud VARCHAR(255),
-    ind_deducible VARCHAR(255),
-    ind_maternidad VARCHAR(255),
-    ind_deducible_maternidad VARCHAR(255),
-    ind_asistencia_internacional VARCHAR(255),
-    ind_espera_exterior VARCHAR(255),
-    ind_examenes VARCHAR(255),
-    ind_espera_vzla VARCHAR(255),
-    ind_condiciones_pago VARCHAR(255),
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -85,7 +54,7 @@ CREATE TABLE IF NOT EXISTS polizas (
     cliente_id INT REFERENCES datos_personales(id) ON DELETE CASCADE,
     asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
     compania_id INT REFERENCES companias_seguros(id) ON DELETE RESTRICT,
-    tipo_cobertura VARCHAR(50) NOT NULL CHECK (tipo_cobertura IN ('colectivo', 'individual')),
+    plan VARCHAR(100), -- Nombre del plan contratado (ej. 'PLATINO', 'ACCESS')
     area VARCHAR(100) NOT NULL DEFAULT 'Salud',
     suma_asegurada NUMERIC NOT NULL,
     deducible NUMERIC DEFAULT 0,

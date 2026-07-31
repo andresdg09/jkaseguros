@@ -17,7 +17,7 @@ export default function AsesorDashboard() {
   const [policies, setPolicies] = useState([]);
   const [payments, setPayments] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [policyForm, setPolicyForm] = useState({ cliente_id: '', compania_id: '', tipo_cobertura: 'colectivo', suma_asegurada: 5000, prima_anual: 300 });
+  const [policyForm, setPolicyForm] = useState({ cliente_id: '', compania_id: '', plan: '', suma_asegurada: 5000, prima_anual: 300 });
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DE PANELES ---
@@ -166,7 +166,7 @@ export default function AsesorDashboard() {
         },
         body: JSON.stringify({
           compania_id: parseInt(policyForm.compania_id),
-          tipo_cobertura: policyForm.tipo_cobertura,
+          plan: policyForm.plan,
           suma_asegurada: parseFloat(policyForm.suma_asegurada),
           prima_anual: parseFloat(policyForm.prima_anual),
           cliente_id: parseInt(policyForm.cliente_id)
@@ -179,7 +179,7 @@ export default function AsesorDashboard() {
       setPolicyForm({
         cliente_id: '',
         compania_id: companies[0]?.id || '',
-        tipo_cobertura: 'colectivo',
+        plan: '',
         suma_asegurada: 5000,
         prima_anual: 300
       });
@@ -650,16 +650,15 @@ export default function AsesorDashboard() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Tipo de Cobertura *</label>
-                  <select
+                  <label className="form-label">Plan / Modalidad *</label>
+                  <input
+                    type="text"
                     className="form-input"
-                    value={policyForm.tipo_cobertura}
-                    onChange={e => setPolicyForm({...policyForm, tipo_cobertura: e.target.value})}
+                    placeholder="Ej: PLATINO, ACCESS, SALUD EXTERIOR..."
+                    value={policyForm.plan}
+                    onChange={e => setPolicyForm({...policyForm, plan: e.target.value})}
                     required
-                  >
-                    <option value="colectivo">Colectivo</option>
-                    <option value="individual">Individual</option>
-                  </select>
+                  />
                 </div>
 
                 <div className="form-grid" style={{ marginBottom: '1.5rem' }}>

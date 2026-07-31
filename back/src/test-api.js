@@ -64,7 +64,7 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fecha_nacimiento: '1995-04-12',
-        tipo_cobertura: 'colectivo'
+        suma_asegurada: 50000
       })
     });
     const quoteData = await quoteRes.json();
