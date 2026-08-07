@@ -383,6 +383,15 @@ try {
   // Probar la conexión
   const client = await pool.connect();
   console.log('✅ Conexión establecida con PostgreSQL.');
+
+  // Asegurar que el esquema base exista antes de intentar cualquier migración/ALTER TABLE.
+  // Sin esto, una base de datos nueva (ej. Neon recién creada) no tiene ninguna tabla todavía
+  // y las migraciones de abajo fallan con "relation ... does not exist".
+  const schemaPath = path.join(__dirname, 'schema.sql');
+  const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+  await client.query(schemaSql);
+  console.log('📋 Esquema base verificado/creado.');
+
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL;');
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS numero_hijos INT DEFAULT 0;');
 
