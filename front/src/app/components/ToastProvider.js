@@ -14,7 +14,7 @@ export function ToastProvider({ children }) {
     // Auto-remove after 4 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+    }, 4001);
   };
 
   return (
