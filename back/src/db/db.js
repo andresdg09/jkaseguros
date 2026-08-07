@@ -377,7 +377,11 @@ function saveFallback() {
   }
 }
 
-// Intentar conectar a PostgreSQL
+// Conexión a PostgreSQL, expuesta como función explícita (en vez de código top-level)
+// para que index.js pueda hacer `await initDb()` y garantizar que el esquema base y
+// las migraciones terminen ANTES de levantar rutas, el cron de recordatorios o
+// cualquier otra consulta sobre asesores/usuarios/polizas.
+export async function initDb() {
 try {
   pool = new pg.Pool(dbConfig);
   // Probar la conexión
@@ -554,6 +558,7 @@ try {
   console.error('❌ Error al conectar con PostgreSQL, activando fallback JSON:', err);
   pool = null;
   initFallback();
+}
 }
 
 // Emulación de consultas SQL simples sobre JSON

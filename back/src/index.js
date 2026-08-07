@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
+import { initDb } from './db/db.js';
+
 // Importar Enrutadores Modulares
 import authRouter from './routes/auth.js';
 import profileRouter from './routes/profile.js';
@@ -36,11 +38,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor API de JKA Seguros en funcionamiento.' });
 });
 
-// Levantar Servidor
-app.listen(port, () => {
-  console.log(`🚀 Servidor backend modularizado escuchando en http://localhost:${port}`);
-  
-  // Ejecutar cron de recordatorios al arrancar y luego cada hora
-  procesarRecordatoriosPolizas();
-  setInterval(procesarRecordatoriosPolizas, 3600000); // 1 hora
-});
+// Levantar Servidor: se espera explícitamente a que initDb() termine (conexión +
+// schema.sql + migraciones) antes de aceptar tráfico o disparar el cron de
+// recordatorios, para no depender de que el top-level await de db.js propague
+// el bloqueo de forma implícita a través de la cadena de imports de las rutas.
+async function startServer() {
+  await initDb();
+
+  app.listen(port, () => {
+    console.log(`🚀 Servidor backend modularizado escuchando en http://localhost:${port}`);
+
+    // Ejecutar cron de recordatorios al arrancar y luego cada hora
+    procesarRecordatoriosPolizas();
+    setInterval(procesarRecordatoriosPolizas, 3600000); // 1 hora
+  });
+}
+
+startServer();
