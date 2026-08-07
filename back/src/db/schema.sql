@@ -9,7 +9,18 @@ CREATE TABLE IF NOT EXISTS usuarios (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Tabla de Datos Personales (Clientes)
+-- 2. Tabla de Asesores
+CREATE TABLE IF NOT EXISTS asesores (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+    nombre VARCHAR(200) NOT NULL,
+    codigo_asesor VARCHAR(50) UNIQUE NOT NULL,
+    correo VARCHAR(150) NOT NULL,
+    telefono VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Tabla de Datos Personales (Clientes)
 CREATE TABLE IF NOT EXISTS datos_personales (
     id SERIAL PRIMARY KEY,
     usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -26,17 +37,6 @@ CREATE TABLE IF NOT EXISTS datos_personales (
     numero_celular VARCHAR(50) NOT NULL,
     numero_hijos INT DEFAULT 0,
     asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. Tabla de Asesores
-CREATE TABLE IF NOT EXISTS asesores (
-    id SERIAL PRIMARY KEY,
-    usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
-    nombre VARCHAR(200) NOT NULL,
-    codigo_asesor VARCHAR(50) UNIQUE NOT NULL,
-    correo VARCHAR(150) NOT NULL,
-    telefono VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -76,15 +76,26 @@ CREATE TABLE IF NOT EXISTS pagos (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Tabla de Tarifas (Primas por rango de edad)
+-- 7. Tabla de Tarifas (Matriz por plan / edad / suma asegurada, con beneficios)
 CREATE TABLE IF NOT EXISTS tarifas (
     id SERIAL PRIMARY KEY,
     compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
-    tipo_cobertura VARCHAR(50) NOT NULL CHECK (tipo_cobertura IN ('colectivo', 'individual')),
+    plan VARCHAR(100), -- Nombre del plan (ej. 'PLATINO', 'ACCESS')
+    pago VARCHAR(100), -- Forma(s) de pago disponibles
     edad_min INT NOT NULL,
     edad_max INT NOT NULL,
     suma_asegurada NUMERIC NOT NULL,
     prima NUMERIC NOT NULL,
+    maternidad_suma VARCHAR(50),
+    maternidad_costo VARCHAR(50),
+    asist_intl_suma VARCHAR(50),
+    asist_intl_costo VARCHAR(50),
+    funeral_suma VARCHAR(50),
+    funeral_costo VARCHAR(50),
+    at_situ_medicamentos VARCHAR(50),
+    consultas_medicas VARCHAR(50),
+    examenes_lab_imagenologia VARCHAR(50),
+    ambulancia VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "front", "run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "jka-movil-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../jkaseguros-movil", "run", "web", "--", "--port", "8082"],
+      "port": 8082
     }
   ]
 }
