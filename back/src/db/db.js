@@ -21,7 +21,10 @@ let fallbackData = {
   polizas: [],
   pagos: [],
   tarifas: [],
-  logs_actividad: []
+  logs_actividad: [],
+  elearning_courses: [],
+  elearning_modules: [],
+  elearning_attempts: []
 };
 
 const fallbackFilePath = path.join(__dirname, '../../data/fallback_db.json');
@@ -42,6 +45,25 @@ function initFallback() {
     try {
       const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
       fallbackData = JSON.parse(fileContent);
+      if (!fallbackData.usuarios) fallbackData.usuarios = [];
+      if (!fallbackData.datos_personales) fallbackData.datos_personales = [];
+      if (!fallbackData.asesores) fallbackData.asesores = [];
+      if (!fallbackData.companias_seguros) fallbackData.companias_seguros = [];
+      if (!fallbackData.polizas) fallbackData.polizas = [];
+      if (!fallbackData.pagos) fallbackData.pagos = [];
+      if (!fallbackData.tarifas) fallbackData.tarifas = [];
+      if (!fallbackData.logs_actividad) fallbackData.logs_actividad = [];
+      if (!fallbackData.elearning_courses) fallbackData.elearning_courses = [];
+      if (!fallbackData.elearning_modules) fallbackData.elearning_modules = [];
+      if (!fallbackData.elearning_attempts) fallbackData.elearning_attempts = [];
+      seedFallbackElearning();
+      if (!fallbackData.tarifario_metadata) {
+        fallbackData.tarifario_metadata = {
+          version: '1.0.0',
+          ultima_modificacion: new Date().toISOString(),
+          usuario_correo: 'admin@jkaseguros.com'
+        };
+      }
       console.log('✅ Base de datos JSON cargada exitosamente.');
     } catch (e) {
       console.error('Error cargando fallback_db.json, re-creando base de datos.', e);
@@ -52,9 +74,109 @@ function initFallback() {
   }
 }
 
+// Sembrar e-learning en Fallback
+function seedFallbackElearning() {
+  if (!fallbackData.elearning_courses || fallbackData.elearning_courses.length === 0) {
+    fallbackData.elearning_courses = [
+      {
+        id: 1,
+        titulo: 'Curso básico de negociación',
+        descripcion: 'Aprende los fundamentos y estrategias para cerrar acuerdos exitosos.',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        titulo: 'Curso de seguros',
+        descripcion: 'Conceptos fundamentales de pólizas de salud, vida y automotores.',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 3,
+        titulo: 'Curso de cómo se usa el sistema',
+        descripcion: 'Guía rápida para cotizar y gestionar solicitudes en la plataforma JKA Seguros.',
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    fallbackData.elearning_modules = [
+      {
+        id: 1,
+        curso_id: 1,
+        titulo: 'Introducción a la Negociación',
+        contenido: 'La negociación es un proceso mediante el cual dos o más partes con intereses comunes o en conflicto buscan un acuerdo. Existen dos tipos principales:\n\n1. **Negociación Distributiva**: Del tipo ganar-perder, donde los recursos son fijos.\n2. **Negociación Integrativa**: Del tipo ganar-ganar, donde se busca ampliar los beneficios para ambas partes.\n\nEs clave conocer el MAAN (Mejor Alternativa a un Acuerdo Negociado), que define tu plan de escape si la negociación fracasa.',
+        orden: 1,
+        quiz_preguntas: [
+          { pregunta: '¿Qué caracteriza a una negociación distributiva?', opciones: ['Es del tipo ganar-perder', 'Es del tipo ganar-ganar'], correcta: 0 },
+          { pregunta: '¿Qué es el MAAN (Mejor Alternativa a un Acuerdo Negociado)?', opciones: ['La opción que tienes si la negociación fracasa', 'Tu oferta inicial en la mesa'], correcta: 0 }
+        ],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        curso_id: 1,
+        titulo: 'Estrategias de Cierre y Objeciones',
+        contenido: 'El cierre es el momento culmen. Ante objeciones comunes como el precio:\n\n- No rebajes la prima de inmediato, destruye la percepción de valor.\n- Concéntrate en la cobertura de salud completa y el respaldo de la aseguradora.\n- Usa la técnica del "Sentir-Encontrar-Demostrar" para empatizar con el cliente antes de rebatir.',
+        orden: 2,
+        quiz_preguntas: [
+          { pregunta: 'Ante una objeción de precio del cliente, ¿cuál es la mejor estrategia?', opciones: ['Bajar el precio o prima de inmediato sin justificación', 'Resaltar el valor del seguro, las coberturas y el respaldo de la aseguradora'], correcta: 1 }
+        ],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 3,
+        curso_id: 2,
+        titulo: 'Conceptos Fundamentales de Seguros',
+        contenido: 'Para asesorar bien, debes dominar estos términos:\n\n- **Prima**: El pago que hace el cliente para mantener activa la cobertura.\n- **Suma Asegurada**: El límite máximo que la aseguradora pagará por un siniestro.\n- **Deducible**: El monto fijo que corre por cuenta del asegurado antes de que la aseguradora empiece a pagar.\n- **Siniestro**: El evento cubierto (enfermedad, accidente, etc.) que activa la póliza.',
+        orden: 1,
+        quiz_preguntas: [
+          { pregunta: '¿Qué es la prima en una póliza de seguro?', opciones: ['El costo que paga el cliente para mantener la póliza activa', 'El deducible que paga el cliente en la clínica'], correcta: 0 },
+          { pregunta: 'Si una póliza tiene un deducible de $500 y el siniestro es de $2000, ¿cuánto cubre la aseguradora?', opciones: ['Cubre los $2000 completos', 'Cubre $1500 (restando el deducible)'], correcta: 1 }
+        ],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 4,
+        curso_id: 2,
+        titulo: 'Ramos de Seguros en Venezuela',
+        contenido: 'Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn JKA nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).',
+        orden: 2,
+        quiz_preguntas: [
+          { pregunta: '¿Qué cubre primordialmente una póliza HCM?', opciones: ['Gastos médicos por Hospitalización, Cirugía y Maternidad', 'Daños materiales del vehículo del asegurado'], correcta: 0 }
+        ],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 5,
+        curso_id: 3,
+        titulo: 'Cotización y Creación de Pólizas',
+        contenido: 'El flujo principal es:\n\n1. El cliente ingresa y cotiza en base a su edad y suma asegurada.\n2. Para cotizar con éxito, el cliente DEBE completar primero sus datos personales en su Perfil.\n3. La solicitud se crea inicialmente en estado **Negociación**.\n4. El asesor o administrador revisen y puede pasarla a **Vigente** cuando se formaliza.',
+        orden: 1,
+        quiz_preguntas: [
+          { pregunta: '¿Cuál es el estado inicial de una póliza cuando la solicita un cliente?', opciones: ['Vigente', 'Negociación'], correcta: 1 },
+          { pregunta: '¿Qué sección del sistema es obligatoria rellenar antes de cotizar?', opciones: ['La pestaña de Perfil (Datos Personales)', 'La pestaña de Pagos'], correcta: 0 }
+        ],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 6,
+        curso_id: 3,
+        titulo: 'Reporte y Conciliación de Pagos',
+        contenido: 'Una vez creada la póliza:\n\n- Se genera una cuota de pago pendiente.\n- El cliente reporta su transferencia bancaria ingresando el Número de Referencia.\n- El asesor o admin valida y marca el pago como "pagado" para que la póliza pase a estar activa y solvente.',
+        orden: 2,
+        quiz_preguntas: [
+          { pregunta: '¿Qué campo debe ingresar obligatoriamente el asegurado para notificar un pago?', opciones: ['La referencia bancaria', 'El nombre de su asesor de confianza'], correcta: 0 }
+        ],
+        created_at: new Date().toISOString()
+      }
+    ];
+    saveFallback();
+  }
+}
+
 // Sembrar el Fallback
 function seedFallback() {
   console.log('🌱 Sembrando base de datos JSON local (Fallback)...');
+  seedFallbackElearning();
   
   // Agregar Compañías
   fallbackData.companias_seguros = companiasSemilla.map((c, i) => ({
@@ -90,7 +212,7 @@ function seedFallback() {
     fallbackData.usuarios.push({
       id: uId,
       correo: a.correo,
-      contrasena: '$2a$10$hrdf4Eh7uxFnHGGVAJCLYu4pYpbO7QpextBYsF7u8nyZ7J3w.x45e', // admin123
+      contrasena: '$2a$10$JnHfHQevjvqfkZj0uJ9sIe1n1e86mib5e3HA2k7QLKFXbChH0OQcG', // 123456789
       rango: 'asesor',
       created_at: new Date().toISOString()
     });
@@ -108,7 +230,7 @@ function seedFallback() {
 
   // Agregar Clientes Semilla
   clientesSemilla.forEach((c, index) => {
-    const uId = index + 5; // admin es 1, asesores son 2, 3, 4. Clientes empiezan en 5
+    const uId = index + 3; // admin es 1, asesor es 2. Clientes empiezan en 3
     fallbackData.usuarios.push({
       id: uId,
       correo: c.correo,
@@ -136,18 +258,18 @@ function seedFallback() {
   });
 
   // Agregar Pólizas Semilla
-  // Póliza 1: Roberto (Client ID 1, Advisor ID 1), Vigente, Pagado
+  // Póliza 1: Jorge Fanianos (Client ID 1, Advisor ID 1), Vigente, Pagado
   fallbackData.polizas.push({
     id: 1,
     codigo_poliza: 'POL-882731',
     cliente_id: 1,
     asesor_id: 1,
     compania_id: 1, // Mercantil Seguros
-    plan: 'PLATINO',
+    plan: 'ACCESS',
     area: 'Salud',
-    suma_asegurada: 5000,
+    suma_asegurada: 50000,
     deducible: 0,
-    prima_anual: 260,
+    prima_anual: 740,
     estado: 'vigente',
     pago_estado: 'pagado',
     created_at: new Date().toISOString()
@@ -156,7 +278,7 @@ function seedFallback() {
   fallbackData.pagos.push({
     id: 1,
     poliza_id: 1,
-    monto: 260,
+    monto: 740,
     fecha_pago: '2026-06-15',
     estado_pago: 'pagado',
     referencia: 'REF-99887766',
@@ -164,18 +286,18 @@ function seedFallback() {
     created_at: new Date().toISOString()
   });
 
-  // Póliza 2: Lucía (Client ID 2, Advisor ID 2), Negociación, Pendiente
+  // Póliza 2: Jorge Fanianos (Client ID 1, Advisor ID 1), Negociación, Pendiente
   fallbackData.polizas.push({
     id: 2,
     codigo_poliza: 'POL-449201',
-    cliente_id: 2,
-    asesor_id: 2,
+    cliente_id: 1,
+    asesor_id: 1,
     compania_id: 2, // Seguros Caracas
-    plan: 'SALUD INDIVIDUAL',
+    plan: 'ACCESS',
     area: 'Salud',
     suma_asegurada: 30000,
     deducible: 0,
-    prima_anual: 340,
+    prima_anual: 657,
     estado: 'negociacion',
     pago_estado: 'pendiente',
     created_at: new Date().toISOString()
@@ -184,39 +306,11 @@ function seedFallback() {
   fallbackData.pagos.push({
     id: 2,
     poliza_id: 2,
-    monto: 340,
+    monto: 657,
     fecha_pago: new Date().toISOString().split('T')[0],
     estado_pago: 'pendiente',
     referencia: null,
     fecha_vencimiento: '2026-08-20',
-    created_at: new Date().toISOString()
-  });
-
-  // Póliza 3: Alejandro (Client ID 3, Advisor ID 3), Vencido, Pendiente
-  fallbackData.polizas.push({
-    id: 3,
-    codigo_poliza: 'POL-102938',
-    cliente_id: 3,
-    asesor_id: 3,
-    compania_id: 3, // Seguros Venezuela
-    plan: 'BRONCE',
-    area: 'Salud',
-    suma_asegurada: 50000,
-    deducible: 0,
-    prima_anual: 450,
-    estado: 'vencido',
-    pago_estado: 'pendiente',
-    created_at: new Date().toISOString()
-  });
-
-  fallbackData.pagos.push({
-    id: 3,
-    poliza_id: 3,
-    monto: 450,
-    fecha_pago: new Date().toISOString().split('T')[0],
-    estado_pago: 'pendiente',
-    referencia: null,
-    fecha_vencimiento: '2026-07-10',
     created_at: new Date().toISOString()
   });
 
@@ -232,43 +326,41 @@ function seedFallback() {
   fallbackData.logs_actividad.push({
     id: 2,
     usuario_id: 2,
-    correo_usuario: 'asesor@jkaseguros.com',
+    correo_usuario: 'info@jkaconsultores.com',
     accion: 'REGISTRO',
-    descripcion: 'Asesor Juan Pérez registrado con código ASE-001.',
+    descripcion: 'Asesor Johann Joubert registrado con código ASE-001.',
     created_at: new Date().toISOString()
   });
   fallbackData.logs_actividad.push({
     id: 3,
     usuario_id: 3,
-    correo_usuario: 'maria.delgado@jkaseguros.com',
+    correo_usuario: 'fanianosj@gmail.com',
     accion: 'REGISTRO',
-    descripcion: 'Asesor María Delgado registrado con código ASE-002.',
+    descripcion: 'Asegurado Jorge Fanianos registrado en el sistema.',
     created_at: new Date().toISOString()
   });
   fallbackData.logs_actividad.push({
     id: 4,
-    usuario_id: 5,
-    correo_usuario: 'roberto.mendoza@gmail.com',
-    accion: 'REGISTRO',
-    descripcion: 'Asegurado Roberto Mendoza registrado en el sistema.',
+    usuario_id: 3,
+    correo_usuario: 'fanianosj@gmail.com',
+    accion: 'CREACION_POLIZA',
+    descripcion: 'Póliza POL-882731 emitida y aprobada para Jorge Fanianos.',
     created_at: new Date().toISOString()
   });
   fallbackData.logs_actividad.push({
     id: 5,
-    usuario_id: 5,
-    correo_usuario: 'roberto.mendoza@gmail.com',
-    accion: 'CREACION_POLIZA',
-    descripcion: 'Póliza POL-882731 emitida y aprobada para Roberto Mendoza.',
-    created_at: new Date().toISOString()
-  });
-  fallbackData.logs_actividad.push({
-    id: 6,
-    usuario_id: 5,
-    correo_usuario: 'roberto.mendoza@gmail.com',
+    usuario_id: 3,
+    correo_usuario: 'fanianosj@gmail.com',
     accion: 'PAGO_REPORTADO',
-    descripcion: 'Roberto Mendoza reportó pago de cuota $260. Ref: REF-99887766.',
+    descripcion: 'Jorge Fanianos reportó pago de cuota $740. Ref: REF-99887766.',
     created_at: new Date().toISOString()
   });
+
+  fallbackData.tarifario_metadata = {
+    version: '1.0.0',
+    ultima_modificacion: new Date().toISOString(),
+    usuario_correo: 'admin@jkaseguros.com'
+  };
 
   saveFallback();
   console.log('✅ Base de datos JSON sembrada exitosamente con tarifas, compañías, asesores, clientes, pólizas y pagos.');
@@ -319,6 +411,131 @@ try {
   `);
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
   await client.query('ALTER TABLE polizas ALTER COLUMN plan DROP NOT NULL;');
+
+  // Migración para recordatorios y estado 'anulada'
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_24h BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_48h BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_5d BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_estado_check;');
+  await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_estado_check CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada'));");
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
+
+  // Tabla de metadatos de tarifario
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS tarifario_metadata (
+      id SERIAL PRIMARY KEY,
+      version VARCHAR(50) NOT NULL,
+      ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      usuario_correo VARCHAR(150) NOT NULL
+    );
+  `);
+  // Insertar por defecto si está vacía
+  await client.query(`
+    INSERT INTO tarifario_metadata (version, usuario_correo)
+    SELECT '1.0.0', 'admin@jkaseguros.com'
+    WHERE NOT EXISTS (SELECT 1 FROM tarifario_metadata);
+  `);
+
+  // Migraciones de E-Learning
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS elearning_cursos (
+      id SERIAL PRIMARY KEY,
+      titulo VARCHAR(255) NOT NULL,
+      descripcion TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS elearning_modulos (
+      id SERIAL PRIMARY KEY,
+      curso_id INT REFERENCES elearning_cursos(id) ON DELETE CASCADE,
+      titulo VARCHAR(255) NOT NULL,
+      contenido TEXT NOT NULL,
+      orden INT NOT NULL,
+      quiz_preguntas JSONB NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS elearning_intentos (
+      id SERIAL PRIMARY KEY,
+      usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+      modulo_id INT REFERENCES elearning_modulos(id) ON DELETE CASCADE,
+      puntaje INT NOT NULL,
+      total_preguntas INT NOT NULL,
+      aprobado BOOLEAN NOT NULL,
+      respuestas_usuario JSONB,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Seeder de cursos en PostgreSQL si está vacío
+  const checkCursos = await client.query('SELECT count(*) FROM elearning_cursos');
+  if (parseInt(checkCursos.rows[0].count) === 0) {
+    console.log('🌱 Sembrando cursos de E-Learning en PostgreSQL...');
+    // Curso 1: Negociación
+    const c1 = await client.query(`
+      INSERT INTO elearning_cursos (titulo, descripcion) 
+      VALUES ('Curso básico de negociación', 'Aprende los fundamentos y estrategias para cerrar acuerdos exitosos.') 
+      RETURNING id
+    `);
+    const c1Id = c1.rows[0].id;
+    await client.query(`
+      INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
+      VALUES ($1, 'Introducción a la Negociación', 'La negociación es un proceso mediante el cual dos o más partes con intereses comunes o en conflicto buscan un acuerdo. Existen dos tipos principales:\n\n1. **Negociación Distributiva**: Del tipo ganar-perder, donde los recursos son fijos.\n2. **Negociación Integrativa**: Del tipo ganar-ganar, donde se busca ampliar los beneficios para ambas partes.\n\nEs clave conocer el MAAN (Mejor Alternativa a un Acuerdo Negociado), que define tu plan de escape si la negociación fracasa.', 1, $2)
+    `, [c1Id, JSON.stringify([
+      { pregunta: '¿Qué caracteriza a una negociación distributiva?', opciones: ['Es del tipo ganar-perder', 'Es del tipo ganar-ganar'], correcta: 0 },
+      { pregunta: '¿Qué es el MAAN (Mejor Alternativa a un Acuerdo Negociado)?', opciones: ['La opción que tienes si la negociación fracasa', 'Tu oferta inicial en la mesa'], correcta: 0 }
+    ])]);
+    await client.query(`
+      INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
+      VALUES ($1, 'Estrategias de Cierre y Objeciones', 'El cierre es el momento culmen. Ante objeciones comunes como el precio:\n\n- No rebajes la prima de inmediato, destruye la percepción de valor.\n- Concéntrate en la cobertura de salud completa y el respaldo de la aseguradora.\n- Usa la técnica del "Sentir-Encontrar-Demostrar" para empatizar con el cliente antes de rebatir.', 2, $2)
+    `, [c1Id, JSON.stringify([
+      { pregunta: 'Ante una objeción de precio del cliente, ¿cuál es la mejor estrategia?', opciones: ['Bajar el precio o prima de inmediato sin justificación', 'Resaltar el valor del seguro, las coberturas y el respaldo de la aseguradora'], correcta: 1 }
+    ])]);
+
+    // Curso 2: Seguros
+    const c2 = await client.query(`
+      INSERT INTO elearning_cursos (titulo, descripcion) 
+      VALUES ('Curso de seguros', 'Conceptos fundamentales de pólizas de salud, vida y automotores.') 
+      RETURNING id
+    `);
+    const c2Id = c2.rows[0].id;
+    await client.query(`
+      INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
+      VALUES ($1, 'Conceptos Fundamentales de Seguros', 'Para asesorar bien, debes dominar estos términos:\n\n- **Prima**: El pago que hace el cliente para mantener activa la cobertura.\n- **Suma Asegurada**: El límite máximo que la aseguradora pagará por un siniestro.\n- **Deducible**: El monto fijo que corre por cuenta del asegurado antes de que la aseguradora empiece a pagar.\n- **Siniestro**: El evento cubierto (enfermedad, accidente, etc.) que activa la póliza.', 1, $2)
+    `, [c2Id, JSON.stringify([
+      { pregunta: '¿Qué es la prima en una póliza de seguro?', opciones: ['El costo que paga el cliente para mantener la póliza activa', 'El deducible que paga el cliente en la clínica'], correcta: 0 },
+      { pregunta: 'Si una póliza tiene un deducible de $500 y el siniestro es de $2000, ¿cuánto cubre la aseguradora?', opciones: ['Cubre los $2000 completos', 'Cubre $1500 (restando el deducible)'], correcta: 1 }
+    ])]);
+    await client.query(`
+      INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
+      VALUES ($1, 'Ramos de Seguros en Venezuela', 'Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn JKA nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).', 2, $2)
+    `, [c2Id, JSON.stringify([
+      { pregunta: '¿Qué cubre primordialmente una póliza HCM?', opciones: ['Gastos médicos por Hospitalización, Cirugía y Maternidad', 'Daños materiales del vehículo del asegurado'], correcta: 0 }
+    ])]);
+
+    // Curso 3: Cómo se usa el sistema
+    const c3 = await client.query(`
+      INSERT INTO elearning_cursos (titulo, descripcion) 
+      VALUES ('Curso de cómo se usa el sistema', 'Guía rápida para cotizar y gestionar solicitudes en la plataforma JKA Seguros.') 
+      RETURNING id
+    `);
+    const c3Id = c3.rows[0].id;
+    await client.query(`
+      INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
+      VALUES ($1, 'Cotización y Creación de Pólizas', 'El flujo principal es:\n\n1. El cliente ingresa y cotiza en base a su edad y suma asegurada.\n2. Para cotizar con éxito, el cliente DEBE completar primero sus datos personales en su Perfil.\n3. La solicitud se crea inicialmente en estado **Negociación**.\n4. El asesor o administrador revisa y puede pasarla a **Vigente** cuando se formaliza.', 1, $2)
+    `, [c3Id, JSON.stringify([
+      { pregunta: '¿Cuál es el estado inicial de una póliza cuando la solicita un cliente?', opciones: ['Vigente', 'Negociación'], correcta: 1 },
+      { pregunta: '¿Qué sección del sistema es obligatoria rellenar antes de cotizar?', opciones: ['La pestaña de Perfil (Datos Personales)', 'La pestaña de Pagos'], correcta: 0 }
+    ])]);
+    await client.query(`
+      INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
+      VALUES ($1, 'Reporte y Conciliación de Pagos', 'Una vez creada la póliza:\n\n- Se genera una cuota de pago pendiente.\n- El cliente reporta su transferencia bancaria ingresando el Número de Referencia.\n- El asesor o admin valida y marca el pago como "pagado" para que la póliza pase a estar activa y solvente.', 2, $2)
+    `, [c3Id, JSON.stringify([
+      { pregunta: '¿Qué campo debe ingresar obligatoriamente el asegurado para notificar un pago?', opciones: ['La referencia bancaria', 'El nombre de su asesor de confianza'], correcta: 0 }
+    ])]);
+  }
 
   client.release();
 } catch (err) {
@@ -523,6 +740,9 @@ function fallbackQuery(text, params = []) {
       const compania = fallbackData.companias_seguros.find(c => c.id === p.compania_id);
       return {
         ...p,
+        recordatorio_24h: p.recordatorio_24h || false,
+        recordatorio_48h: p.recordatorio_48h || false,
+        recordatorio_5d: p.recordatorio_5d || false,
         cliente_nombre: cliente ? `${cliente.primer_nombre} ${cliente.primer_apellido}` : 'Cliente Desconocido',
         cliente_email: cliente ? fallbackData.usuarios.find(u => u.id === cliente.usuario_id)?.correo : '',
         asesor_nombre: asesor ? asesor.nombre : 'Sin Asesor',
@@ -611,6 +831,31 @@ function fallbackQuery(text, params = []) {
       return { rows: [fallbackData.polizas[idx]], rowCount: 1 };
     }
     return { rows: [], rowCount: 0 };
+  }
+
+  // 14b. UPDATE polizas SET recordatorio_24h = ...
+  if (cleanSql.includes('UPDATE polizas SET recordatorio_24h =')) {
+    const [recordatorio_24h, recordatorio_48h, recordatorio_5d, estado, id] = params;
+    const idx = fallbackData.polizas.findIndex(p => p.id === parseInt(id));
+    if (idx !== -1) {
+      fallbackData.polizas[idx].recordatorio_24h = !!recordatorio_24h;
+      fallbackData.polizas[idx].recordatorio_48h = !!recordatorio_48h;
+      fallbackData.polizas[idx].recordatorio_5d = !!recordatorio_5d;
+      fallbackData.polizas[idx].estado = estado;
+      saveFallback();
+      return { rows: [fallbackData.polizas[idx]], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // 14c. SELECT FROM tarifario_metadata
+  if (cleanSql.includes('FROM tarifario_metadata')) {
+    const meta = fallbackData.tarifario_metadata || {
+      version: '1.0.0',
+      ultima_modificacion: new Date().toISOString(),
+      usuario_correo: 'admin@jkaseguros.com'
+    };
+    return { rows: [meta] };
   }
 
   // 15. SELECT * FROM pagos
@@ -738,6 +983,8 @@ function fallbackQuery(text, params = []) {
 // Exportar interfaz de consultas
 export const db = {
   isFallback: () => isFallback,
+  getFallbackData: () => fallbackData,
+  saveFallback: () => saveFallback(),
   query: async (text, params) => {
     if (isFallback || !pool) {
       return fallbackQuery(text, params);

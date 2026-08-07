@@ -136,6 +136,96 @@ router.post('/', authenticateToken, async (req, res) => {
     // Registrar en logs de actividad
     await registrarAccion(req.user.id, req.user.correo, 'CREACION_POLIZA', `Póliza ${codPoliza} creada en estado ${initialStatus} por ${req.user.correo}.`);
 
+    // Obtener datos del cliente de forma compatible
+    let clientEmail = null;
+    let clientName = 'Cliente';
+    try {
+      const dpRes = await db.query('SELECT * FROM datos_personales WHERE id = $1', [finalClienteId]);
+      if (dpRes.rows.length > 0) {
+        const dp = dpRes.rows[0];
+        clientName = `${dp.primer_nombre} ${dp.primer_apellido}`;
+        const uRes = await db.query('SELECT * FROM usuarios WHERE id = $1', [dp.usuario_id]);
+        if (uRes.rows.length > 0) {
+          clientEmail = uRes.rows[0].correo;
+        }
+      }
+    } catch (errCli) {
+      console.error('Error al consultar datos de cliente para envío de correo:', errCli);
+    }
+
+    // Obtener nombre de la compañía
+    let compName = 'Aseguradora';
+    try {
+      const compRes = await db.query('SELECT * FROM companias_seguros WHERE id = $1', [parseInt(compania_id)]);
+      if (compRes.rows.length > 0) {
+        compName = compRes.rows[0].nombre;
+      }
+    } catch (errComp) {
+      console.error('Error al consultar compañía para envío de correo:', errComp);
+    }
+
+    // Map company to PDF
+    let pdfFilename = 'SM.764_Solic_Pol_Seg_Salud_Global_Benefits.pdf'; // Default to mercantil if not matched
+    const lowerName = compName.toLowerCase();
+    if (lowerName.includes('mercantil')) pdfFilename = 'SM.764_Solic_Pol_Seg_Salud_Global_Benefits.pdf';
+    else if (lowerName.includes('caracas')) pdfFilename = 'SolicitudSegurosSaludIndividualMonedaExtranjera.pdf';
+    else if (lowerName.includes('venezuela')) pdfFilename = 'Solicitud de Seguro HCM Individual 08-2025.pdf';
+    else if (lowerName.includes('mapfre')) pdfFilename = 'E0306021_Solicitud de Seguro salud individual_2026.pdf';
+
+    const hostname = req.get('host');
+    const protocol = req.protocol;
+    const baseUrl = `${protocol}://${hostname}`;
+    const downloadUrl = `${baseUrl}/docs/${pdfFilename}`;
+
+    // Enviar correo automático con la documentación
+    if (clientEmail) {
+      const emailHtml = `
+        <div style="background-color: #f8fafc; border: 1.5px solid #2563eb; border-radius: 8px; padding: 25px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+          <h3 style="color: #1e3a8a; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Documentación de Seguro - ${compName}</h3>
+          <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 15px 0 15px 0;">
+            Estimado cliente, te hacemos llegar el condicionado oficial y los documentos correspondientes para tu solicitud de seguro <strong>${plan || 'Salud'}</strong> con la compañía <strong>${compName}</strong>.
+          </p>
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0; background-color: #f1f5f9; padding: 12px 15px; border-radius: 6px;">
+            <strong>Código de Solicitud:</strong> ${codPoliza}<br>
+            <strong>Suma Asegurada:</strong> $${Number(suma_asegurada).toLocaleString('en-US')}<br>
+            <strong>Prima Anual:</strong> $${Number(prima_anual).toLocaleString('en-US')}
+          </p>
+          <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 20px 0;">
+            Por favor haz clic en el botón de abajo para descargar el condicionado de <strong>${compName}</strong>:
+          </p>
+          <div style="text-align: center; margin-bottom: 15px;">
+            <a href="${downloadUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 28px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 6px rgba(37,99,235,0.15);">
+              📥 Descargar Condicionado de ${compName}
+            </a>
+          </div>
+        </div>
+      `;
+
+      // Enviar correo vía EmailJS
+      fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: 'service_271yuq8',
+          template_id: 'template_068mrut',
+          user_id: 'jgnK_ClSfIQ6PBYqd',
+          accessToken: 's2Qg_q1KjxfL6H28PVCIQ',
+          template_params: {
+            user_name: clientName,
+            to_email: clientEmail,
+            fecha: new Date().toLocaleDateString('es-VE'),
+            solicitud_ref: `Confirmación de Póliza en Negociación - ${codPoliza}`,
+            plan_cards: emailHtml,
+            cotizacion_pdf: ''
+          }
+        })
+      }).then(res => {
+        if (!res.ok) console.error('Error al enviar correo de bienvenida de póliza a EmailJS');
+      }).catch(err => {
+        console.error('Error en fetch de EmailJS al enviar condicionado de póliza:', err);
+      });
+    }
+
     res.status(201).json({
       message: `Póliza creada exitosamente en estado: ${initialStatus}.`,
       poliza: newPol
@@ -150,28 +240,102 @@ router.post('/', authenticateToken, async (req, res) => {
 // Modificar el estado de la póliza (Asesor / Admin)
 router.put('/:id/status', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body; // 'negociacion', 'vigente', 'vencido', 'rechazado'
+  const { estado, motivo_rechazo } = req.body; // 'negociacion', 'vigente', 'vencido', 'rechazado', 'anulada'
 
   if (req.user.rango !== 'admin' && req.user.rango !== 'asesor') {
     return res.status(403).json({ error: 'No está autorizado para cambiar el estado de las pólizas.' });
   }
 
-  if (!['negociacion', 'vigente', 'vencido', 'rechazado'].includes(estado)) {
+  if (!['negociacion', 'vigente', 'vencido', 'rechazado', 'anulada'].includes(estado)) {
     return res.status(400).json({ error: 'Estado de póliza inválido.' });
   }
 
   try {
-    const q = 'UPDATE polizas SET estado = $1 WHERE id = $2 RETURNING *';
-    const updateRes = await db.query(q, [estado, parseInt(id)]);
-    
-    if (updateRes.rowCount === 0) {
-      return res.status(404).json({ error: 'Póliza no encontrada.' });
+    let oldStatus = '';
+    let primaAnual = 0;
+    let updatedPol;
+
+    if (db.isFallback()) {
+      const fallbackFilePath = './data/fallback_db.json';
+      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const fData = JSON.parse(fileContent);
+
+      const idx = fData.polizas.findIndex(p => p.id === parseInt(id));
+      if (idx === -1) return res.status(404).json({ error: 'Póliza no encontrada.' });
+
+      // Si es asesor, verificar que le pertenezca la póliza
+      if (req.user.rango === 'asesor') {
+        const aseRes = fData.asesores.find(a => a.usuario_id === req.user.id);
+        if (!aseRes || fData.polizas[idx].asesor_id !== aseRes.id) {
+          return res.status(403).json({ error: 'No autorizado para modificar esta póliza.' });
+        }
+      }
+
+      oldStatus = fData.polizas[idx].estado;
+      primaAnual = parseFloat(fData.polizas[idx].prima_anual || 0);
+
+      fData.polizas[idx].estado = estado;
+      fData.polizas[idx].motivo_rechazo = estado === 'rechazado' ? (motivo_rechazo || '') : null;
+
+      // Si cambia a vigente y no tenía pagos, o si queremos registrar cobro
+      if (estado === 'vigente' && oldStatus !== 'vigente') {
+        const checkPay = fData.pagos.find(pa => pa.poliza_id === parseInt(id));
+        if (!checkPay) {
+          const payId = fData.pagos.length > 0 ? Math.max(...fData.pagos.map(pa => pa.id)) + 1 : 1;
+          const nextMonth = new Date();
+          nextMonth.setMonth(nextMonth.getMonth() + 1);
+          fData.pagos.push({
+            id: payId,
+            poliza_id: parseInt(id),
+            monto: primaAnual,
+            fecha_pago: new Date().toISOString().split('T')[0],
+            estado_pago: 'pendiente',
+            referencia: null,
+            fecha_vencimiento: nextMonth.toISOString().split('T')[0],
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+
+      updatedPol = fData.polizas[idx];
+      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+    } else {
+      // Postgres
+      const oldRes = await db.query('SELECT estado, prima_anual, asesor_id FROM polizas WHERE id = $1', [parseInt(id)]);
+      if (oldRes.rows.length === 0) return res.status(404).json({ error: 'Póliza no encontrada.' });
+      
+      // Si es asesor, verificar que le pertenezca la póliza
+      if (req.user.rango === 'asesor') {
+        const aseRes = await db.query('SELECT id FROM asesores WHERE usuario_id = $1', [req.user.id]);
+        if (aseRes.rows.length === 0 || oldRes.rows[0].asesor_id !== aseRes.rows[0].id) {
+          return res.status(403).json({ error: 'No autorizado para modificar esta póliza.' });
+        }
+      }
+
+      oldStatus = oldRes.rows[0].estado;
+      primaAnual = parseFloat(oldRes.rows[0].prima_anual || 0);
+
+      const q = 'UPDATE polizas SET estado = $1, motivo_rechazo = $2 WHERE id = $3 RETURNING *';
+      const motivoVal = estado === 'rechazado' ? (motivo_rechazo || '') : null;
+      const updateRes = await db.query(q, [estado, motivoVal, parseInt(id)]);
+      updatedPol = updateRes.rows[0];
+
+      if (estado === 'vigente' && oldStatus !== 'vigente') {
+        const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
+        if (checkPay.rows.length === 0) {
+          const nextMonth = new Date();
+          nextMonth.setMonth(nextMonth.getMonth() + 1);
+          const fechaVencimiento = nextMonth.toISOString().split('T')[0];
+          await db.query(
+            `INSERT INTO pagos (poliza_id, monto, estado_pago, fecha_vencimiento) VALUES ($1, $2, 'pendiente', $3)`,
+            [parseInt(id), primaAnual, fechaVencimiento]
+          );
+        }
+      }
     }
 
-    const updatedPol = updateRes.rows[0];
-
     // Registrar en logs
-    await registrarAccion(req.user.id, req.user.correo, 'CAMBIO_ESTADO_POLIZA', `Póliza ${updatedPol.codigo_poliza} cambió de estado a: ${estado}`);
+    await registrarAccion(req.user.id, req.user.correo, 'CAMBIO_ESTADO_POLIZA', `Póliza ${updatedPol.codigo_poliza} cambió de estado a: ${estado} (Motivo: ${motivo_rechazo || 'N/A'})`);
 
     res.json({ message: 'Estado de póliza actualizado exitosamente.', poliza: updatedPol });
 
@@ -211,13 +375,153 @@ router.put('/:id/advisor', authenticateToken, async (req, res) => {
   }
 });
 
+// Guardar múltiples pólizas en lote (bulk)
+router.post('/bulk', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin' && req.user.rango !== 'asesor') {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+  const { policies } = req.body;
+
+  if (!Array.isArray(policies)) {
+    return res.status(400).json({ error: 'El cuerpo debe ser una lista de pólizas.' });
+  }
+
+  try {
+    let advisorId = null;
+    if (req.user.rango === 'asesor') {
+      if (db.isFallback()) {
+        const fallbackFilePath = './data/fallback_db.json';
+        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+        const fData = JSON.parse(fileContent);
+        const aseRes = fData.asesores.find(a => a.usuario_id === req.user.id);
+        if (!aseRes) return res.status(403).json({ error: 'Asesor no encontrado.' });
+        advisorId = aseRes.id;
+      } else {
+        const aseRes = await db.query('SELECT id FROM asesores WHERE usuario_id = $1', [req.user.id]);
+        if (aseRes.rows.length === 0) return res.status(403).json({ error: 'Asesor no encontrado.' });
+        advisorId = aseRes.rows[0].id;
+      }
+    }
+
+    if (db.isFallback()) {
+      const fallbackFilePath = './data/fallback_db.json';
+      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const fData = JSON.parse(fileContent);
+
+      for (const policy of policies) {
+        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = policy;
+        const idx = fData.polizas.findIndex(p => p.id === parseInt(id));
+        if (idx === -1) continue;
+
+        // Si es asesor, verificar que le pertenezca la póliza
+        if (req.user.rango === 'asesor' && fData.polizas[idx].asesor_id !== advisorId) {
+          continue;
+        }
+
+        const oldStatus = fData.polizas[idx].estado;
+        
+        // El asesor no puede cambiar el asesor asignado ni la compañía
+        fData.polizas[idx] = {
+          ...fData.polizas[idx],
+          plan,
+          suma_asegurada: parseFloat(suma_asegurada),
+          prima_anual: parseFloat(prima_anual),
+          estado,
+          motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null
+        };
+
+        // Si es administrador, también puede cambiar asesor y compañía
+        if (req.user.rango === 'admin') {
+          fData.polizas[idx].asesor_id = policy.asesor_id ? parseInt(policy.asesor_id) : null;
+          fData.polizas[idx].compania_id = parseInt(policy.compania_id);
+        }
+
+        if (estado === 'vigente' && oldStatus !== 'vigente') {
+          const checkPay = fData.pagos.find(pa => pa.poliza_id === parseInt(id));
+          if (!checkPay) {
+            const payId = fData.pagos.length > 0 ? Math.max(...fData.pagos.map(pa => pa.id)) + 1 : 1;
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            fData.pagos.push({
+              id: payId,
+              poliza_id: parseInt(id),
+              monto: parseFloat(prima_anual),
+              fecha_pago: new Date().toISOString().split('T')[0],
+              estado_pago: 'pendiente',
+              referencia: null,
+              fecha_vencimiento: nextMonth.toISOString().split('T')[0],
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      }
+
+      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+    } else {
+      for (const policy of policies) {
+        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = policy;
+        const oldRes = await db.query('SELECT estado, asesor_id FROM polizas WHERE id = $1', [parseInt(id)]);
+        if (oldRes.rows.length === 0) continue;
+
+        // Si es asesor, verificar que le pertenezca la póliza
+        if (req.user.rango === 'asesor' && oldRes.rows[0].asesor_id !== advisorId) {
+          continue;
+        }
+
+        const oldStatus = oldRes.rows[0].estado;
+        const motivoVal = estado === 'rechazado' ? (motivo_rechazo || '') : null;
+
+        if (req.user.rango === 'admin') {
+          const q = `
+            UPDATE polizas
+            SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7
+            WHERE id = $8
+          `;
+          await db.query(q, [
+            policy.asesor_id ? parseInt(policy.asesor_id) : null, parseInt(policy.compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal, parseInt(id)
+          ]);
+        } else {
+          // Asesor: no puede reasignar compañía ni asesor
+          const q = `
+            UPDATE polizas
+            SET plan = $1, suma_asegurada = $2, prima_anual = $3, estado = $4, motivo_rechazo = $5
+            WHERE id = $6
+          `;
+          await db.query(q, [
+            plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal, parseInt(id)
+          ]);
+        }
+
+        if (estado === 'vigente' && oldStatus !== 'vigente') {
+          const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
+          if (checkPay.rows.length === 0) {
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            const fechaVencimiento = nextMonth.toISOString().split('T')[0];
+            await db.query(
+              `INSERT INTO pagos (poliza_id, monto, estado_pago, fecha_vencimiento) VALUES ($1, $2, 'pendiente', $3)`,
+              [parseInt(id), parseFloat(prima_anual), fechaVencimiento]
+            );
+          }
+        }
+      }
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'MODIFICACION_POLIZAS_LOTE', `Modificadas en lote ${policies.length} pólizas.`);
+    res.json({ message: 'Pólizas actualizadas en lote correctamente.', count: policies.length });
+  } catch (err) {
+    console.error('Error al actualizar pólizas en lote:', err);
+    res.status(500).json({ error: 'Error al actualizar pólizas en lote.' });
+  }
+});
+
 // Actualizar póliza completa (Admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') {
     return res.status(403).json({ error: 'No autorizado.' });
   }
   const { id } = req.params;
-  const { asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado } = req.body;
+  const { asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = req.body;
 
   try {
     if (db.isFallback()) {
@@ -237,7 +541,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         plan,
         suma_asegurada: parseFloat(suma_asegurada),
         prima_anual: parseFloat(prima_anual),
-        estado
+        estado,
+        motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null
       };
 
       // Si cambia a vigente y no tenía pagos, o si queremos regenerar cobro
@@ -269,11 +574,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
       const q = `
         UPDATE polizas
-        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6
-        WHERE id = $7
+        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7
+        WHERE id = $8
       `;
+      const motivoVal = estado === 'rechazado' ? (motivo_rechazo || '') : null;
       await db.query(q, [
-        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, parseInt(id)
+        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal, parseInt(id)
       ]);
 
       if (estado === 'vigente' && oldStatus !== 'vigente') {

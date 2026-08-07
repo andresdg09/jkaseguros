@@ -4,6 +4,8 @@ export const companiasSemilla = [
   { nombre: "Mercantil Seguros" },
   { nombre: "Seguros Caracas" },
   { nombre: "Seguros Venezuela" },
+  { nombre: "Mapfre Seguros" },
+  { nombre: "Internacional de Seguros" },
 ];
 
 // Tarifas: una fila por (compañía, plan, rango de edad, suma asegurada) tal como aparece en el excel.
@@ -168,53 +170,23 @@ export const tarifasSemilla = [
 
 // Asesores Semilla
 export const asesoresSemilla = [
-  { nombre: "Juan Pérez (Asesor)", codigo: "ASE-001", correo: "asesor@jkaseguros.com", telefono: "0412-1234567" },
-  { nombre: "María Delgado", codigo: "ASE-002", correo: "maria.delgado@jkaseguros.com", telefono: "0414-9876543" },
-  { nombre: "Carlos Gómez", codigo: "ASE-003", correo: "carlos.gomez@jkaseguros.com", telefono: "0424-5556677" }
+  { nombre: "Johann Joubert", codigo: "ASE-001", correo: "info@jkaconsultores.com", telefono: "+584242188282" }
 ];
 
 // Clientes Semilla (Usuarios y Datos Personales)
 export const clientesSemilla = [
   {
-    correo: "roberto.mendoza@gmail.com",
-    primer_nombre: "Roberto",
-    segundo_nombre: "José",
-    primer_apellido: "Mendoza",
-    segundo_apellido: "Alvarado",
-    fecha_nacimiento: "1994-05-15",
-    tipo_documento: "Venezolano",
-    nro_documento: "15123456",
-    genero: "Masculino",
-    estado_civil: "Casado",
-    codigo_area: "0412",
-    numero_celular: "5551122"
-  },
-  {
-    correo: "lucia.rivas@gmail.com",
-    primer_nombre: "Lucía",
-    segundo_nombre: "Beatriz",
-    primer_apellido: "Rivas",
-    segundo_apellido: "Silva",
-    fecha_nacimiento: "1996-08-22",
-    tipo_documento: "Venezolano",
-    nro_documento: "18987654",
-    genero: "Femenino",
-    estado_civil: "Soltero",
-    codigo_area: "0414",
-    numero_celular: "7773344"
-  },
-  {
-    correo: "alejandro.torres@gmail.com",
-    primer_nombre: "Alejandro",
+    correo: "fanianosj@gmail.com",
+    primer_nombre: "Jorge",
     segundo_nombre: "",
-    primer_apellido: "Torres",
-    segundo_apellido: "Flores",
-    fecha_nacimiento: "2000-01-10",
+    primer_apellido: "Fanianos",
+    segundo_apellido: "",
+    fecha_nacimiento: "1998-05-15",
     tipo_documento: "Venezolano",
-    nro_documento: "22333444",
+    nro_documento: "27028299",
     genero: "Masculino",
     estado_civil: "Soltero",
-    codigo_area: "0416",
-    numero_celular: "8889900"
+    codigo_area: "+58412",
+    numero_celular: "2980463"
   }
 ];

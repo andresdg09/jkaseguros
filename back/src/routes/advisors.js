@@ -76,6 +76,7 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
         const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
         return {
           id: c.id,
+          id_cliente: c.id,
           nombre: `${c.primer_nombre} ${c.primer_apellido}`,
           primer_nombre: c.primer_nombre,
           segundo_nombre: c.segundo_nombre,
@@ -113,6 +114,7 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
         const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
         return {
           id: c.id,
+          id_cliente: c.id,
           nombre: `${c.primer_nombre} ${c.primer_apellido}`,
           primer_nombre: c.primer_nombre,
           segundo_nombre: c.segundo_nombre,
@@ -219,6 +221,130 @@ router.post('/advisor/create-client', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al registrar cliente desde asesor:', err);
     res.status(500).json({ error: 'Error del servidor al registrar el cliente.' });
+  }
+});
+
+// 5. ASESOR: Enviar documentación de seguros por correo (Salud, Vida, Vehiculo, Hogar)
+router.post('/advisor/send-document', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'asesor' && req.user.rango !== 'admin') {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  const { cliente_id, tipo_seguro } = req.body;
+
+  if (!cliente_id || !tipo_seguro) {
+    return res.status(400).json({ error: 'Faltan parámetros requeridos: cliente_id y tipo_seguro.' });
+  }
+
+  try {
+    // 1. Obtener datos personales del cliente de manera compatible
+    const dpRes = await db.query('SELECT * FROM datos_personales WHERE id = $1', [parseInt(cliente_id)]);
+    if (dpRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado.' });
+    }
+    const dp = dpRes.rows[0];
+
+    // 2. Obtener correo del usuario asociado al cliente
+    const uRes = await db.query('SELECT * FROM usuarios WHERE id = $1', [dp.usuario_id]);
+    if (uRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario de cliente no encontrado.' });
+    }
+    const clientEmail = uRes.rows[0].correo;
+
+    const hostname = req.get('host');
+    const protocol = req.protocol;
+    const baseUrl = `${protocol}://${hostname}`;
+
+    // Configurar detalles según tipo de seguro
+    let subject = '';
+    let downloadUrl = '';
+    let displayTipo = '';
+
+    switch (tipo_seguro.toLowerCase()) {
+      case 'salud':
+        subject = `Documentación de Seguro de Salud - JKA Consultores`;
+        downloadUrl = `${baseUrl}/docs/seguro_salud_jka.pdf`;
+        displayTipo = 'Salud';
+        break;
+      case 'vida':
+        subject = `Documentación de Seguro de Vida - JKA Consultores`;
+        downloadUrl = `${baseUrl}/docs/seguro_vida_jka.pdf`;
+        displayTipo = 'Vida';
+        break;
+      case 'vehiculo':
+      case 'vehículo':
+        subject = `Documentación de Seguro de Vehículo - JKA Consultores`;
+        downloadUrl = `${baseUrl}/docs/seguro_vehiculo_jka.pdf`;
+        displayTipo = 'Vehículo';
+        break;
+      case 'hogar':
+      case 'patrimonial':
+        subject = `Documentación de Seguro Hogar y Patrimonial - JKA Consultores`;
+        downloadUrl = `${baseUrl}/docs/seguro_hogar_jka.pdf`;
+        displayTipo = 'Hogar y Patrimonial';
+        break;
+      default:
+        return res.status(400).json({ error: 'Tipo de seguro no soportado. Debe ser Salud, Vida, Vehiculo o Hogar.' });
+    }
+
+    // Cuerpo HTML interactivo
+    const htmlContent = `
+      <div style="background-color: #f8fafc; border: 1.5px solid #2563eb; border-radius: 8px; padding: 25px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <h3 style="color: #1e3a8a; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Documentación de Seguro de ${displayTipo}</h3>
+        <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 15px 0 15px 0;">
+          Estimado cliente, de acuerdo a lo conversado con tu asesor de JKA Seguros, te hacemos llegar la información detallada y la documentación oficial para tu solicitud de <strong>Seguro de ${displayTipo}</strong>.
+        </p>
+        <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 20px 0;">
+          Por favor haz clic en el botón de abajo para descargar y revisar los términos del seguro, coberturas y requisitos necesarios para su emisión:
+        </p>
+        <div style="text-align: center; margin-bottom: 15px;">
+          <a href="${downloadUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 28px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 6px rgba(37,99,235,0.15);">
+            📥 Descargar Documentación PDF
+          </a>
+        </div>
+      </div>
+    `;
+
+    // 3. Enviar correo vía EmailJS
+    const emailjsPayload = {
+      service_id: 'service_271yuq8',
+      template_id: 'template_068mrut',
+      user_id: 'jgnK_ClSfIQ6PBYqd',
+      accessToken: 's2Qg_q1KjxfL6H28PVCIQ',
+      template_params: {
+        user_name: `${dp.primer_nombre} ${dp.primer_apellido}`,
+        to_email: clientEmail,
+        fecha: new Date().toLocaleDateString('es-VE'),
+        solicitud_ref: `Envío de Documentación de Seguro de ${displayTipo}`,
+        plan_cards: htmlContent,
+        cotizacion_pdf: ''
+      }
+    };
+
+    const emailjsRes = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(emailjsPayload)
+    });
+
+    if (!emailjsRes.ok) {
+      const errorText = await emailjsRes.text();
+      console.error('Error de API EmailJS en envío de docs:', errorText);
+      throw new Error(`EmailJS falló con código ${emailjsRes.status}`);
+    }
+
+    // 4. Registrar acción en logs
+    await registrarAccion(
+      req.user.id,
+      req.user.correo,
+      'ENVIO_DOCUMENTACION',
+      `Asesor envió documentación de ${displayTipo} al cliente ${dp.primer_nombre} ${dp.primer_apellido} (${clientEmail}).`
+    );
+
+    res.json({ message: 'Documentación enviada por correo electrónico con éxito.' });
+  } catch (err) {
+    console.error('Error al enviar documentación:', err);
+    res.status(500).json({ error: 'Error interno al enviar la documentación por correo.' });
   }
 });
 

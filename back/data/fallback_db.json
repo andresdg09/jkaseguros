@@ -5,351 +5,131 @@
       "correo": "admin@jkaseguros.com",
       "contrasena": "$2a$10$hrdf4Eh7uxFnHGGVAJCLYu4pYpbO7QpextBYsF7u8nyZ7J3w.x45e",
       "rango": "admin",
-      "created_at": "2026-07-17T18:13:46.153Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 2,
-      "correo": "asesor@jkaseguros.com",
-      "contrasena": "$2a$10$hrdf4Eh7uxFnHGGVAJCLYu4pYpbO7QpextBYsF7u8nyZ7J3w.x45e",
+      "correo": "info@jkaconsultores.com",
+      "contrasena": "$2a$10$JnHfHQevjvqfkZj0uJ9sIe1n1e86mib5e3HA2k7QLKFXbChH0OQcG",
       "rango": "asesor",
-      "created_at": "2026-07-17T18:13:46.153Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 3,
-      "correo": "test_1784312075871@jka.com",
-      "contrasena": "$2a$10$dOCNo6DkhAFtMKV6Myn0m.eSO7TYBS/jAREGWr.RijfUQ3EFkovCa",
-      "rango": "cliente",
-      "created_at": "2026-07-17T18:14:36.033Z"
-    },
-    {
-      "id": 4,
-      "correo": "asdfdsdf@gmail.com",
-      "contrasena": "$2a$10$W0RLmcysMyLNTJmCKpL8teEbqwGFqg7GNveBURIIHm.4regJmG5Ra",
-      "rango": "cliente",
-      "created_at": "2026-07-17T18:37:47.406Z"
-    },
-    {
-      "id": 5,
-      "correo": "test_1784313534339@jka.com",
-      "contrasena": "$2a$10$0gGdZrMiHNs7S/9LAgsoWu7F8g.8I29Gh4ES73f905m3zdyae/di2",
-      "rango": "cliente",
-      "created_at": "2026-07-17T18:38:54.543Z"
-    },
-    {
-      "id": 6,
-      "correo": "alejandrochacon233@gmail.com",
-      "contrasena": "$2a$10$2018etdAeds.k66a/Y/ip.pDJQuDt/Lk1a/YO7aKLz4K/cQBq0aNe",
-      "rango": "cliente",
-      "created_at": "2026-07-23T18:11:56.800Z"
-    },
-    {
-      "id": 7,
-      "correo": "adsfgdsafsgd@gmail.com",
-      "contrasena": "$2a$10$DC/1CXLB/1soKA.U1nEAHOzA.HapXNxqzkI.rbKyT/SaL26MPSC7K",
-      "rango": "cliente",
-      "created_at": "2026-07-24T00:06:48.061Z"
-    },
-    {
-      "id": 8,
-      "correo": "dasilvagomesandreseduardo@gmail.com",
-      "contrasena": "$2a$10$Jy4vd2gZn1WzEEDctybxUONzQtGVkN6JO2hHIFgC5oPNy0sA4o05a",
-      "rango": "asesor",
-      "created_at": "2026-07-30T18:04:28.819Z"
-    },
-    {
-      "id": 9,
-      "correo": "aaa@gmail.com",
-      "contrasena": "$2a$10$NZGvUb44NX/QypVlumudCuvFMq1o9NuUf51p/Re/wZRdorWwwhMUm",
-      "rango": "cliente",
-      "created_at": "2026-07-30T18:22:15.664Z"
-    },
-    {
-      "id": 10,
       "correo": "fanianosj@gmail.com",
-      "contrasena": "$2a$10$cwOqttgu/O8nTZUt6NO6qulpvcYWEPK/xeSAep13eO.z9dgJrYs5q",
+      "contrasena": "$2a$10$hrdf4Eh7uxFnHGGVAJCLYu4pYpbO7QpextBYsF7u8nyZ7J3w.x45e",
       "rango": "cliente",
-      "created_at": "2026-07-31T15:43:56.363Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
   "datos_personales": [
     {
       "id": 1,
       "usuario_id": 3,
-      "primer_nombre": "Mariana",
-      "segundo_nombre": "Sofia",
-      "primer_apellido": "Rodriguez",
-      "segundo_apellido": "Perez",
-      "fecha_nacimiento": "1995-04-12",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "V-75636869",
-      "genero": "Femenino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0414",
-      "numero_celular": "7654321",
-      "created_at": "2026-07-17T18:14:36.034Z"
-    },
-    {
-      "id": 2,
-      "usuario_id": 4,
-      "primer_nombre": "asdfgh",
-      "segundo_nombre": "asdfgh",
-      "primer_apellido": "asdfg",
-      "segundo_apellido": "asdf",
-      "fecha_nacimiento": "2006-09-18",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "333333",
-      "genero": "Masculino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0412",
-      "numero_celular": "111111",
-      "created_at": "2026-07-17T18:37:47.408Z"
-    },
-    {
-      "id": 3,
-      "usuario_id": 5,
-      "primer_nombre": "Mariana",
-      "segundo_nombre": "Sofia",
-      "primer_apellido": "Rodriguez",
-      "segundo_apellido": "Perez",
-      "fecha_nacimiento": "1995-04-12",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "V-80835380",
-      "genero": "Femenino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0414",
-      "numero_celular": "7654321",
-      "created_at": "2026-07-17T18:38:54.545Z"
-    },
-    {
-      "id": 4,
-      "usuario_id": 1,
-      "primer_nombre": "andres",
-      "segundo_nombre": "eduardo",
-      "primer_apellido": "da silva",
-      "segundo_apellido": "gomes",
-      "fecha_nacimiento": "2006-09-18",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "123445",
-      "genero": "Masculino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0412",
-      "numero_celular": "123456",
-      "created_at": "2026-07-23T15:39:57.065Z"
-    },
-    {
-      "id": 5,
-      "usuario_id": 6,
-      "primer_nombre": "lefferson",
-      "segundo_nombre": "alejandro",
-      "primer_apellido": "chacon",
-      "segundo_apellido": "mena",
-      "fecha_nacimiento": "2006-06-20",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "32397539",
-      "genero": "Masculino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0412",
-      "numero_celular": "0994010",
-      "created_at": "2026-07-23T18:11:56.801Z"
-    },
-    {
-      "id": 6,
-      "usuario_id": 7,
-      "primer_nombre": "carlos",
-      "segundo_nombre": "augusto",
-      "primer_apellido": "da silva",
-      "segundo_apellido": "gomes",
-      "fecha_nacimiento": "1994-11-23",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "34231086",
-      "genero": "Masculino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0412",
-      "numero_celular": "124545665",
-      "created_at": "2026-07-24T00:06:48.062Z"
-    },
-    {
-      "id": 7,
-      "usuario_id": 8,
-      "primer_nombre": "a",
-      "segundo_nombre": "e",
-      "primer_apellido": "d",
-      "segundo_apellido": "g",
-      "fecha_nacimiento": "2011-10-21",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "12455376",
-      "genero": "Masculino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0412",
-      "numero_celular": "1244256",
-      "asesor_id": null,
-      "created_at": "2026-07-30T18:04:28.819Z"
-    },
-    {
-      "id": 8,
-      "usuario_id": 9,
-      "primer_nombre": "aa",
-      "segundo_nombre": "aa",
-      "primer_apellido": "aa",
-      "segundo_apellido": "aa",
-      "fecha_nacimiento": "2013-08-04",
-      "tipo_documento": "Venezolano",
-      "nro_documento": "40596778",
-      "genero": "Masculino",
-      "estado_civil": "Soltero",
-      "codigo_area": "0412",
-      "numero_celular": "2133526",
-      "asesor_id": null,
-      "created_at": "2026-07-30T18:22:15.664Z"
-    },
-    {
-      "id": 9,
-      "created_at": "2026-07-31T15:43:56.365Z",
-      "usuario_id": 10,
-      "primer_nombre": "jorge",
-      "segundo_nombre": "antonio",
-      "primer_apellido": "fanianos",
-      "segundo_apellido": "frangieh",
-      "fecha_nacimiento": "1999-05-06",
+      "primer_nombre": "Jorge",
+      "segundo_nombre": "",
+      "primer_apellido": "Fanianos",
+      "segundo_apellido": "",
+      "fecha_nacimiento": "1998-05-15",
       "tipo_documento": "Venezolano",
       "nro_documento": "27028299",
       "genero": "Masculino",
       "estado_civil": "Soltero",
-      "codigo_area": "0412",
+      "codigo_area": "+58412",
       "numero_celular": "2980463",
-      "asesor_id": null
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
   "asesores": [
     {
       "id": 1,
       "usuario_id": 2,
-      "nombre": "Juan Pérez (Asesor)",
+      "nombre": "Johann Joubert",
       "codigo_asesor": "ASE-001",
-      "correo": "asesor@jkaseguros.com",
-      "telefono": "0412-1234567",
-      "created_at": "2026-07-17T18:13:46.153Z"
+      "correo": "info@jkaconsultores.com",
+      "telefono": "+584242188282",
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
   "companias_seguros": [
     {
       "id": 1,
       "nombre": "Mercantil Seguros",
-      "created_at": "2026-07-31T14:17:07.842Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 2,
       "nombre": "Seguros Caracas",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 3,
       "nombre": "Seguros Venezuela",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 4,
+      "nombre": "Mapfre Seguros",
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 5,
+      "nombre": "Internacional de Seguros",
+      "created_at": "2026-08-07T11:02:17.000Z"
     }
   ],
   "polizas": [
     {
       "id": 1,
-      "codigo_poliza": "POL-628985",
-      "cliente_id": 2,
-      "asesor_id": null,
-      "compania_id": 2,
+      "codigo_poliza": "POL-882731",
+      "cliente_id": 1,
+      "asesor_id": 1,
+      "compania_id": 1,
+      "plan": "ACCESS",
       "area": "Salud",
-      "suma_asegurada": 5000,
+      "suma_asegurada": 50000,
       "deducible": 0,
-      "prima_anual": 210,
-      "estado": "negociacion",
-      "pago_estado": "pendiente",
-      "created_at": "2026-07-17T18:38:09.336Z",
-      "plan": null
+      "prima_anual": 740,
+      "estado": "vigente",
+      "pago_estado": "pagado",
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 2,
-      "codigo_poliza": "POL-143457",
-      "cliente_id": 4,
+      "codigo_poliza": "POL-449201",
+      "cliente_id": 1,
       "asesor_id": 1,
-      "compania_id": 1,
+      "compania_id": 2,
+      "plan": "ACCESS",
       "area": "Salud",
-      "suma_asegurada": 5000,
+      "suma_asegurada": 30000,
       "deducible": 0,
-      "prima_anual": 156,
-      "estado": "vigente",
-      "pago_estado": "pendiente",
-      "created_at": "2026-07-23T15:42:44.817Z",
-      "plan": null
-    },
-    {
-      "id": 3,
-      "codigo_poliza": "POL-610614",
-      "cliente_id": 6,
-      "asesor_id": 1,
-      "compania_id": 1,
-      "area": "Salud",
-      "suma_asegurada": 5000,
-      "deducible": 0,
-      "prima_anual": 195,
+      "prima_anual": 657,
       "estado": "negociacion",
       "pago_estado": "pendiente",
-      "created_at": "2026-07-24T00:09:40.806Z",
-      "plan": null
-    },
-    {
-      "id": 4,
-      "codigo_poliza": "POL-681676",
-      "cliente_id": 4,
-      "asesor_id": 1,
-      "compania_id": 1,
-      "area": "Salud",
-      "suma_asegurada": 5000,
-      "deducible": 0,
-      "prima_anual": 156,
-      "estado": "negociacion",
-      "pago_estado": "pendiente",
-      "created_at": "2026-07-27T14:32:56.641Z",
-      "plan": null
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
   "pagos": [
     {
       "id": 1,
       "poliza_id": 1,
-      "monto": 210,
-      "fecha_pago": "2026-07-17",
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2026-08-17",
-      "created_at": "2026-07-17T18:38:09.337Z"
+      "monto": 740,
+      "fecha_pago": "2026-06-15",
+      "estado_pago": "pagado",
+      "referencia": "REF-99887766",
+      "fecha_vencimiento": "2026-06-15",
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 2,
       "poliza_id": 2,
-      "monto": 156,
-      "fecha_pago": "2026-07-23",
+      "monto": 657,
+      "fecha_pago": "2026-08-04",
       "estado_pago": "pendiente",
       "referencia": null,
-      "fecha_vencimiento": "2026-08-23",
-      "created_at": "2026-07-23T15:42:44.818Z"
-    },
-    {
-      "id": 3,
-      "poliza_id": 3,
-      "monto": 195,
-      "fecha_pago": "2026-07-24",
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2026-08-24",
-      "created_at": "2026-07-24T00:09:40.806Z"
-    },
-    {
-      "id": 4,
-      "poliza_id": 4,
-      "monto": 156,
-      "fecha_pago": "2026-07-27",
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2026-08-27",
-      "created_at": "2026-07-27T14:32:56.641Z"
+      "fecha_vencimiento": "2026-08-20",
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
   "tarifas": [
@@ -372,7 +152,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 2,
@@ -393,7 +173,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 3,
@@ -414,7 +194,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 4,
@@ -435,7 +215,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 5,
@@ -456,7 +236,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 6,
@@ -477,7 +257,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 7,
@@ -498,7 +278,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 8,
@@ -519,7 +299,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 9,
@@ -540,7 +320,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 10,
@@ -561,7 +341,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 11,
@@ -582,7 +362,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 12,
@@ -603,7 +383,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 13,
@@ -624,7 +404,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 14,
@@ -645,7 +425,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 15,
@@ -666,7 +446,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 16,
@@ -687,7 +467,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 17,
@@ -708,7 +488,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 18,
@@ -729,7 +509,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 19,
@@ -750,7 +530,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 20,
@@ -771,7 +551,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 21,
@@ -792,7 +572,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 22,
@@ -813,7 +593,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.240Z"
     },
     {
       "id": 23,
@@ -834,7 +614,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 24,
@@ -855,7 +635,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 25,
@@ -876,7 +656,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 26,
@@ -897,7 +677,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 27,
@@ -918,7 +698,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 28,
@@ -939,7 +719,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 29,
@@ -960,7 +740,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 30,
@@ -981,7 +761,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 31,
@@ -1002,7 +782,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 32,
@@ -1023,7 +803,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 33,
@@ -1044,7 +824,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 34,
@@ -1065,7 +845,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 35,
@@ -1086,7 +866,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 36,
@@ -1107,7 +887,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 37,
@@ -1128,7 +908,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 38,
@@ -1149,7 +929,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 39,
@@ -1170,7 +950,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 40,
@@ -1191,7 +971,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 41,
@@ -1212,7 +992,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 42,
@@ -1233,7 +1013,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 43,
@@ -1254,7 +1034,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 44,
@@ -1275,7 +1055,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 45,
@@ -1296,7 +1076,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 46,
@@ -1317,7 +1097,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 47,
@@ -1338,7 +1118,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 48,
@@ -1359,7 +1139,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 49,
@@ -1380,7 +1160,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 50,
@@ -1401,7 +1181,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 51,
@@ -1422,7 +1202,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 52,
@@ -1443,7 +1223,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 53,
@@ -1464,7 +1244,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 54,
@@ -1485,7 +1265,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 55,
@@ -1506,7 +1286,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 56,
@@ -1527,7 +1307,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 57,
@@ -1548,7 +1328,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 58,
@@ -1569,7 +1349,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 59,
@@ -1590,7 +1370,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 60,
@@ -1611,7 +1391,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 61,
@@ -1632,7 +1412,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 62,
@@ -1653,7 +1433,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 63,
@@ -1674,7 +1454,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 64,
@@ -1695,7 +1475,7 @@
       "consultas_medicas": "2/AÑO",
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 65,
@@ -1716,7 +1496,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 66,
@@ -1737,7 +1517,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 67,
@@ -1758,7 +1538,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 68,
@@ -1779,7 +1559,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 69,
@@ -1800,7 +1580,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 70,
@@ -1821,7 +1601,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 71,
@@ -1842,7 +1622,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 72,
@@ -1863,7 +1643,7 @@
       "consultas_medicas": "INCL",
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 73,
@@ -1884,7 +1664,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 74,
@@ -1905,7 +1685,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 75,
@@ -1926,7 +1706,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 76,
@@ -1947,7 +1727,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 77,
@@ -1968,7 +1748,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.843Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 78,
@@ -1989,7 +1769,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 79,
@@ -2010,7 +1790,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 80,
@@ -2031,7 +1811,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 81,
@@ -2052,7 +1832,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 82,
@@ -2073,7 +1853,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 83,
@@ -2094,7 +1874,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 84,
@@ -2115,7 +1895,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 85,
@@ -2136,7 +1916,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 86,
@@ -2157,7 +1937,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 87,
@@ -2178,7 +1958,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 88,
@@ -2199,7 +1979,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 89,
@@ -2220,7 +2000,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 90,
@@ -2241,7 +2021,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 91,
@@ -2262,7 +2042,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 92,
@@ -2283,7 +2063,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 93,
@@ -2304,7 +2084,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 94,
@@ -2325,7 +2105,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 95,
@@ -2346,7 +2126,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 96,
@@ -2367,7 +2147,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 97,
@@ -2388,7 +2168,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 98,
@@ -2409,7 +2189,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 99,
@@ -2430,7 +2210,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 100,
@@ -2451,7 +2231,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 101,
@@ -2472,7 +2252,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 102,
@@ -2493,7 +2273,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 103,
@@ -2514,7 +2294,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 104,
@@ -2535,7 +2315,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 105,
@@ -2556,7 +2336,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 106,
@@ -2577,7 +2357,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 107,
@@ -2598,7 +2378,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 108,
@@ -2619,7 +2399,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 109,
@@ -2640,7 +2420,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 110,
@@ -2661,7 +2441,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 111,
@@ -2682,7 +2462,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 112,
@@ -2703,7 +2483,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 113,
@@ -2724,7 +2504,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 114,
@@ -2745,7 +2525,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 115,
@@ -2766,7 +2546,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 116,
@@ -2787,7 +2567,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 117,
@@ -2808,7 +2588,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 118,
@@ -2829,7 +2609,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 119,
@@ -2850,7 +2630,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 120,
@@ -2871,7 +2651,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 121,
@@ -2892,7 +2672,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 122,
@@ -2913,7 +2693,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 123,
@@ -2934,7 +2714,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 124,
@@ -2955,7 +2735,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 125,
@@ -2976,7 +2756,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 126,
@@ -2997,7 +2777,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 127,
@@ -3018,7 +2798,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 128,
@@ -3039,7 +2819,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 129,
@@ -3060,7 +2840,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 130,
@@ -3081,7 +2861,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 131,
@@ -3102,7 +2882,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 132,
@@ -3123,7 +2903,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 133,
@@ -3144,7 +2924,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 134,
@@ -3165,7 +2945,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 135,
@@ -3186,7 +2966,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 136,
@@ -3207,7 +2987,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 137,
@@ -3228,7 +3008,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 138,
@@ -3249,7 +3029,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 139,
@@ -3270,7 +3050,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 140,
@@ -3291,7 +3071,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 141,
@@ -3312,7 +3092,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 142,
@@ -3333,7 +3113,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 143,
@@ -3354,7 +3134,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 144,
@@ -3375,7 +3155,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 145,
@@ -3396,7 +3176,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 146,
@@ -3417,7 +3197,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 147,
@@ -3438,7 +3218,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 148,
@@ -3459,7 +3239,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 149,
@@ -3480,7 +3260,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 150,
@@ -3501,7 +3281,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 151,
@@ -3522,7 +3302,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 152,
@@ -3543,7 +3323,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 153,
@@ -3564,7 +3344,7 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 154,
@@ -3585,34 +3365,209 @@
       "consultas_medicas": "",
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
-      "created_at": "2026-07-31T14:17:07.844Z"
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
-  "trazabilidad": [
+  "logs_actividad": [
     {
       "id": 1,
-      "usuario_id": 2,
-      "rol": "asesor",
-      "accion": "Inicio de sesión",
-      "detalles": "El usuario inició sesión en el portal",
-      "created_at": "2026-07-28T14:31:00.100Z"
+      "usuario_id": 1,
+      "correo_usuario": "admin@jkaseguros.com",
+      "accion": "REGISTRO",
+      "descripcion": "Administrador inicial del sistema configurado.",
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 2,
       "usuario_id": 2,
-      "rol": "asesor",
-      "accion": "Actualización de estado de póliza",
-      "detalles": "Cambió estado de la póliza POL-989798 (ID: 1) a vigente",
-      "created_at": "2026-07-28T14:31:09.343Z"
+      "correo_usuario": "info@jkaconsultores.com",
+      "accion": "REGISTRO",
+      "descripcion": "Asesor Johann Joubert registrado con código ASE-001.",
+      "created_at": "2026-08-04T21:07:26.241Z"
     },
     {
       "id": 3,
-      "usuario_id": 2,
-      "rol": "asesor",
-      "accion": "Actualización de estado de póliza",
-      "detalles": "Cambió estado de la póliza POL-143457 (ID: 2) a vigente",
-      "created_at": "2026-07-28T14:31:55.605Z"
+      "usuario_id": 3,
+      "correo_usuario": "fanianosj@gmail.com",
+      "accion": "REGISTRO",
+      "descripcion": "Asegurado Jorge Fanianos registrado en el sistema.",
+      "created_at": "2026-08-04T21:07:26.241Z"
+    },
+    {
+      "id": 4,
+      "usuario_id": 3,
+      "correo_usuario": "fanianosj@gmail.com",
+      "accion": "CREACION_POLIZA",
+      "descripcion": "Póliza POL-882731 emitida y aprobada para Jorge Fanianos.",
+      "created_at": "2026-08-04T21:07:26.241Z"
+    },
+    {
+      "id": 5,
+      "usuario_id": 3,
+      "correo_usuario": "fanianosj@gmail.com",
+      "accion": "PAGO_REPORTADO",
+      "descripcion": "Jorge Fanianos reportó pago de cuota $740. Ref: REF-99887766.",
+      "created_at": "2026-08-04T21:07:26.241Z"
     }
   ],
-  "recordatorios": []
+  "elearning_courses": [
+    {
+      "id": 1,
+      "titulo": "Curso básico de negociación",
+      "descripcion": "Aprende los fundamentos y estrategias para cerrar acuerdos exitosos.",
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 2,
+      "titulo": "Curso de seguros",
+      "descripcion": "Conceptos fundamentales de pólizas de salud, vida y automotores.",
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 3,
+      "titulo": "Curso de cómo se usa el sistema",
+      "descripcion": "Guía rápida para cotizar y gestionar solicitudes en la plataforma JKA Seguros.",
+      "created_at": "2026-08-04T21:07:26.240Z"
+    }
+  ],
+  "elearning_modules": [
+    {
+      "id": 1,
+      "curso_id": 1,
+      "titulo": "Introducción a la Negociación",
+      "contenido": "La negociación es un proceso mediante el cual dos o más partes con intereses comunes o en conflicto buscan un acuerdo. Existen dos tipos principales:\n\n1. **Negociación Distributiva**: Del tipo ganar-perder, donde los recursos son fijos.\n2. **Negociación Integrativa**: Del tipo ganar-ganar, donde se busca ampliar los beneficios para ambas partes.\n\nEs clave conocer el MAAN (Mejor Alternativa a un Acuerdo Negociado), que define tu plan de escape si la negociación fracasa.",
+      "orden": 1,
+      "quiz_preguntas": [
+        {
+          "pregunta": "¿Qué caracteriza a una negociación distributiva?",
+          "opciones": [
+            "Es del tipo ganar-perder",
+            "Es del tipo ganar-ganar"
+          ],
+          "correcta": 0
+        },
+        {
+          "pregunta": "¿Qué es el MAAN (Mejor Alternativa a un Acuerdo Negociado)?",
+          "opciones": [
+            "La opción que tienes si la negociación fracasa",
+            "Tu oferta inicial en la mesa"
+          ],
+          "correcta": 0
+        }
+      ],
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 2,
+      "curso_id": 1,
+      "titulo": "Estrategias de Cierre y Objeciones",
+      "contenido": "El cierre es el momento culmen. Ante objeciones comunes como el precio:\n\n- No rebajes la prima de inmediato, destruye la percepción de valor.\n- Concéntrate en la cobertura de salud completa y el respaldo de la aseguradora.\n- Usa la técnica del \"Sentir-Encontrar-Demostrar\" para empatizar con el cliente antes de rebatir.",
+      "orden": 2,
+      "quiz_preguntas": [
+        {
+          "pregunta": "Ante una objeción de precio del cliente, ¿cuál es la mejor estrategia?",
+          "opciones": [
+            "Bajar el precio o prima de inmediato sin justificación",
+            "Resaltar el valor del seguro, las coberturas y el respaldo de la aseguradora"
+          ],
+          "correcta": 1
+        }
+      ],
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 3,
+      "curso_id": 2,
+      "titulo": "Conceptos Fundamentales de Seguros",
+      "contenido": "Para asesorar bien, debes dominar estos términos:\n\n- **Prima**: El pago que hace el cliente para mantener activa la cobertura.\n- **Suma Asegurada**: El límite máximo que la aseguradora pagará por un siniestro.\n- **Deducible**: El monto fijo que corre por cuenta del asegurado antes de que la aseguradora empiece a pagar.\n- **Siniestro**: El evento cubierto (enfermedad, accidente, etc.) que activa la póliza.",
+      "orden": 1,
+      "quiz_preguntas": [
+        {
+          "pregunta": "¿Qué es la prima en una póliza de seguro?",
+          "opciones": [
+            "El costo que paga el cliente para mantener la póliza activa",
+            "El deducible que paga el cliente en la clínica"
+          ],
+          "correcta": 0
+        },
+        {
+          "pregunta": "Si una póliza tiene un deducible de $500 y el siniestro es de $2000, ¿cuánto cubre la aseguradora?",
+          "opciones": [
+            "Cubre los $2000 completos",
+            "Cubre $1500 (restando el deducible)"
+          ],
+          "correcta": 1
+        }
+      ],
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 4,
+      "curso_id": 2,
+      "titulo": "Ramos de Seguros en Venezuela",
+      "contenido": "Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn JKA nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).",
+      "orden": 2,
+      "quiz_preguntas": [
+        {
+          "pregunta": "¿Qué cubre primordialmente una póliza HCM?",
+          "opciones": [
+            "Gastos médicos por Hospitalización, Cirugía y Maternidad",
+            "Daños materiales del vehículo del asegurado"
+          ],
+          "correcta": 0
+        }
+      ],
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 5,
+      "curso_id": 3,
+      "titulo": "Cotización y Creación de Pólizas",
+      "contenido": "El flujo principal es:\n\n1. El cliente ingresa y cotiza en base a su edad y suma asegurada.\n2. Para cotizar con éxito, el cliente DEBE completar primero sus datos personales en su Perfil.\n3. La solicitud se crea inicialmente en estado **Negociación**.\n4. El asesor o administrador revisen y puede pasarla a **Vigente** cuando se formaliza.",
+      "orden": 1,
+      "quiz_preguntas": [
+        {
+          "pregunta": "¿Cuál es el estado inicial de una póliza cuando la solicita un cliente?",
+          "opciones": [
+            "Vigente",
+            "Negociación"
+          ],
+          "correcta": 1
+        },
+        {
+          "pregunta": "¿Qué sección del sistema es obligatoria rellenar antes de cotizar?",
+          "opciones": [
+            "La pestaña de Perfil (Datos Personales)",
+            "La pestaña de Pagos"
+          ],
+          "correcta": 0
+        }
+      ],
+      "created_at": "2026-08-04T21:07:26.240Z"
+    },
+    {
+      "id": 6,
+      "curso_id": 3,
+      "titulo": "Reporte y Conciliación de Pagos",
+      "contenido": "Una vez creada la póliza:\n\n- Se genera una cuota de pago pendiente.\n- El cliente reporta su transferencia bancaria ingresando el Número de Referencia.\n- El asesor o admin valida y marca el pago como \"pagado\" para que la póliza pase a estar activa y solvente.",
+      "orden": 2,
+      "quiz_preguntas": [
+        {
+          "pregunta": "¿Qué campo debe ingresar obligatoriamente el asegurado para notificar un pago?",
+          "opciones": [
+            "La referencia bancaria",
+            "El nombre de su asesor de confianza"
+          ],
+          "correcta": 0
+        }
+      ],
+      "created_at": "2026-08-04T21:07:26.240Z"
+    }
+  ],
+  "elearning_attempts": [],
+  "tarifario_metadata": {
+    "version": "1.0.0",
+    "ultima_modificacion": "2026-08-04T21:07:26.241Z",
+    "usuario_correo": "admin@jkaseguros.com"
+  }
 }

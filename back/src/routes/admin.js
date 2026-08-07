@@ -9,6 +9,48 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Helper: Actualizar metadatos de tarifario (versión y fecha de última modificación)
+async function actualizarTarifarioMetadata(usuarioCorreo) {
+  const now = new Date().toISOString();
+  if (db.isFallback()) {
+    const fallbackFilePath = './data/fallback_db.json';
+    try {
+      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const fData = JSON.parse(fileContent);
+      
+      const oldMeta = fData.tarifario_metadata || { version: '1.0.0' };
+      const parts = oldMeta.version.split('.');
+      const nextPatch = parseInt(parts[2] || 0) + 1;
+      const nextVersion = `${parts[0] || '1'}.${parts[1] || '0'}.${nextPatch}`;
+      
+      fData.tarifario_metadata = {
+        version: nextVersion,
+        ultima_modificacion: now,
+        usuario_correo: usuarioCorreo
+      };
+      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+    } catch (e) {
+      console.error('Error al actualizar metadatos en fallback:', e);
+    }
+  } else {
+    try {
+      const lastMeta = await db.query('SELECT version FROM tarifario_metadata ORDER BY id DESC LIMIT 1');
+      let nextVersion = '1.0.1';
+      if (lastMeta.rows && lastMeta.rows.length > 0) {
+        const parts = lastMeta.rows[0].version.split('.');
+        const nextPatch = parseInt(parts[2] || 0) + 1;
+        nextVersion = `${parts[0] || '1'}.${parts[1] || '0'}.${nextPatch}`;
+      }
+      await db.query(
+        'INSERT INTO tarifario_metadata (version, ultima_modificacion, usuario_correo) VALUES ($1, CURRENT_TIMESTAMP, $2)',
+        [nextVersion, usuarioCorreo]
+      );
+    } catch (e) {
+      console.error('Error al actualizar metadatos en Postgres:', e);
+    }
+  }
+}
+
 // 1. Obtener lista de clientes con métricas útiles para el administrador
 router.get('/clients', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
@@ -27,6 +69,7 @@ router.get('/clients', authenticateToken, async (req, res) => {
       const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
 
       return {
+        id: c.id,
         id_cliente: c.id,
         nombre: `${c.primer_nombre} ${c.primer_apellido}`,
         primer_nombre: c.primer_nombre,
@@ -199,8 +242,21 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
         compMap[c.nombre] = c.id;
       });
 
-      const nuevasTarifas = parsedData.map((t, idx) => {
-        const cId = compMap[t.compania];
+      const nuevasTarifas = [];
+      parsedData.forEach((t, idx) => {
+        let cId = compMap[t.compania];
+        if (!cId && t.compania) {
+          const newId = fData.companias_seguros.length ? Math.max(...fData.companias_seguros.map(c => c.id)) + 1 : 1;
+          const newComp = {
+            id: newId,
+            nombre: t.compania,
+            created_at: new Date().toISOString()
+          };
+          fData.companias_seguros.push(newComp);
+          cId = newId;
+          compMap[t.compania] = cId;
+        }
+
         const row = {
           id: idx + 1,
           compania_id: cId || 1,
@@ -211,7 +267,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           created_at: new Date().toISOString()
         };
         BENEFIT_FIELDS.forEach(f => { row[f] = t[f] || ''; });
-        return row;
+        nuevasTarifas.push(row);
       });
 
       fData.tarifas = nuevasTarifas;
@@ -225,8 +281,16 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
       });
 
       for (const t of parsedData) {
-        const cId = compMap[t.compania];
-        if (!cId) continue;
+        if (!t.compania) continue;
+        let cId = compMap[t.compania];
+        if (!cId) {
+          const insRes = await db.query(
+            'INSERT INTO companias_seguros (nombre) VALUES ($1) RETURNING id',
+            [t.compania]
+          );
+          cId = insRes.rows[0].id;
+          compMap[t.compania] = cId;
+        }
 
         await db.query(
           `INSERT INTO tarifas (
@@ -244,6 +308,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
     }
 
     // Trazabilidad
+    await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'CARGA_TARIFAS', `Cargadas masivamente ${parsedData.length} tarifas en el sistema.`);
 
     res.json({ message: 'Carga masiva realizada con éxito.', count: parsedData.length });
@@ -321,6 +386,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
       ]);
     }
 
+    await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'CREACION_TARIFA', `Nueva tarifa agregada para Compañía ID ${compania_id} (plan ${req.body.plan || 'N/A'})`);
     res.json({ message: 'Tarifa creada correctamente.' });
   } catch (err) {
@@ -376,11 +442,111 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
       if (resUp.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
     }
 
+    await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'EDICION_TARIFA', `Tarifa ID ${id} modificada.`);
     res.json({ message: 'Tarifa actualizada correctamente.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al actualizar la tarifa.' });
+  }
+});
+
+// 9.5 Guardar tarifas modificadas/nuevas en lote
+router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { tariffs } = req.body;
+
+  if (!Array.isArray(tariffs)) {
+    return res.status(400).json({ error: 'El cuerpo debe ser una lista de tarifas.' });
+  }
+
+  try {
+    if (db.isFallback()) {
+      const fallbackFilePath = './data/fallback_db.json';
+      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const fData = JSON.parse(fileContent);
+
+      for (const t of tariffs) {
+        const { id, compania_id, edad_min, edad_max, suma_asegurada, prima } = t;
+        if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
+          continue;
+        }
+
+        const isNew = String(id).startsWith('new-');
+        if (isNew) {
+          const newId = fData.tarifas.length > 0 ? Math.max(...fData.tarifas.map(item => item.id)) + 1 : 1;
+          const row = {
+            id: newId,
+            compania_id: parseInt(compania_id),
+            edad_min: parseInt(edad_min),
+            edad_max: parseInt(edad_max),
+            suma_asegurada: parseFloat(suma_asegurada),
+            prima: parseFloat(prima),
+            created_at: new Date().toISOString()
+          };
+          TARIFF_BENEFIT_FIELDS.forEach(f => { row[f] = t[f] || ''; });
+          fData.tarifas.push(row);
+        } else {
+          const idx = fData.tarifas.findIndex(item => item.id === parseInt(id));
+          if (idx !== -1) {
+            const updated = {
+              ...fData.tarifas[idx],
+              compania_id: parseInt(compania_id),
+              edad_min: parseInt(edad_min),
+              edad_max: parseInt(edad_max),
+              suma_asegurada: parseFloat(suma_asegurada),
+              prima: parseFloat(prima)
+            };
+            TARIFF_BENEFIT_FIELDS.forEach(f => { updated[f] = t[f] ?? updated[f] ?? ''; });
+            fData.tarifas[idx] = updated;
+          }
+        }
+      }
+      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+    } else {
+      for (const t of tariffs) {
+        const { id, compania_id, edad_min, edad_max, suma_asegurada, prima } = t;
+        if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
+          continue;
+        }
+
+        const isNew = String(id).startsWith('new-');
+        if (isNew) {
+          const q = `
+            INSERT INTO tarifas (
+              compania_id, edad_min, edad_max, suma_asegurada, prima,
+              plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+              funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          `;
+          await db.query(q, [
+            parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+            ...TARIFF_BENEFIT_FIELDS.map(f => t[f] || '')
+          ]);
+        } else {
+          const q = `
+            UPDATE tarifas
+            SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, prima = $5,
+                plan = $6, pago = $7, maternidad_suma = $8, maternidad_costo = $9, asist_intl_suma = $10, asist_intl_costo = $11,
+                funeral_suma = $12, funeral_costo = $13, at_situ_medicamentos = $14, consultas_medicas = $15,
+                examenes_lab_imagenologia = $16, ambulancia = $17
+            WHERE id = $18
+          `;
+          await db.query(q, [
+            parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+            ...TARIFF_BENEFIT_FIELDS.map(f => t[f] || ''),
+            parseInt(id)
+          ]);
+        }
+      }
+    }
+
+    await actualizarTarifarioMetadata(req.user.correo);
+    await registrarAccion(req.user.id, req.user.correo, 'EDICION_TARIFA_LOTE', `Se actualizaron o crearon ${tariffs.length} tarifas en lote.`);
+    res.json({ message: 'Tarifas actualizadas en lote correctamente.', count: tariffs.length });
+  } catch (err) {
+    console.error('Error en guardado masivo:', err);
+    res.status(500).json({ error: 'Error al procesar el guardado por lote de tarifas.' });
   }
 });
 
@@ -403,6 +569,7 @@ router.delete('/tariffs/:id', authenticateToken, async (req, res) => {
       if (resDel.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
     }
 
+    await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'ELIMINACION_TARIFA', `Tarifa ID ${id} eliminada.`);
     res.json({ message: 'Tarifa eliminada correctamente.' });
   } catch (err) {
@@ -422,6 +589,38 @@ router.get('/companies', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener compañías.' });
+  }
+});
+
+// 12. Obtener metadatos del tarifario
+router.get('/tarifario-metadata', authenticateToken, async (req, res) => {
+  try {
+    let result;
+    if (db.isFallback()) {
+      const fallbackFilePath = './data/fallback_db.json';
+      try {
+        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+        const fData = JSON.parse(fileContent);
+        result = { rows: [fData.tarifario_metadata || { version: '1.0.0', ultima_modificacion: new Date().toISOString(), usuario_correo: 'admin@jkaseguros.com' }] };
+      } catch (e) {
+        result = { rows: [] };
+      }
+    } else {
+      result = await db.query('SELECT * FROM tarifario_metadata ORDER BY id DESC LIMIT 1');
+    }
+
+    if (!result.rows || result.rows.length === 0) {
+      return res.json({
+        version: '1.0.0',
+        ultima_modificacion: new Date().toISOString(),
+        usuario_correo: 'admin@jkaseguros.com'
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error al obtener metadatos del tarifario:', err);
+    res.status(500).json({ error: 'Error al obtener los metadatos del tarifario.' });
   }
 });
 

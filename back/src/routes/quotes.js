@@ -36,9 +36,72 @@ function getCalidadScore(tarifa) {
   return Math.round((incluidos / BENEFIT_FIELDS.length) * 50);
 }
 
+// Helper: Calcular comparativa para una suma asegurada
+function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIdsFiltrados) {
+  let tarifasAplicables = tarifasRows.filter(t =>
+    parseFloat(t.suma_asegurada) === parseFloat(sumaAsegurada) &&
+    edadTarifa >= parseInt(t.edad_min) &&
+    edadTarifa <= parseInt(t.edad_max)
+  );
+
+  if (companiaIdsFiltrados && companiaIdsFiltrados.length > 0) {
+    tarifasAplicables = tarifasAplicables.filter(t => companiaIdsFiltrados.includes(t.compania_id));
+  }
+
+  // Agrupar por compañía y quedarnos con el plan de menor prima para cada una
+  const porCompania = new Map();
+  tarifasAplicables.forEach(t => {
+    const key = t.compania_id;
+    const actual = porCompania.get(key);
+    if (!actual || parseFloat(t.prima) < parseFloat(actual.prima)) {
+      porCompania.set(key, t);
+    }
+  });
+
+  let comparativa = [...porCompania.values()].map(t => {
+    const prima = parseFloat(t.prima);
+    const calidadScore = getCalidadScore(t);
+    const relacion_calidad_precio = prima ? parseFloat(((calidadScore / prima) * 100).toFixed(2)) : 0;
+
+    return {
+      id: t.compania_id,
+      nombre: t.compania_nombre || 'Aseguradora',
+      plan: t.plan,
+      pago: t.pago,
+      suma_asegurada: parseFloat(t.suma_asegurada),
+      prima,
+      maternidad_suma: t.maternidad_suma,
+      maternidad_costo: t.maternidad_costo,
+      asist_intl_suma: t.asist_intl_suma,
+      asist_intl_costo: t.asist_intl_costo,
+      funeral_suma: t.funeral_suma,
+      funeral_costo: t.funeral_costo,
+      at_situ_medicamentos: t.at_situ_medicamentos,
+      consultas_medicas: t.consultas_medicas,
+      examenes_lab_imagenologia: t.examenes_lab_imagenologia,
+      ambulancia: t.ambulancia,
+      calidadScore,
+      relacion_calidad_precio,
+      recomendada: false
+    };
+  });
+
+  // Identificar la mejor opción costo/calidad (mayor relación calidad/precio)
+  if (comparativa.length > 0) {
+    const mejorOpcion = comparativa.reduce((prev, current) => {
+      return (prev.relacion_calidad_precio > current.relacion_calidad_precio) ? prev : current;
+    });
+    comparativa = comparativa.map(item => item.id === mejorOpcion.id ? { ...item, recomendada: true } : item);
+  }
+
+  // Ordenar por prima ascendente para una comparación más clara
+  comparativa.sort((a, b) => a.prima - b.prima);
+  return comparativa;
+}
+
 // 1. Obtener cotización comparativa
 router.post('/', async (req, res) => {
-  const { fecha_nacimiento, suma_asegurada } = req.body;
+  const { fecha_nacimiento, suma_asegurada, suma_asegurada_2, compania_ids } = req.body;
 
   if (!fecha_nacimiento) {
     return res.status(400).json({ error: 'La fecha de nacimiento es requerida para calcular la cotización.' });
@@ -51,76 +114,53 @@ router.post('/', async (req, res) => {
   const edadReal = calcularEdad(fecha_nacimiento);
 
   // Métrica: Ajuste de edad sumándole 6 meses.
-  // Restamos 6 meses a la fecha de nacimiento para simular que nació 6 meses antes (es 6 meses mayor).
   const cumpleAjustado = new Date(fecha_nacimiento);
   cumpleAjustado.setMonth(cumpleAjustado.getMonth() - 6);
   const edadTarifa = calcularEdad(cumpleAjustado);
 
   try {
-    // Cargar todas las tarifas que ofrecen la suma asegurada solicitada para la edad calculada
-    const tarifasRes = await db.query('SELECT t.*, c.nombre AS compania_nombre FROM tarifas t LEFT JOIN companias_seguros c ON t.compania_id = c.id', []);
-    const tarifasAplicables = tarifasRes.rows.filter(t =>
-      parseFloat(t.suma_asegurada) === sumaAsegurada &&
-      edadTarifa >= parseInt(t.edad_min) &&
-      edadTarifa <= parseInt(t.edad_max)
-    );
-
-    // Agrupar por compañía y quedarnos con el plan de menor prima para cada una
-    const porCompania = new Map();
-    tarifasAplicables.forEach(t => {
-      const key = t.compania_id;
-      const actual = porCompania.get(key);
-      if (!actual || parseFloat(t.prima) < parseFloat(actual.prima)) {
-        porCompania.set(key, t);
+    // Validar restricción de un máximo de 3 aseguradoras seleccionadas
+    if (compania_ids) {
+      if (!Array.isArray(compania_ids) || compania_ids.length === 0) {
+        return res.status(400).json({ error: 'Debe seleccionar al menos 1 compañía de seguros para realizar la cotización.' });
       }
-    });
-
-    let comparativa = [...porCompania.values()].map(t => {
-      const prima = parseFloat(t.prima);
-      const calidadScore = getCalidadScore(t);
-      const relacion_calidad_precio = prima ? parseFloat(((calidadScore / prima) * 100).toFixed(2)) : 0;
-
-      return {
-        id: t.compania_id,
-        nombre: t.compania_nombre || 'Aseguradora',
-        plan: t.plan,
-        pago: t.pago,
-        suma_asegurada: parseFloat(t.suma_asegurada),
-        prima,
-        maternidad_suma: t.maternidad_suma,
-        maternidad_costo: t.maternidad_costo,
-        asist_intl_suma: t.asist_intl_suma,
-        asist_intl_costo: t.asist_intl_costo,
-        funeral_suma: t.funeral_suma,
-        funeral_costo: t.funeral_costo,
-        at_situ_medicamentos: t.at_situ_medicamentos,
-        consultas_medicas: t.consultas_medicas,
-        examenes_lab_imagenologia: t.examenes_lab_imagenologia,
-        ambulancia: t.ambulancia,
-        calidadScore,
-        relacion_calidad_precio,
-        recomendada: false
-      };
-    });
-
-    // Identificar la mejor opción costo/calidad (mayor relación calidad/precio)
-    if (comparativa.length > 0) {
-      const mejorOpcion = comparativa.reduce((prev, current) => {
-        return (prev.relacion_calidad_precio > current.relacion_calidad_precio) ? prev : current;
-      });
-      comparativa = comparativa.map(item => item.id === mejorOpcion.id ? { ...item, recomendada: true } : item);
+      if (compania_ids.length > 3) {
+        return res.status(400).json({ error: 'Puede seleccionar un máximo de 3 compañías de seguros para realizar la cotización.' });
+      }
     }
 
-    // Ordenar por prima ascendente para una comparación más clara
-    comparativa.sort((a, b) => a.prima - b.prima);
+    const companiaIdsFiltrados = (compania_ids && Array.isArray(compania_ids)) ? compania_ids.map(id => parseInt(id)) : null;
 
-    // Registrar cotización anónima o del usuario en los logs
-    await registrarAccion(null, 'cotizador_publico', 'COTIZACION', `Cotización calculada para edad ${edadReal} (tarifa evaluada para ${edadTarifa}), suma asegurada: $${sumaAsegurada}`);
+    // Cargar todas las tarifas
+    const tarifasRes = await db.query('SELECT t.*, c.nombre AS compania_nombre FROM tarifas t LEFT JOIN companias_seguros c ON t.compania_id = c.id', []);
+
+    // Calcular comparativa para la primera suma asegurada
+    const comparativa = calcularComparativa(tarifasRes.rows, sumaAsegurada, edadTarifa, companiaIdsFiltrados);
+
+    // Calcular comparativa para la segunda suma asegurada (si se proporciona)
+    let comparativa2 = null;
+    if (suma_asegurada_2) {
+      comparativa2 = calcularComparativa(tarifasRes.rows, parseFloat(suma_asegurada_2), edadTarifa, companiaIdsFiltrados);
+    }
+
+    // Registrar en logs de trazabilidad
+    let logsMsg = `Cotización calculada para edad ${edadReal}, suma asegurada: $${sumaAsegurada}`;
+    if (suma_asegurada_2) {
+      logsMsg += ` y segunda suma: $${suma_asegurada_2}`;
+    }
+    if (companiaIdsFiltrados) {
+      logsMsg += `. Aseguradoras seleccionadas: ${companiaIdsFiltrados.join(', ')}`;
+    }
+    await registrarAccion(null, 'cotizador_publico', 'COTIZACION', logsMsg);
 
     res.json({
-      edad: edadReal, // Retorna edad REAL al cliente
+      edad: edadReal,
       suma_asegurada: sumaAsegurada,
-      comparativa
+      comparativa,
+      ...(suma_asegurada_2 ? {
+        suma_asegurada_2: parseFloat(suma_asegurada_2),
+        comparativa_2: comparativa2
+      } : {})
     });
 
   } catch (err) {
@@ -177,6 +217,77 @@ router.post('/email', async (req, res) => {
     const pdfBuffer = await generarPdfBuffer(cliente, edad, suma_asegurada, comparativas, asesor);
     const pdfBase64 = pdfBuffer.toString('base64');
 
+    // Generar bloque HTML de las tarjetas de planes para el cuerpo del correo
+    let planCardsHtml = '';
+    const cleanPhone = (asesor && asesor.telefono) ? asesor.telefono.replace(/[^0-9]/g, '') : '584121234567';
+    const advisorName = (asesor && asesor.nombre) ? asesor.nombre : 'Asesor JKA Seguros';
+
+    comparativas.forEach(comp => {
+      const waMsg = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${comp.nombre}* (Plan ${comp.plan || 'N/A'}) con una prima anual de *$${comp.prima}* para la suma asegurada de *$${comp.suma_asegurada || suma_asegurada}*. Por favor contácteme.`;
+      const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}`;
+      
+      const isBest = !!comp.recomendada;
+      const cardBg = isBest ? '#eff6ff' : '#ffffff';
+      const cardBorder = isBest ? '#2563eb' : '#cbd5e1';
+      const badgeHtml = isBest ? `
+        <div style="background-color: #10b981; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px;">
+          RECOMENDACIÓN JKA
+        </div>
+      ` : '';
+
+      planCardsHtml += `
+        <div style="background-color: ${cardBg}; border: 1.5px solid ${cardBorder}; border-radius: 8px; margin-bottom: 20px; padding: 20px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+          ${badgeHtml}
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="vertical-align: top;">
+                <span style="font-size: 18px; font-weight: bold; color: #1e3a8a; display: block;">${comp.nombre}</span>
+                <span style="font-size: 13px; font-weight: bold; color: #2563eb; text-transform: uppercase;">PLAN: ${comp.plan || 'N/A'}</span>
+              </td>
+              <td align="right" style="vertical-align: top;">
+                <div style="background-color: ${isBest ? '#dbeafe' : '#f1f5f9'}; padding: 10px 15px; border-radius: 6px; text-align: center; min-width: 100px; display: inline-block;">
+                  <span style="font-size: 9px; color: #64748b; font-weight: bold; display: block; text-transform: uppercase; letter-spacing: 0.5px;">PRIMA ANUAL</span>
+                  <span style="font-size: 18px; color: #1e3a8a; font-weight: bold; display: block;">$${Number(comp.prima).toLocaleString('en-US')}</span>
+                  <span style="font-size: 8px; color: #94a3b8; display: block;">por año</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+          
+          <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #334155; line-height: 1.5;">
+              <tr>
+                <td width="50%" style="padding: 4px 0;"><strong>Maternidad:</strong> ${comp.maternidad_suma ? comp.maternidad_suma + (comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : '') : 'No incluida'}</td>
+                <td width="50%" style="padding: 4px 0;"><strong>Asistencia Intl:</strong> ${comp.asist_intl_suma ? comp.asist_intl_suma + (comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : '') : 'No incluida'}</td>
+              </tr>
+              <tr>
+                <td width="50%" style="padding: 4px 0;"><strong>Funeral:</strong> ${comp.funeral_suma ? comp.funeral_suma + (comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : '') : 'No incluido'}</td>
+                <td width="50%" style="padding: 4px 0;"><strong>Forma de Pago:</strong> ${comp.pago || 'Consultar'}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div style="margin-top: 12px; font-size: 11px; color: #64748b; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
+            <strong>Servicios:</strong>
+            <span style="margin-right: 8px; color: ${comp.at_situ_medicamentos && comp.at_situ_medicamentos !== 'NO' ? '#10b981' : '#94a3b8'};">● At. Situ+Med</span>
+            <span style="margin-right: 8px; color: ${comp.consultas_medicas && comp.consultas_medicas !== 'NO' ? '#10b981' : '#94a3b8'};">● Consultas</span>
+            <span style="margin-right: 8px; color: ${comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' ? '#10b981' : '#94a3b8'};">● Exámenes</span>
+            <span style="color: ${comp.ambulancia && comp.ambulancia !== 'NO' ? '#10b981' : '#94a3b8'};">● Ambulancia</span>
+          </div>
+
+          <div style="margin-top: 10px; font-size: 11px; color: #1e3a8a; font-weight: bold;">
+            Score de Cobertura: ${comp.calidadScore || 0}/50 pts
+          </div>
+          
+          <div style="margin-top: 15px; text-align: center;">
+            <a href="${waLink}" target="_blank" style="background-color: #25d366; color: #ffffff; padding: 10px 24px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2); line-height: 1.2;">
+              💬 Solicitar este Plan por WhatsApp
+            </a>
+          </div>
+        </div>
+      `;
+    });
+
     // Armar payload de la API de EmailJS
     const emailjsPayload = {
       service_id: 'service_271yuq8',
@@ -188,7 +299,8 @@ router.post('/email', async (req, res) => {
         to_email: targetEmail,
         fecha: new Date().toLocaleDateString('es-VE'),
         solicitud_ref: `Cuadro Comparativo de Seguro de Salud (Suma Asegurada $${Number(suma_asegurada).toLocaleString('en-US')})`,
-        cotizacion_pdf: pdfBase64
+        cotizacion_pdf: pdfBase64,
+        plan_cards: planCardsHtml
       }
     };
 
