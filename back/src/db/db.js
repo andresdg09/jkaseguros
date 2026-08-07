@@ -9,6 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const dbConfig = {
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/jkaseguros',
+  // Proveedores como Neon/Render firman con una CA que Node no siempre trae confiada por defecto;
+  // sin esto pg rechaza el handshake TLS y el pool nunca llega a conectar.
+  ...(process.env.DATABASE_URL ? { ssl: { rejectUnauthorized: false } } : {}),
 };
 
 let pool = null;
