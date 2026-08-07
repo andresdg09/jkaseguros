@@ -542,6 +542,7 @@ try {
 
   client.release();
 } catch (err) {
+  console.error('❌ Error al conectar con PostgreSQL, activando fallback JSON:', err);
   pool = null;
   initFallback();
 }
