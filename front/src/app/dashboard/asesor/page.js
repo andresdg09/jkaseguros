@@ -5,7 +5,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+// Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
+// (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
+function normalizeApiUrl(url) {
+  const trimmed = url.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api');
 
 export default function AsesorDashboard() {
   const { token, isLoggedIn, user, asesor, hydrated } = useAuth();
