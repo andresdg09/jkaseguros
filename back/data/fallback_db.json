@@ -3408,6 +3408,934 @@
       "accion": "PAGO_REPORTADO",
       "descripcion": "Jorge Fanianos reportó pago de cuota $740. Ref: REF-99887766.",
       "created_at": "2026-08-04T21:07:26.241Z"
+    },
+    {
+      "id": 6,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:08.661Z"
+    },
+    {
+      "id": 7,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:08.963Z"
+    },
+    {
+      "id": 8,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:09.270Z"
+    },
+    {
+      "id": 9,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:09.576Z"
+    },
+    {
+      "id": 10,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:09.883Z"
+    },
+    {
+      "id": 11,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:10.194Z"
+    },
+    {
+      "id": 12,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:10.498Z"
+    },
+    {
+      "id": 13,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:10.804Z"
+    },
+    {
+      "id": 14,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:11.109Z"
+    },
+    {
+      "id": 15,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:11.421Z"
+    },
+    {
+      "id": 16,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:11.729Z"
+    },
+    {
+      "id": 17,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:12.035Z"
+    },
+    {
+      "id": 18,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:12.340Z"
+    },
+    {
+      "id": 19,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:12.645Z"
+    },
+    {
+      "id": 20,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:12.950Z"
+    },
+    {
+      "id": 21,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:13.257Z"
+    },
+    {
+      "id": 22,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:13.563Z"
+    },
+    {
+      "id": 23,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:13.865Z"
+    },
+    {
+      "id": 24,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:14.172Z"
+    },
+    {
+      "id": 25,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:14.476Z"
+    },
+    {
+      "id": 26,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:14.782Z"
+    },
+    {
+      "id": 27,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:15.089Z"
+    },
+    {
+      "id": 28,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:15.396Z"
+    },
+    {
+      "id": 29,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:15.701Z"
+    },
+    {
+      "id": 30,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:16.009Z"
+    },
+    {
+      "id": 31,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:16.317Z"
+    },
+    {
+      "id": 32,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:16.623Z"
+    },
+    {
+      "id": 33,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:16.931Z"
+    },
+    {
+      "id": 34,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:17.233Z"
+    },
+    {
+      "id": 35,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:17.540Z"
+    },
+    {
+      "id": 36,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:17.846Z"
+    },
+    {
+      "id": 37,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:18.153Z"
+    },
+    {
+      "id": 38,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:18.460Z"
+    },
+    {
+      "id": 39,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:18.766Z"
+    },
+    {
+      "id": 40,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:19.072Z"
+    },
+    {
+      "id": 41,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:19.382Z"
+    },
+    {
+      "id": 42,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:19.689Z"
+    },
+    {
+      "id": 43,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:19.996Z"
+    },
+    {
+      "id": 44,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:20.301Z"
+    },
+    {
+      "id": 45,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:20.609Z"
+    },
+    {
+      "id": 46,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:20.917Z"
+    },
+    {
+      "id": 47,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:21.226Z"
+    },
+    {
+      "id": 48,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:21.532Z"
+    },
+    {
+      "id": 49,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:21.838Z"
+    },
+    {
+      "id": 50,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:22.153Z"
+    },
+    {
+      "id": 51,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:22.451Z"
+    },
+    {
+      "id": 52,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:31.935Z"
+    },
+    {
+      "id": 53,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:32.245Z"
+    },
+    {
+      "id": 54,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:32.563Z"
+    },
+    {
+      "id": 55,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:32.876Z"
+    },
+    {
+      "id": 56,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:33.194Z"
+    },
+    {
+      "id": 57,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:33.486Z"
+    },
+    {
+      "id": 58,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:33.792Z"
+    },
+    {
+      "id": 59,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:34.103Z"
+    },
+    {
+      "id": 60,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:34.404Z"
+    },
+    {
+      "id": 61,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:34.733Z"
+    },
+    {
+      "id": 62,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:35.015Z"
+    },
+    {
+      "id": 63,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:35.322Z"
+    },
+    {
+      "id": 64,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:35.631Z"
+    },
+    {
+      "id": 65,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:35.935Z"
+    },
+    {
+      "id": 66,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:36.240Z"
+    },
+    {
+      "id": 67,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:36.545Z"
+    },
+    {
+      "id": 68,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:36.846Z"
+    },
+    {
+      "id": 69,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:37.042Z"
+    },
+    {
+      "id": 70,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:37.239Z"
+    },
+    {
+      "id": 71,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:37.435Z"
+    },
+    {
+      "id": 72,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:37.632Z"
+    },
+    {
+      "id": 73,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:37.828Z"
+    },
+    {
+      "id": 74,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:38.024Z"
+    },
+    {
+      "id": 75,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:38.221Z"
+    },
+    {
+      "id": 76,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:38.418Z"
+    },
+    {
+      "id": 77,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:38.615Z"
+    },
+    {
+      "id": 78,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:38.816Z"
+    },
+    {
+      "id": 79,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:39.122Z"
+    },
+    {
+      "id": 80,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:39.423Z"
+    },
+    {
+      "id": 81,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:39.728Z"
+    },
+    {
+      "id": 82,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:40.031Z"
+    },
+    {
+      "id": 83,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:40.340Z"
+    },
+    {
+      "id": 84,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:40.647Z"
+    },
+    {
+      "id": 85,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:40.953Z"
+    },
+    {
+      "id": 86,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:41.313Z"
+    },
+    {
+      "id": 87,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:41.577Z"
+    },
+    {
+      "id": 88,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:41.885Z"
+    },
+    {
+      "id": 89,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:42.189Z"
+    },
+    {
+      "id": 90,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:42.501Z"
+    },
+    {
+      "id": 91,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:42.808Z"
+    },
+    {
+      "id": 92,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:43.122Z"
+    },
+    {
+      "id": 93,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:43.458Z"
+    },
+    {
+      "id": 94,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:43.762Z"
+    },
+    {
+      "id": 95,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:44.065Z"
+    },
+    {
+      "id": 96,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:44.365Z"
+    },
+    {
+      "id": 97,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:44.561Z"
+    },
+    {
+      "id": 98,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:44.760Z"
+    },
+    {
+      "id": 99,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:44.959Z"
+    },
+    {
+      "id": 100,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:45.156Z"
+    },
+    {
+      "id": 101,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:45.354Z"
+    },
+    {
+      "id": 102,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:45.552Z"
+    },
+    {
+      "id": 103,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:45.749Z"
+    },
+    {
+      "id": 104,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:45.947Z"
+    },
+    {
+      "id": 105,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:46.144Z"
+    },
+    {
+      "id": 106,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:46.347Z"
+    },
+    {
+      "id": 107,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:46.659Z"
+    },
+    {
+      "id": 108,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:46.979Z"
+    },
+    {
+      "id": 109,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:47.286Z"
+    },
+    {
+      "id": 110,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:47.593Z"
+    },
+    {
+      "id": 111,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:47.899Z"
+    },
+    {
+      "id": 112,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:48.207Z"
+    },
+    {
+      "id": 113,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:48.512Z"
+    },
+    {
+      "id": 114,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:48.820Z"
+    },
+    {
+      "id": 115,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:49.126Z"
+    },
+    {
+      "id": 116,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:49.432Z"
+    },
+    {
+      "id": 117,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:49.742Z"
+    },
+    {
+      "id": 118,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:50.041Z"
+    },
+    {
+      "id": 119,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:50.349Z"
+    },
+    {
+      "id": 120,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:50.654Z"
+    },
+    {
+      "id": 121,
+      "usuario_id": null,
+      "correo_usuario": "sistema",
+      "accion": "ALERTA_5D_NEGOCIACION",
+      "descripcion": "Recordatorio de 5 días de negociación enviado al asesor para póliza POL-449201.",
+      "created_at": "2026-08-11T12:34:50.962Z"
     }
   ],
   "elearning_courses": [

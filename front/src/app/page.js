@@ -35,7 +35,9 @@ export default function Home() {
     primer_apellido: '',
     genero: 'Masculino',
     estado_civil: 'Soltero',
-    numero_hijos: '',
+    tiene_dependientes: 'No',
+    cantidad_dependientes: '',
+    dependientes: [],
     correo: '',
     codigo_area: '0412',
     numero_celular: '',
@@ -149,7 +151,9 @@ export default function Home() {
         numero_celular: '',
         estado_civil: 'Soltero',
         genero: 'Masculino',
-        numero_hijos: ''
+        tiene_dependientes: 'No',
+        cantidad_dependientes: '',
+        dependientes: []
       }));
       return;
     }
@@ -170,12 +174,33 @@ export default function Home() {
         tipo_documento: selectedCli.tipo_documento || 'Venezolano',
         genero: selectedCli.genero || 'Masculino',
         estado_civil: selectedCli.estado_civil || 'Soltero',
-        numero_hijos: selectedCli.numero_hijos || '',
+        tiene_dependientes: 'No',
+        cantidad_dependientes: '',
+        dependientes: [],
         correo: selectedCli.correo || '',
         codigo_area: area,
         numero_celular: num
       }));
     }
+  };
+
+  const handleCantidadDependientesChange = (qtyStr) => {
+    const qty = Math.max(0, parseInt(qtyStr) || 0);
+    setQuoteForm(prev => {
+      const newDeps = [...prev.dependientes];
+      if (newDeps.length < qty) {
+        for (let i = newDeps.length; i < qty; i++) {
+          newDeps.push({ relacion: 'hijo', edad: '' });
+        }
+      } else if (newDeps.length > qty) {
+        newDeps.splice(qty);
+      }
+      return {
+        ...prev,
+        cantidad_dependientes: qtyStr,
+        dependientes: newDeps
+      };
+    });
   };
 
   // Manejar selección de aseguradoras por checkbox
@@ -201,7 +226,8 @@ export default function Home() {
         fecha_nacimiento: clienteActivo.fecha_nacimiento,
         suma_asegurada: sumaAsegurada,
         ...(sumaAsegurada2 ? { suma_asegurada_2: sumaAsegurada2 } : {}),
-        ...(companiaIds && companiaIds.length > 0 ? { compania_ids: companiaIds } : {})
+        ...(companiaIds && companiaIds.length > 0 ? { compania_ids: companiaIds } : {}),
+        dependientes: clienteActivo.dependientes || []
       };
 
       const res = await fetch(`${API_URL}/quote`, {
@@ -257,7 +283,9 @@ export default function Home() {
       estado_civil: quoteForm.estado_civil,
       correo: quoteForm.correo,
       telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`,
-      numero_hijos: quoteForm.numero_hijos ? parseInt(quoteForm.numero_hijos) : 0
+      tiene_dependientes: quoteForm.tiene_dependientes,
+      cantidad_dependientes: quoteForm.tiene_dependientes === 'Sí' ? parseInt(quoteForm.cantidad_dependientes) || 0 : 0,
+      dependientes: quoteForm.tiene_dependientes === 'Sí' ? quoteForm.dependientes : []
     };
 
     ejecutarCotizacion(
@@ -279,7 +307,10 @@ export default function Home() {
       genero: quoteForm.genero,
       estado_civil: quoteForm.estado_civil,
       correo: quoteForm.correo,
-      telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`
+      telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`,
+      tiene_dependientes: quoteForm.tiene_dependientes,
+      cantidad_dependientes: quoteForm.tiene_dependientes === 'Sí' ? parseInt(quoteForm.cantidad_dependientes) || 0 : 0,
+      dependientes: quoteForm.tiene_dependientes === 'Sí' ? quoteForm.dependientes : []
     };
 
     if (!quotingResults || !activeCli.fecha_nacimiento) return;
@@ -609,18 +640,85 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Número de hijos */}
+              {/* ¿Tiene dependientes? */}
               <div className="form-group">
-                <label className="form-label">Número de hijos</label>
-                <input
-                  type="number"
-                  min="0"
+                <label className="form-label">¿Tiene dependientes? *</label>
+                <select
                   className="form-input"
-                  placeholder="0"
-                  value={quoteForm.numero_hijos}
-                  onChange={e => setQuoteForm({...quoteForm, numero_hijos: e.target.value})}
-                />
+                  value={quoteForm.tiene_dependientes}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setQuoteForm(prev => ({
+                      ...prev,
+                      tiene_dependientes: val,
+                      cantidad_dependientes: val === 'Sí' ? prev.cantidad_dependientes || '1' : '',
+                      dependientes: val === 'Sí' ? (prev.dependientes.length > 0 ? prev.dependientes : [{ relacion: 'hijo', edad: '' }]) : []
+                    }));
+                  }}
+                >
+                  <option value="No">No</option>
+                  <option value="Sí">Sí</option>
+                </select>
               </div>
+
+              {/* Cantidad de dependientes */}
+              {quoteForm.tiene_dependientes === 'Sí' && (
+                <div className="form-group">
+                  <label className="form-label">Cantidad de dependientes *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-input"
+                    placeholder="1"
+                    value={quoteForm.cantidad_dependientes}
+                    onChange={e => handleCantidadDependientesChange(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Espacios para cada dependiente */}
+              {quoteForm.tiene_dependientes === 'Sí' && quoteForm.dependientes.map((dep, idx) => (
+                <div key={idx} className="form-group" style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', border: '1px solid var(--border)', borderRadius: '6px', padding: '1rem', marginTop: '0.5rem', backgroundColor: 'var(--secondary-bg, #f8fafc)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Parentesco dependiente {idx + 1} *</label>
+                    <select
+                      className="form-input"
+                      value={dep.relacion}
+                      onChange={e => {
+                        const newDeps = [...quoteForm.dependientes];
+                        newDeps[idx].relacion = e.target.value;
+                        setQuoteForm({...quoteForm, dependientes: newDeps});
+                      }}
+                      required
+                    >
+                      <option value="hijo">Hijo</option>
+                      <option value="hija">Hija</option>
+                      <option value="esposo">Esposo</option>
+                      <option value="esposa">Esposa</option>
+                      <option value="padre">Padre</option>
+                      <option value="madre">Madre</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Edad dependiente {idx + 1} *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="120"
+                      className="form-input"
+                      placeholder="Edad"
+                      value={dep.edad}
+                      onChange={e => {
+                        const newDeps = [...quoteForm.dependientes];
+                        newDeps[idx].edad = e.target.value;
+                        setQuoteForm({...quoteForm, dependientes: newDeps});
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+              ))}
 
               {/* Suma Asegurada Principal */}
               <div className="form-group">

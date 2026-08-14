@@ -12,9 +12,9 @@ export default function AdminDashboard() {
   const { showToast } = useToast();
   const router = useRouter();
 
-  // --- ESTADOS DE DATOS ---
   const [policies, setPolicies] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [tempRefs, setTempRefs] = useState({});
   const [users, setUsers] = useState([]);
   const [advisors, setAdvisors] = useState([]);
   const [clients, setClients] = useState([]);
@@ -427,6 +427,9 @@ export default function AdminDashboard() {
 
   // Cambiar estado de pago
   const handleUpdatePaymentStatus = async (paymentId, newStatus) => {
+    const currentPayment = payments.find(p => p.id === paymentId);
+    const ref = tempRefs[paymentId] !== undefined ? tempRefs[paymentId] : (currentPayment?.referencia || '');
+
     try {
       const res = await fetch(`${API_URL}/payments/${paymentId}`, {
         method: 'PUT',
@@ -434,12 +437,17 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ estado_pago: newStatus })
+        body: JSON.stringify({ estado_pago: newStatus, referencia: ref || null })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al actualizar el pago.');
       
       showToast('Estado de pago actualizado.');
+      setTempRefs(prev => {
+        const copy = { ...prev };
+        delete copy[paymentId];
+        return copy;
+      });
       loadData();
     } catch (err) {
       showToast(err.message, 'error');
@@ -800,16 +808,54 @@ export default function AdminDashboard() {
     return [...map.values()].sort((a, b) => a.edad_min - b.edad_min || a.suma_asegurada - b.suma_asegurada);
   })();
 
-  const filteredPivotRows = pivotRows.filter(row => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
-    return companies.some(c => {
-      const cell = row.byCompany[c.id];
-      if (!cell) return false;
-      return c.nombre.toLowerCase().includes(q) || cell.plan?.toLowerCase().includes(q) || String(cell.prima).includes(q);
-    });
-  });
+  // --- CÁLCULO DE METRICAS / KPIS ---
+  const totalPols = policies.length;
+  const vigentesCount = policies.filter(p => p.estado === 'vigente').length;
+  const negociacionCount = policies.filter(p => p.estado === 'negociacion').length;
+  const vencidosCount = policies.filter(p => p.estado === 'vencido').length;
+  const rechazadosCount = policies.filter(p => p.estado === 'rechazado').length;
+
+  const totalPrimaVigente = policies
+    .filter(p => p.estado === 'vigente')
+    .reduce((sum, p) => sum + parseFloat(p.prima_anual || 0), 0);
+
+  const totalRecaudado = payments
+    .filter(p => p.estado_pago === 'pagado')
+    .reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
+
+  const totalPendiente = payments
+    .filter(p => p.estado_pago === 'pendiente')
+    .reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
+
+  const totalVencidoPay = payments
+    .filter(p => p.estado_pago === 'vencido')
+    .reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
+
+  const tasaCobranza = payments.length > 0 
+    ? ((payments.filter(p => p.estado_pago === 'pagado').length / payments.length) * 100).toFixed(1)
+    : '0.0';
+
+  const tasaConversion = totalPols > 0 
+    ? ((vigentesCount / totalPols) * 100).toFixed(1)
+    : '0.0';
+
+  // Rendimiento por asesor:
+  const advisorsPerformance = advisors.map(adv => {
+    const advPols = policies.filter(p => p.asesor_id === adv.id);
+    const activePols = advPols.filter(p => p.estado === 'vigente');
+    
+    // Contar clientes únicos asociados a las pólizas de este asesor
+    const uniqueClientIds = new Set(advPols.filter(p => p.cliente_id).map(p => p.cliente_id));
+    const clientsCount = uniqueClientIds.size;
+    
+    const totalPrima = activePols.reduce((sum, p) => sum + parseFloat(p.prima_anual || 0), 0);
+    return {
+      ...adv,
+      clientsCount,
+      activePolicies: activePols.length,
+      totalPrima
+    };
+  }).sort((a, b) => b.totalPrima - a.totalPrima);
 
   return (
     <div>
@@ -920,62 +966,204 @@ export default function AdminDashboard() {
         <div>
           {/* --- RESUMEN DE CLIENTES --- */}
           {activeTab === 'resumen' && (
-            <div className="card">
-              <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Lista de Clientes Registrados</h3>
-              <div style={{ marginBottom: '1.2rem' }}>
-                <input
-                  type="text"
-                  placeholder="🔍 Buscar cliente por nombre, documento o teléfono..."
-                  className="form-input"
-                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            <div>
+              {/* --- PANEL DE INDICADORES (KPIs) --- */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem', marginBottom: '2rem' }}>
+                
+                {/* KPI: Prima de Cartera */}
+                <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prima en Cartera Activa</span>
+                  <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--primary)' }}>
+                    ${totalPrimaVigente.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: '500' }}>
+                    📈 {vigentesCount} pólizas vigentes
+                  </span>
+                </div>
+
+                {/* KPI: Cobrado */}
+                <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Recaudación Cobrada</span>
+                  <span style={{ fontSize: '1.75rem', fontWeight: '800', color: '#10b981' }}>
+                    ${totalRecaudado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Tasa de Cobranza: <strong>{tasaCobranza}%</strong>
+                  </span>
+                </div>
+
+                {/* KPI: Pendiente y Vencido */}
+                <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cuentas por Cobrar</span>
+                  <span style={{ fontSize: '1.75rem', fontWeight: '800', color: '#f59e0b' }}>
+                    ${(totalPendiente + totalVencidoPay).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Pendiente: <strong>${totalPendiente.toLocaleString('en-US')}</strong> | Vencido: <strong style={{ color: '#ef4444' }}>${totalVencidoPay.toLocaleString('en-US')}</strong>
+                  </span>
+                </div>
+
+                {/* KPI: Conversión */}
+                <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tasa de Conversión</span>
+                  <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--accent)' }}>
+                    {tasaConversion}%
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Pólizas en Negociación: <strong>{negociacionCount}</strong>
+                  </span>
+                </div>
+
               </div>
-              <div className="table-container">
-                <table className="table" style={{ fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Cliente</th>
-                      <th>Documento</th>
-                      <th>Correo</th>
-                      <th>Teléfono</th>
-                      <th>Nacimiento (Edad)</th>
-                      <th>Género</th>
-                      <th>Edo. Civil</th>
-                      <th>Pólizas</th>
-                      <th>Total Aportado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredClients.length === 0 ? (
-                      <tr><td colSpan="10" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
-                    ) : (
-                      filteredClients.map((c) => {
-                        const birthYear = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).getFullYear() : null;
-                        const age = birthYear ? new Date().getFullYear() - birthYear : 'N/A';
-                        const formattedBirth = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).toLocaleDateString('es-VE', { timeZone: 'UTC' }) : 'N/A';
-                        return (
-                          <tr key={c.id_cliente}>
-                            <td>{c.id_cliente}</td>
-                            <td>
-                              <strong>{c.primer_nombre} {c.segundo_nombre ? c.segundo_nombre + ' ' : ''}{c.primer_apellido} {c.segundo_apellido ? c.segundo_apellido : ''}</strong>
-                            </td>
-                            <td>{c.tipo_documento ? `${c.tipo_documento}-${c.nro_documento}` : c.nro_documento}</td>
-                            <td>{c.correo || 'N/A'}</td>
-                            <td>{c.telefono}</td>
-                            <td>{formattedBirth} ({age} años)</td>
-                            <td>{c.genero || 'N/A'}</td>
-                            <td>{c.estado_civil || 'N/A'}</td>
-                            <td><span className="badge badge-vigente" style={{ background: 'var(--secondary)', color: 'var(--primary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>{c.polizas}</span></td>
-                            <td><strong style={{ color: '#10b981' }}>{c.historial_pagos}</strong></td>
-                          </tr>
-                        );
-                      })
+
+              {/* --- DISTRIBUCIÓN Y RENDIMIENTO DE ASESORES --- */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                
+                {/* Card: Distribución de Pólizas */}
+                <div className="card" style={{ padding: '1.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                  <h4 style={{ color: 'var(--primary)', fontWeight: 'bold', marginBottom: '1.2rem', fontSize: '1rem' }}>Distribución de Pólizas ({totalPols} totales)</h4>
+                  
+                  {/* Proportional Bar Chart */}
+                  <div style={{ display: 'flex', height: '24px', borderRadius: '6px', overflow: 'hidden', marginBottom: '1.5rem', border: '1px solid var(--border)' }}>
+                    {vigentesCount > 0 && (
+                      <div style={{ width: `${(vigentesCount / totalPols) * 100}%`, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }} title={`Vigentes: ${vigentesCount}`}>
+                        {Math.round((vigentesCount / totalPols) * 100)}%
+                      </div>
                     )}
-                  </tbody>
-                </table>
+                    {negociacionCount > 0 && (
+                      <div style={{ width: `${(negociacionCount / totalPols) * 100}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }} title={`Negociación: ${negociacionCount}`}>
+                        {Math.round((negociacionCount / totalPols) * 100)}%
+                      </div>
+                    )}
+                    {vencidosCount > 0 && (
+                      <div style={{ width: `${(vencidosCount / totalPols) * 100}%`, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }} title={`Vencidas: ${vencidosCount}`}>
+                        {Math.round((vencidosCount / totalPols) * 100)}%
+                      </div>
+                    )}
+                    {rechazadosCount > 0 && (
+                      <div style={{ width: `${(rechazadosCount / totalPols) * 100}%`, background: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }} title={`Rechazadas: ${rechazadosCount}`}>
+                        {Math.round((rechazadosCount / totalPols) * 100)}%
+                      </div>
+                    )}
+                    {totalPols === 0 && (
+                      <div style={{ width: '100%', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        Sin pólizas registradas
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Legend */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981', display: 'inline-block' }}></span>
+                      <span>Vigentes: <strong>{vigentesCount}</strong></span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b', display: 'inline-block' }}></span>
+                      <span>En Negociación: <strong>{negociacionCount}</strong></span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ef4444', display: 'inline-block' }}></span>
+                      <span>Vencidas: <strong>{vencidosCount}</strong></span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#64748b', display: 'inline-block' }}></span>
+                      <span>Rechazadas: <strong>{rechazadosCount}</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card: Tabla de Rendimiento de Asesores */}
+                <div className="card" style={{ padding: '1.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                  <h4 style={{ color: 'var(--primary)', fontWeight: 'bold', marginBottom: '1rem', fontSize: '1rem' }}>Ranking de Asesores</h4>
+                  <div className="table-container" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                    <table className="table" style={{ fontSize: '0.8rem', minWidth: '100%' }}>
+                      <thead>
+                        <tr>
+                          <th>Asesor</th>
+                          <th>Clientes</th>
+                          <th>Pólizas Activas</th>
+                          <th>Cartera ($)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {advisorsPerformance.length === 0 ? (
+                          <tr><td colSpan="4" className="text-center">No hay asesores registrados.</td></tr>
+                        ) : (
+                          advisorsPerformance.map(adv => (
+                            <tr key={adv.id}>
+                              <td><strong>{adv.nombre}</strong></td>
+                              <td>{adv.clientsCount}</td>
+                              <td>{adv.activePolicies}</td>
+                              <td><strong style={{ color: 'var(--primary)' }}>${adv.totalPrima.toLocaleString('en-US')}</strong></td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Lista de Clientes Registrados */}
+              <div className="card" style={{ boxShadow: 'var(--shadow-lg)' }}>
+                <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Lista de Clientes Registrados</h3>
+                <div style={{ marginBottom: '1.2rem' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar cliente por nombre, documento o teléfono..."
+                    className="form-input"
+                    style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="table-container">
+                  <table className="table" style={{ fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Documento</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Nacimiento (Edad)</th>
+                        <th>Género</th>
+                        <th>Edo. Civil</th>
+                        <th>Pólizas</th>
+                        <th>Total Aportado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredClients.length === 0 ? (
+                        <tr><td colSpan="10" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
+                      ) : (
+                        filteredClients.map((c) => {
+                          const birthYear = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).getFullYear() : null;
+                          const age = birthYear ? new Date().getFullYear() - birthYear : 'N/A';
+                          const formattedBirth = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).toLocaleDateString('es-VE', { timeZone: 'UTC' }) : 'N/A';
+                          return (
+                            <tr key={c.id_cliente}>
+                              <td>{c.id_cliente}</td>
+                              <td>
+                                <strong>{c.primer_nombre} {c.segundo_nombre ? c.segundo_nombre + ' ' : ''}{c.primer_apellido} {c.segundo_apellido ? c.segundo_apellido : ''}</strong>
+                              </td>
+                              <td>{c.tipo_documento ? `${c.tipo_documento}-${c.nro_documento}` : c.nro_documento}</td>
+                              <td>{c.correo || 'N/A'}</td>
+                              <td>{c.telefono}</td>
+                              <td>{formattedBirth} ({age} años)</td>
+                              <td>{c.genero || 'N/A'}</td>
+                              <td>{c.estado_civil || 'N/A'}</td>
+                              <td><span className="badge badge-vigente" style={{ background: 'var(--secondary)', color: 'var(--primary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>{c.polizas}</span></td>
+                              <td><strong style={{ color: '#10b981' }}>{c.historial_pagos}</strong></td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1171,13 +1359,25 @@ export default function AdminDashboard() {
                           <td>{pa.compania_nombre}</td>
                           <td>${parseFloat(pa.monto).toLocaleString('en-US')}</td>
                           <td>
-                            {pa.referencia ? (
-                              <span style={{ fontFamily: 'monospace', background: 'var(--secondary)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
-                                {pa.referencia}
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Sin Reportar</span>
-                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <input 
+                                type="text" 
+                                placeholder="Nro. Referencia" 
+                                className="form-input" 
+                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '130px', margin: 0 }}
+                                value={tempRefs[pa.id] !== undefined ? tempRefs[pa.id] : (pa.referencia || '')}
+                                onChange={(e) => setTempRefs({ ...tempRefs, [pa.id]: e.target.value })}
+                              />
+                              {(tempRefs[pa.id] !== undefined && tempRefs[pa.id] !== (pa.referencia || '')) && (
+                                <button 
+                                  onClick={() => handleUpdatePaymentStatus(pa.id, pa.estado_pago)} 
+                                  className="btn btn-accent"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                >
+                                  ✓
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
                           <td>

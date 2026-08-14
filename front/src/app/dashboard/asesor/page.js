@@ -16,6 +16,7 @@ export default function AsesorDashboard() {
   const [clients, setClients] = useState([]);
   const [policies, setPolicies] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [tempRefs, setTempRefs] = useState({});
   const [companies, setCompanies] = useState([]);
   const [policyForm, setPolicyForm] = useState({ cliente_id: '', compania_id: '', plan: '', suma_asegurada: 5000, prima_anual: 300 });
   const [loading, setLoading] = useState(true);
@@ -339,6 +340,9 @@ export default function AsesorDashboard() {
 
   // Registrar pago como cobrado/pendiente
   const handleUpdatePaymentStatus = async (paymentId, newStatus) => {
+    const currentPayment = payments.find(p => p.id === paymentId);
+    const ref = tempRefs[paymentId] !== undefined ? tempRefs[paymentId] : (currentPayment?.referencia || '');
+
     try {
       const res = await fetch(`${API_URL}/payments/${paymentId}`, {
         method: 'PUT',
@@ -346,12 +350,17 @@ export default function AsesorDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ estado_pago: newStatus })
+        body: JSON.stringify({ estado_pago: newStatus, referencia: ref || null })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al actualizar el pago.');
       
       showToast('Cobranza registrada correctamente.');
+      setTempRefs(prev => {
+        const copy = { ...prev };
+        delete copy[paymentId];
+        return copy;
+      });
       loadData();
     } catch (err) {
       showToast(err.message, 'error');
@@ -781,13 +790,25 @@ export default function AsesorDashboard() {
                           <td>{pa.compania_nombre}</td>
                           <td>${parseFloat(pa.monto).toLocaleString('en-US')}</td>
                           <td>
-                            {pa.referencia ? (
-                              <span style={{ fontFamily: 'monospace', background: 'var(--secondary)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
-                                {pa.referencia}
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sin Reportar</span>
-                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <input 
+                                type="text" 
+                                placeholder="Nro. Referencia" 
+                                className="form-input" 
+                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '130px', margin: 0 }}
+                                value={tempRefs[pa.id] !== undefined ? tempRefs[pa.id] : (pa.referencia || '')}
+                                onChange={(e) => setTempRefs({ ...tempRefs, [pa.id]: e.target.value })}
+                              />
+                              {(tempRefs[pa.id] !== undefined && tempRefs[pa.id] !== (pa.referencia || '')) && (
+                                <button 
+                                  onClick={() => handleUpdatePaymentStatus(pa.id, pa.estado_pago)} 
+                                  className="btn btn-accent"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                >
+                                  ✓
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
                           <td>

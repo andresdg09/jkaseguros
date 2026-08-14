@@ -11,7 +11,10 @@ const dbConfig = {
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/jkaseguros',
   // Proveedores como Neon/Render firman con una CA que Node no siempre trae confiada por defecto;
   // sin esto pg rechaza el handshake TLS y el pool nunca llega a conectar.
-  ...(process.env.DATABASE_URL ? { ssl: { rejectUnauthorized: false } } : {}),
+  // Solo aplicamos SSL si la DATABASE_URL no es de un servidor de base de datos local.
+  ...(process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1')
+    ? { ssl: { rejectUnauthorized: false } }
+    : {}),
 };
 
 let pool = null;

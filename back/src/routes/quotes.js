@@ -37,29 +37,76 @@ function getCalidadScore(tarifa) {
 }
 
 // Helper: Calcular comparativa para una suma asegurada
-function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIdsFiltrados) {
-  let tarifasAplicables = tarifasRows.filter(t =>
-    parseFloat(t.suma_asegurada) === parseFloat(sumaAsegurada) &&
-    edadTarifa >= parseInt(t.edad_min) &&
-    edadTarifa <= parseInt(t.edad_max)
-  );
+function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIdsFiltrados, dependientes = []) {
+  const validDeps = dependientes.filter(d => d.edad !== undefined && d.edad !== null && d.edad !== '' && !isNaN(parseInt(d.edad)));
+
+  // 1. Filtrar tarifas por la suma asegurada solicitada
+  let tarifasSuma = tarifasRows.filter(t => parseFloat(t.suma_asegurada) === parseFloat(sumaAsegurada));
 
   if (companiaIdsFiltrados && companiaIdsFiltrados.length > 0) {
-    tarifasAplicables = tarifasAplicables.filter(t => companiaIdsFiltrados.includes(t.compania_id));
+    tarifasSuma = tarifasSuma.filter(t => companiaIdsFiltrados.includes(t.compania_id));
   }
 
-  // Agrupar por compañía y quedarnos con el plan de menor prima para cada una
+  // 2. Agrupar tarifas por (compania_id, plan)
+  const planesMap = new Map();
+  tarifasSuma.forEach(t => {
+    const key = `${t.compania_id}_${t.plan}`;
+    if (!planesMap.has(key)) {
+      planesMap.set(key, []);
+    }
+    planesMap.get(key).push(t);
+  });
+
+  // 3. Para cada plan, calcular el total de prima (titular + dependientes)
+  const planesCalculados = [];
+  for (const [key, rows] of planesMap.entries()) {
+    // Buscar tarifa para el titular
+    const titularRow = rows.find(t => edadTarifa >= parseInt(t.edad_min) && edadTarifa <= parseInt(t.edad_max));
+    if (!titularRow) {
+      continue; // Si el plan no cubre la edad del titular, se descarta
+    }
+
+    let totalPrima = parseFloat(titularRow.prima);
+    let todosCubiertos = true;
+    const desglosePrimas = [{ relacion: 'titular', edad: edadTarifa, prima: parseFloat(titularRow.prima) }];
+
+    // Buscar tarifa para cada dependiente en este mismo plan
+    for (const dep of validDeps) {
+      const depEdad = parseInt(dep.edad);
+      const depRow = rows.find(t => depEdad >= parseInt(t.edad_min) && depEdad <= parseInt(t.edad_max));
+      if (!depRow) {
+        todosCubiertos = false;
+        break; // Si el plan no cubre a este dependiente, se descarta el plan
+      }
+      const depPrima = parseFloat(depRow.prima);
+      totalPrima += depPrima;
+      desglosePrimas.push({ relacion: dep.relacion, edad: depEdad, prima: depPrima });
+    }
+
+    if (!todosCubiertos) {
+      continue;
+    }
+
+    planesCalculados.push({
+      titularRow,
+      totalPrima,
+      desglosePrimas
+    });
+  }
+
+  // 4. Agrupar por compañía de seguros y quedarnos con el plan de menor prima total
   const porCompania = new Map();
-  tarifasAplicables.forEach(t => {
-    const key = t.compania_id;
-    const actual = porCompania.get(key);
-    if (!actual || parseFloat(t.prima) < parseFloat(actual.prima)) {
-      porCompania.set(key, t);
+  planesCalculados.forEach(p => {
+    const cid = p.titularRow.compania_id;
+    const actual = porCompania.get(cid);
+    if (!actual || p.totalPrima < actual.totalPrima) {
+      porCompania.set(cid, p);
     }
   });
 
-  let comparativa = [...porCompania.values()].map(t => {
-    const prima = parseFloat(t.prima);
+  let comparativa = [...porCompania.values()].map(p => {
+    const t = p.titularRow;
+    const prima = p.totalPrima;
     const calidadScore = getCalidadScore(t);
     const relacion_calidad_precio = prima ? parseFloat(((calidadScore / prima) * 100).toFixed(2)) : 0;
 
@@ -82,7 +129,8 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       ambulancia: t.ambulancia,
       calidadScore,
       relacion_calidad_precio,
-      recomendada: false
+      recomendada: false,
+      desglosePrimas: p.desglosePrimas
     };
   });
 
@@ -101,7 +149,7 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
 
 // 1. Obtener cotización comparativa
 router.post('/', async (req, res) => {
-  const { fecha_nacimiento, suma_asegurada, suma_asegurada_2, compania_ids } = req.body;
+  const { fecha_nacimiento, suma_asegurada, suma_asegurada_2, compania_ids, dependientes } = req.body;
 
   if (!fecha_nacimiento) {
     return res.status(400).json({ error: 'La fecha de nacimiento es requerida para calcular la cotización.' });
@@ -135,12 +183,12 @@ router.post('/', async (req, res) => {
     const tarifasRes = await db.query('SELECT t.*, c.nombre AS compania_nombre FROM tarifas t LEFT JOIN companias_seguros c ON t.compania_id = c.id', []);
 
     // Calcular comparativa para la primera suma asegurada
-    const comparativa = calcularComparativa(tarifasRes.rows, sumaAsegurada, edadTarifa, companiaIdsFiltrados);
+    const comparativa = calcularComparativa(tarifasRes.rows, sumaAsegurada, edadTarifa, companiaIdsFiltrados, dependientes);
 
     // Calcular comparativa para la segunda suma asegurada (si se proporciona)
     let comparativa2 = null;
     if (suma_asegurada_2) {
-      comparativa2 = calcularComparativa(tarifasRes.rows, parseFloat(suma_asegurada_2), edadTarifa, companiaIdsFiltrados);
+      comparativa2 = calcularComparativa(tarifasRes.rows, parseFloat(suma_asegurada_2), edadTarifa, companiaIdsFiltrados, dependientes);
     }
 
     // Registrar en logs de trazabilidad
@@ -150,6 +198,9 @@ router.post('/', async (req, res) => {
     }
     if (companiaIdsFiltrados) {
       logsMsg += `. Aseguradoras seleccionadas: ${companiaIdsFiltrados.join(', ')}`;
+    }
+    if (dependientes && dependientes.length > 0) {
+      logsMsg += `. Dependientes: ${dependientes.length}`;
     }
     await registrarAccion(null, 'cotizador_publico', 'COTIZACION', logsMsg);
 

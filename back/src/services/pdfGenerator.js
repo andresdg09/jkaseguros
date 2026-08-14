@@ -71,8 +71,12 @@ function dibujarHeader(doc, logoPath, tituloPagina = '') {
  * Dibuja el bloque de datos del asegurado
  */
 function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
-  doc.rect(MARGIN, 92, CONTENT_W, 58).fill(COLORS.lightBg);
-  doc.rect(MARGIN, 92, CONTENT_W, 58).stroke(COLORS.border);
+  const hasDeps = cliente.dependientes && cliente.dependientes.length > 0;
+  const depLines = hasDeps ? Math.ceil(cliente.dependientes.length / 2) : 0;
+  const boxH = 58 + depLines * 14;
+
+  doc.rect(MARGIN, 92, CONTENT_W, boxH).fill(COLORS.lightBg);
+  doc.rect(MARGIN, 92, CONTENT_W, boxH).stroke(COLORS.border);
 
   const col1 = 55;
   const col2 = 310;
@@ -89,7 +93,20 @@ function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
   doc.font('Helvetica-Bold').text('Teléfono:', col1, 128, { lineBreak: false }).font('Helvetica').text(`${cliente.codigo_area}-${cliente.numero_celular}`, col1 + 60, 128, { lineBreak: false });
   doc.font('Helvetica-Bold').text('Suma Asegurada:', col2, 128, { lineBreak: false }).font('Helvetica-Bold').fillColor(COLORS.secondary).text(sumaFormateada, col2 + 85, 128, { lineBreak: false });
 
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.5).text(`Fecha de emisión: ${fechaHoy}`, col1, 142, { lineBreak: false });
+  if (hasDeps) {
+    let dy = 142;
+    doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8).text('Dependientes:', col1, dy, { lineBreak: false });
+    
+    cliente.dependientes.forEach((dep, idx) => {
+      const col = idx % 2 === 0 ? col1 + 70 : col2;
+      const rowY = dy + Math.floor(idx / 2) * 14;
+      const label = dep.relacion.charAt(0).toUpperCase() + dep.relacion.slice(1);
+      doc.fillColor(COLORS.dark).font('Helvetica').fontSize(8).text(`• ${label} (Edad: ${dep.edad} años)`, col, rowY, { lineBreak: false });
+    });
+  }
+
+  const footY = 92 + boxH + 3;
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.5).text(`Fecha de emisión: ${fechaHoy}`, col1, footY, { lineBreak: false });
 }
 
 /**
@@ -159,7 +176,10 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(6.5).text('PRIMA ANUAL', priceX, priceY + 12, { width: priceBoxW, align: 'center', lineBreak: false });
   doc.fillColor(isBest ? COLORS.success : COLORS.primary).font('Helvetica-Bold').fontSize(17)
      .text(comp.prima ? `$${Number(comp.prima).toLocaleString('en-US')}` : 'N/D', priceX, priceY + 24, { width: priceBoxW, align: 'center', lineBreak: false });
-  doc.fillColor('#94a3b8').font('Helvetica').fontSize(6.5).text('por año', priceX, priceY + 46, { width: priceBoxW, align: 'center', lineBreak: false });
+  
+  const numDeps = comp.desglosePrimas ? comp.desglosePrimas.length - 1 : 0;
+  const labelDeps = numDeps > 0 ? `(titular + ${numDeps} dep.)` : 'por año';
+  doc.fillColor('#94a3b8').font('Helvetica').fontSize(6.5).text(labelDeps, priceX, priceY + 46, { width: priceBoxW, align: 'center', lineBreak: false });
 
   doc.moveTo(priceX + 14, priceY + priceH - 26).lineTo(priceX + priceBoxW - 14, priceY + priceH - 26).lineWidth(0.5).strokeColor(COLORS.border).stroke();
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(7).text(`Score: ${comp.calidadScore ?? 0}/50`, priceX, priceY + priceH - 18, { width: priceBoxW, align: 'center', lineBreak: false });
@@ -233,12 +253,20 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada);
 
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
-     .text('Tu Comparativo Personalizado de Aseguradoras', MARGIN, 162, { lineBreak: false });
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(7)
-     .text('Cada tarjeta resume el plan, la prima anual y los beneficios adicionales ofrecidos para la edad y suma asegurada cotizadas.', MARGIN, 174, { width: CONTENT_W, lineBreak: false });
+  const hasDeps = cliente.dependientes && cliente.dependientes.length > 0;
+  const depLines = hasDeps ? Math.ceil(cliente.dependientes.length / 2) : 0;
+  const boxH = 58 + depLines * 14;
 
-  let cardY = 192;
+  const titleY = 92 + boxH + 12;
+  const subtitleY = titleY + 12;
+  const startCardsY = subtitleY + 16;
+
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
+     .text('Tu Comparativo Personalizado de Aseguradoras', MARGIN, titleY, { lineBreak: false });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(7)
+     .text('Cada tarjeta resume el plan, la prima anual y los beneficios adicionales ofrecidos para la edad y suma asegurada cotizadas.', MARGIN, subtitleY, { width: CONTENT_W, lineBreak: false });
+
+  let cardY = startCardsY;
   const cardH = 140;
   const cardGap = 14;
 
