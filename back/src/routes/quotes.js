@@ -252,7 +252,7 @@ router.post('/pdf', async (req, res) => {
 
 // 4. Enviar Cotización por correo vía EmailJS
 router.post('/email', async (req, res) => {
-  const { cliente, edad, suma_asegurada, comparativas, email, asesor } = req.body;
+  const { cliente, edad, suma_asegurada, comparativas, email, asesor, mensaje } = req.body;
 
   if (!cliente || !comparativas) {
     return res.status(400).json({ error: 'Faltan datos del cliente o la cotización para enviar por correo.' });
@@ -351,7 +351,10 @@ router.post('/email', async (req, res) => {
         fecha: new Date().toLocaleDateString('es-VE'),
         solicitud_ref: `Cuadro Comparativo de Seguro de Salud (Suma Asegurada $${Number(suma_asegurada).toLocaleString('en-US')})`,
         cotizacion_pdf: pdfBase64,
-        plan_cards: planCardsHtml
+        plan_cards: planCardsHtml,
+        // Nota: para que este texto aparezca en el correo, la plantilla en el
+        // dashboard de EmailJS debe referenciar {{mensaje_personalizado}}.
+        mensaje_personalizado: mensaje || 'Gracias por contactarte con nosotros. Adjunto encontrarás tu cotización de seguro de salud.'
       }
     };
 
