@@ -814,6 +814,18 @@ export default function AdminDashboard() {
     return [...map.values()].sort((a, b) => a.edad_min - b.edad_min || a.suma_asegurada - b.suma_asegurada);
   })();
 
+  const filteredPivotRows = pivotRows.filter(row => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
+    return companies.some(c => {
+      const cell = row.byCompany[c.id];
+      if (!cell) return false;
+      return c.nombre.toLowerCase().includes(q) || cell.plan?.toLowerCase().includes(q) || String(cell.prima).includes(q);
+    });
+  });
+
+
   // --- CÁLCULO DE METRICAS / KPIS ---
   const totalPols = policies.length;
   const vigentesCount = policies.filter(p => p.estado === 'vigente').length;
