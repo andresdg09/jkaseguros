@@ -20,6 +20,18 @@ export function AuthProvider({ children }) {
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const isTokenExpired = (tok) => {
+    try {
+      const parts = tok.split('.');
+      if (parts.length !== 3) return true;
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (!payload.exp) return false;
+      return Date.now() >= payload.exp * 1000;
+    } catch (e) {
+      return true;
+    }
+  };
+
   useEffect(() => {
     // Cargar credenciales desde localStorage tras el montaje en el cliente
     const storedToken = localStorage.getItem('jka_token');
@@ -28,10 +40,17 @@ export function AuthProvider({ children }) {
     const storedAsesor = localStorage.getItem('jka_asesor');
 
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      if (storedCliente) setCliente(JSON.parse(storedCliente));
-      if (storedAsesor) setAsesor(JSON.parse(storedAsesor));
+      if (isTokenExpired(storedToken)) {
+        localStorage.removeItem('jka_token');
+        localStorage.removeItem('jka_user');
+        localStorage.removeItem('jka_cliente');
+        localStorage.removeItem('jka_asesor');
+      } else {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        if (storedCliente) setCliente(JSON.parse(storedCliente));
+        if (storedAsesor) setAsesor(JSON.parse(storedAsesor));
+      }
     }
     setHydrated(true);
   }, []);
@@ -105,6 +124,27 @@ export function AuthProvider({ children }) {
     setCliente(null);
     setAsesor(null);
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args);
+      if (res.status === 401 || res.status === 403) {
+        const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+        if (!url.includes('/auth/login') && !url.includes('/auth/register') && !url.includes('/public/')) {
+          logout();
+          window.location.href = '/login';
+        }
+      }
+      return res;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [token]);
 
   const updateProfile = async (profileData) => {
     setLoading(true);

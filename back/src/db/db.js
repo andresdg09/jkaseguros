@@ -30,7 +30,8 @@ let fallbackData = {
   logs_actividad: [],
   elearning_courses: [],
   elearning_modules: [],
-  elearning_attempts: []
+  elearning_attempts: [],
+  comisiones_asesores: []
 };
 
 const fallbackFilePath = path.join(__dirname, '../../data/fallback_db.json');
@@ -62,6 +63,27 @@ function initFallback() {
       if (!fallbackData.elearning_courses) fallbackData.elearning_courses = [];
       if (!fallbackData.elearning_modules) fallbackData.elearning_modules = [];
       if (!fallbackData.elearning_attempts) fallbackData.elearning_attempts = [];
+      if (!fallbackData.comisiones_asesores) fallbackData.comisiones_asesores = [];
+      
+      // Asegurar campos de comisiones
+      fallbackData.companias_seguros = fallbackData.companias_seguros.map(c => ({
+        ...c,
+        comision_estandar: c.comision_estandar !== undefined ? parseFloat(c.comision_estandar) : 0,
+        comision_compania: c.comision_compania !== undefined ? parseFloat(c.comision_compania) : 0,
+        comision_asesor_estandar: c.comision_asesor_estandar !== undefined ? parseFloat(c.comision_asesor_estandar) : 0
+      }));
+      fallbackData.polizas = fallbackData.polizas.map(p => ({
+        ...p,
+        comision_porcentaje: p.comision_porcentaje !== undefined ? (p.comision_porcentaje === null ? null : parseFloat(p.comision_porcentaje)) : null
+      }));
+      fallbackData.asesores = fallbackData.asesores.map(a => ({
+        ...a,
+        cedula: a.cedula || '',
+        fecha_nacimiento: a.fecha_nacimiento || '',
+        banco: a.banco || '',
+        numero_cuenta: a.numero_cuenta || ''
+      }));
+
       seedFallbackElearning();
       if (!fallbackData.tarifario_metadata) {
         fallbackData.tarifario_metadata = {
@@ -485,6 +507,25 @@ try {
       aprobado BOOLEAN NOT NULL,
       respuestas_usuario JSONB,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Migraciones de Comisiones
+  await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_estandar NUMERIC DEFAULT 0;');
+  await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_compania NUMERIC DEFAULT 0;');
+  await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_asesor_estandar NUMERIC DEFAULT 0;');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS comision_porcentaje NUMERIC;');
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS cedula VARCHAR(50);');
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;');
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS banco VARCHAR(100);');
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS comisiones_asesores (
+      id SERIAL PRIMARY KEY,
+      asesor_id INT REFERENCES asesores(id) ON DELETE CASCADE,
+      compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
+      porcentaje NUMERIC NOT NULL,
+      UNIQUE(asesor_id, compania_id)
     );
   `);
 

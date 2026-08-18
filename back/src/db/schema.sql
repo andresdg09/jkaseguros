@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS asesores (
     codigo_asesor VARCHAR(50) UNIQUE NOT NULL,
     correo VARCHAR(150) NOT NULL,
     telefono VARCHAR(50) NOT NULL,
+    cedula VARCHAR(50),
+    fecha_nacimiento DATE,
+    banco VARCHAR(100),
+    numero_cuenta VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -44,6 +48,7 @@ CREATE TABLE IF NOT EXISTS datos_personales (
 CREATE TABLE IF NOT EXISTS companias_seguros (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) UNIQUE NOT NULL,
+    comision_estandar NUMERIC DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -59,6 +64,7 @@ CREATE TABLE IF NOT EXISTS polizas (
     suma_asegurada NUMERIC NOT NULL,
     deducible NUMERIC DEFAULT 0,
     prima_anual NUMERIC NOT NULL,
+    comision_porcentaje NUMERIC,
     estado VARCHAR(50) NOT NULL DEFAULT 'negociacion' CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado')),
     pago_estado VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (pago_estado IN ('pendiente', 'pagado', 'parcial')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -96,4 +102,13 @@ CREATE TABLE IF NOT EXISTS logs_actividad (
     accion VARCHAR(100) NOT NULL,
     descripcion TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. Tabla de Configuración de Comisiones Personalizadas por Asesor y Aseguradora
+CREATE TABLE IF NOT EXISTS comisiones_asesores (
+    id SERIAL PRIMARY KEY,
+    asesor_id INT REFERENCES asesores(id) ON DELETE CASCADE,
+    compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
+    porcentaje NUMERIC NOT NULL,
+    UNIQUE(asesor_id, compania_id)
 );

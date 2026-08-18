@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -43,6 +44,20 @@ export default function AdminDashboard() {
   const [elearningLoading, setElearningLoading] = useState(false);
   const [adminSubTab, setAdminSubTab] = useState('reportes'); // 'reportes', 'editor'
   
+  // --- ESTADOS PARA GESTIÓN DE ASESORES ---
+  const [advisorForm, setAdvisorForm] = useState({
+    nombre: '',
+    cedula: '',
+    correo: '',
+    contrasena: '',
+    telefono: '',
+    banco: '',
+    fecha_nacimiento: '',
+    numero_cuenta: ''
+  });
+  const [showAdvisorModal, setShowAdvisorModal] = useState(false);
+  const [submittingAdvisor, setSubmittingAdvisor] = useState(false);
+
   // --- ESTADOS INTERNOS ---
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('resumen'); // 'resumen', 'polizas', 'pagos', 'roles', 'tarifas', 'trazabilidad'
@@ -105,8 +120,8 @@ export default function AdminDashboard() {
       const dataUsers = await resUsers.json();
       setUsers(Array.isArray(dataUsers) ? dataUsers : []);
 
-      // 4. Cargar asesores públicos (para reasignaciones)
-      const resAdvs = await fetch(`${API_URL}/public/advisors`);
+      // 4. Cargar asesores (detalle administrativo)
+      const resAdvs = await fetch(`${API_URL}/admin/advisors`, { headers: { 'Authorization': `Bearer ${token}` } });
       const dataAdvs = await resAdvs.json();
       setAdvisors(Array.isArray(dataAdvs) ? dataAdvs : []);
 
@@ -157,6 +172,61 @@ export default function AdminDashboard() {
       return () => clearTimeout(timer);
     }
   }, [hydrated, isLoggedIn, user]);
+
+  const handleRegisterAdvisor = async (e) => {
+    e.preventDefault();
+    if (!advisorForm.nombre || !advisorForm.cedula || !advisorForm.correo || !advisorForm.contrasena || !advisorForm.telefono || !advisorForm.banco || !advisorForm.fecha_nacimiento || !advisorForm.numero_cuenta) {
+      return showToast('Por favor rellenar todos los campos obligatorios.', 'error');
+    }
+    setSubmittingAdvisor(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/advisors`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(advisorForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al registrar asesor');
+
+      showToast(`Asesor registrado con éxito.`);
+      setAdvisorForm({
+        nombre: '',
+        cedula: '',
+        correo: '',
+        contrasena: '',
+        telefono: '',
+        banco: '',
+        fecha_nacimiento: '',
+        numero_cuenta: ''
+      });
+      setShowAdvisorModal(false);
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSubmittingAdvisor(false);
+    }
+  };
+
+  const handleDeleteAdvisor = async (id) => {
+    if (!confirm('¿Está seguro de que desea eliminar este asesor y su cuenta de usuario asociada? Esta acción no se puede deshacer.')) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/advisors/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al eliminar asesor');
+
+      showToast('Asesor eliminado con éxito.');
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 
   const loadElearningData = async () => {
     if (!token) return;
@@ -882,9 +952,14 @@ export default function AdminDashboard() {
           <h2 style={{ color: 'var(--primary)', fontWeight: 800 }}>Panel Administrativo Principal</h2>
           <p style={{ color: 'var(--text-muted)' }}>Métricas, pólizas, control de pagos y trazabilidad general</p>
         </div>
-        <button onClick={loadData} className="btn btn-secondary" style={{ padding: '0.5rem 1rem' }} disabled={loading}>
-          {loading ? 'Sincronizando...' : 'Actualizar Data ↻'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link href="/dashboard/admin/comisiones" className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            💰 Comisiones
+          </Link>
+          <button onClick={loadData} className="btn btn-secondary" style={{ padding: '0.5rem 1rem' }} disabled={loading}>
+            {loading ? 'Sincronizando...' : 'Actualizar Data ↻'}
+          </button>
+        </div>
       </div>
 
       {/* KPI METRICS SECTION */}
@@ -956,10 +1031,17 @@ export default function AdminDashboard() {
         overflowX: 'auto',
         paddingBottom: '1px'
       }}>
-        {['resumen', 'polizas', 'pagos', 'roles', 'tarifas', 'trazabilidad', 'elearning'].map((tab) => (
+        {['resumen', 'polizas', 'pagos', 'roles', 'asesores', 'tarifas', 'trazabilidad', 'elearning', 'comisiones'].map((tab) => (
           <button
             key={tab}
-            onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
+            onClick={() => {
+              if (tab === 'comisiones') {
+                router.push('/dashboard/admin/comisiones');
+              } else {
+                setActiveTab(tab);
+                setSearchQuery('');
+              }
+            }}
             style={{
               padding: '0.75rem 1.25rem',
               border: 'none',
@@ -973,7 +1055,7 @@ export default function AdminDashboard() {
               transition: 'var(--transition)'
             }}
           >
-            {tab === 'elearning' ? 'Capacitación' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'asesores' ? 'Asesores' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -1472,6 +1554,226 @@ export default function AdminDashboard() {
                             )}
                           </td>
                           <td>{u.created_at ? u.created_at.split('T')[0] : 'N/A'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* --- GESTIÓN DE ASESORES --- */}
+          {activeTab === 'asesores' && (
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h3 className="card-title" style={{ margin: 0, border: 'none' }}>Directorio y Registro de Asesores</h3>
+                <button 
+                  onClick={() => setShowAdvisorModal(true)} 
+                  className="btn btn-primary"
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  + Registrar Nuevo Asesor
+                </button>
+              </div>
+
+              {/* Formulario de registro (tipo modal / colapsable arriba) */}
+              {showAdvisorModal && (
+                <div style={{
+                  backgroundColor: 'var(--secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  marginBottom: '2rem'
+                }}>
+                  <h4 style={{ color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>Nuevo Perfil de Asesor</h4>
+                  <form onSubmit={handleRegisterAdvisor}>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label className="form-label">Nombre Completo *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={advisorForm.nombre} 
+                          onChange={e => setAdvisorForm({...advisorForm, nombre: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Cédula *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Ej: V-12345678" 
+                          value={advisorForm.cedula} 
+                          onChange={e => setAdvisorForm({...advisorForm, cedula: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Correo Electrónico *</label>
+                        <input 
+                          type="email" 
+                          className="form-input" 
+                          placeholder="correo@asesor.com" 
+                          value={advisorForm.correo} 
+                          onChange={e => setAdvisorForm({...advisorForm, correo: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Contraseña de Acceso *</label>
+                        <input 
+                          type="password" 
+                          className="form-input" 
+                          placeholder="Mínimo 8 caracteres" 
+                          value={advisorForm.contrasena} 
+                          onChange={e => setAdvisorForm({...advisorForm, contrasena: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Teléfono de Contacto *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="0412-1234567" 
+                          value={advisorForm.telefono} 
+                          onChange={e => setAdvisorForm({...advisorForm, telefono: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Fecha de Nacimiento *</label>
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={advisorForm.fecha_nacimiento} 
+                          onChange={e => setAdvisorForm({...advisorForm, fecha_nacimiento: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Banco de la Cuenta *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Ej: Banesco, Banco de Venezuela" 
+                          value={advisorForm.banco} 
+                          onChange={e => setAdvisorForm({...advisorForm, banco: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Número de Cuenta Bancaria (20 dígitos) *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="0102..." 
+                          maxLength="20"
+                          value={advisorForm.numero_cuenta} 
+                          onChange={e => setAdvisorForm({...advisorForm, numero_cuenta: e.target.value})} 
+                          required 
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowAdvisorModal(false)} 
+                        className="btn btn-secondary"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="btn btn-primary" 
+                        disabled={submittingAdvisor}
+                      >
+                        {submittingAdvisor ? 'Registrando...' : 'Registrar Asesor'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Buscador de Asesores */}
+              <div style={{ marginBottom: '1.2rem' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar asesores por nombre, cédula, código o banco..."
+                  className="form-input"
+                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Tabla de Asesores */}
+              <div className="table-container" style={{ overflowX: 'auto' }}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Nombre</th>
+                      <th>Cédula</th>
+                      <th>Teléfono</th>
+                      <th>Correo</th>
+                      <th>Fecha Nac.</th>
+                      <th>Datos Bancarios</th>
+                      <th>Clientes</th>
+                      <th style={{ textAlign: 'right' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advisors.filter(a => {
+                      if (!searchQuery) return true;
+                      const q = searchQuery.toLowerCase();
+                      return (
+                        a.nombre?.toLowerCase().includes(q) ||
+                        a.codigo_asesor?.toLowerCase().includes(q) ||
+                        a.cedula?.toLowerCase().includes(q) ||
+                        a.correo?.toLowerCase().includes(q) ||
+                        a.banco?.toLowerCase().includes(q)
+                      );
+                    }).length === 0 ? (
+                      <tr><td colSpan="9" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>No se encontraron asesores.</td></tr>
+                    ) : (
+                      advisors.filter(a => {
+                        if (!searchQuery) return true;
+                        const q = searchQuery.toLowerCase();
+                        return (
+                          a.nombre?.toLowerCase().includes(q) ||
+                          a.codigo_asesor?.toLowerCase().includes(q) ||
+                          a.cedula?.toLowerCase().includes(q) ||
+                          a.correo?.toLowerCase().includes(q) ||
+                          a.banco?.toLowerCase().includes(q)
+                        );
+                      }).map((a) => (
+                        <tr key={a.id_asesor}>
+                          <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{a.codigo_asesor}</td>
+                          <td>{a.nombre}</td>
+                          <td>{a.cedula}</td>
+                          <td>{a.telefono}</td>
+                          <td>{a.correo}</td>
+                          <td>{a.fecha_nacimiento}</td>
+                          <td>
+                            <strong>{a.banco}</strong>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>CTA: {a.numero_cuenta}</span>
+                          </td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.clientes}>
+                            {a.clientes}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button 
+                              onClick={() => handleDeleteAdvisor(a.id_asesor)} 
+                              className="btn btn-accent" 
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', background: '#e11d48' }}
+                            >
+                              Eliminar
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}

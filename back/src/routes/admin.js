@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
 import { db } from '../db/db.js';
 import { authenticateToken } from './auth.js';
 import { registrarAccion } from '../db/logger.js';
@@ -120,6 +121,10 @@ router.get('/advisors', authenticateToken, async (req, res) => {
         codigo_asesor: a.codigo_asesor,
         telefono: a.telefono,
         correo: a.correo,
+        cedula: a.cedula || 'N/A',
+        fecha_nacimiento: a.fecha_nacimiento ? (typeof a.fecha_nacimiento === 'object' ? a.fecha_nacimiento.toISOString().split('T')[0] : String(a.fecha_nacimiento).split('T')[0]) : 'N/A',
+        banco: a.banco || 'N/A',
+        numero_cuenta: a.numero_cuenta || 'N/A',
         clientes: clientNames || 'Ninguno'
       };
     });
@@ -128,6 +133,130 @@ router.get('/advisors', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al listar asesores en admin:', err);
     res.status(500).json({ error: 'Error del servidor al listar asesores.' });
+  }
+});
+
+// Registrar un asesor directamente desde Admin con todos los datos
+router.post('/advisors', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { correo, contrasena, nombre, cedula, telefono, banco, fecha_nacimiento, numero_cuenta } = req.body;
+
+  if (!correo || !contrasena || !nombre || !cedula || !telefono || !banco || !fecha_nacimiento || !numero_cuenta) {
+    return res.status(400).json({ error: 'Todos los campos obligatorios deben estar completos.' });
+  }
+
+  try {
+    // Verificar si el usuario ya existe
+    let exists = false;
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      exists = fData.usuarios.some(u => u.correo.toLowerCase() === correo.toLowerCase());
+    } else {
+      const checkRes = await db.query('SELECT id FROM usuarios WHERE correo = $1', [correo.toLowerCase()]);
+      exists = checkRes.rows.length > 0;
+    }
+
+    if (exists) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
+    }
+
+    // Hash contraseña
+    const salt = await bcrypt.genSalt(10);
+    const hashContrasena = await bcrypt.hash(contrasena, salt);
+
+    let newUserId;
+    const code = `ASE-${Math.floor(100 + Math.random() * 900)}`;
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      newUserId = fData.usuarios.length ? Math.max(...fData.usuarios.map(u => u.id)) + 1 : 1;
+      
+      fData.usuarios.push({
+        id: newUserId,
+        correo: correo.toLowerCase(),
+        contrasena: hashContrasena,
+        rango: 'asesor',
+        created_at: new Date().toISOString()
+      });
+
+      const newAdvId = fData.asesores.length ? Math.max(...fData.asesores.map(a => a.id)) + 1 : 1;
+      fData.asesores.push({
+        id: newAdvId,
+        usuario_id: newUserId,
+        nombre,
+        codigo_asesor: code,
+        correo: correo.toLowerCase(),
+        telefono,
+        cedula,
+        fecha_nacimiento,
+        banco,
+        numero_cuenta,
+        created_at: new Date().toISOString()
+      });
+      db.saveFallback();
+    } else {
+      const userRes = await db.query(
+        'INSERT INTO usuarios (correo, contrasena, rango) VALUES ($1, $2, $3) RETURNING id',
+        [correo.toLowerCase(), hashContrasena, 'asesor']
+      );
+      newUserId = userRes.rows[0].id;
+
+      await db.query(
+        `INSERT INTO asesores (usuario_id, nombre, codigo_asesor, correo, telefono, cedula, fecha_nacimiento, banco, numero_cuenta) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [newUserId, nombre, code, correo.toLowerCase(), telefono, cedula, fecha_nacimiento, banco, numero_cuenta]
+      );
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'CREAR_ASESOR', `Asesor ${nombre} registrado con éxito. Código: ${code}`);
+
+    res.status(201).json({ message: 'Asesor registrado exitosamente.', codigo_asesor: code });
+  } catch (err) {
+    console.error('Error al crear asesor:', err);
+    res.status(500).json({ error: 'Error del servidor al registrar asesor.' });
+  }
+});
+
+// Eliminar asesor y su usuario asociado
+router.delete('/advisors/:id', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { id } = req.params;
+
+  try {
+    const aId = parseInt(id);
+    let name = '';
+    let uId = null;
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const adv = fData.asesores.find(a => a.id === aId);
+      if (adv) {
+        name = adv.nombre;
+        uId = adv.usuario_id;
+        fData.asesores = fData.asesores.filter(a => a.id !== aId);
+        if (uId) {
+          fData.usuarios = fData.usuarios.filter(u => u.id !== uId);
+        }
+        db.saveFallback();
+      }
+    } else {
+      const checkRes = await db.query('SELECT nombre, usuario_id FROM asesores WHERE id = $1', [aId]);
+      if (checkRes.rows.length > 0) {
+        name = checkRes.rows[0].nombre;
+        uId = checkRes.rows[0].usuario_id;
+        
+        await db.query('DELETE FROM asesores WHERE id = $1', [aId]);
+        if (uId) {
+          await db.query('DELETE FROM usuarios WHERE id = $1', [uId]);
+        }
+      }
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'ELIMINAR_ASESOR', `Asesor ${name} (ID: ${aId}) eliminado del sistema.`);
+    res.json({ message: 'Asesor eliminado correctamente.' });
+  } catch (err) {
+    console.error('Error al eliminar asesor:', err);
+    res.status(500).json({ error: 'Error del servidor al eliminar el asesor.' });
   }
 });
 
@@ -621,6 +750,433 @@ router.get('/tarifario-metadata', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al obtener metadatos del tarifario:', err);
     res.status(500).json({ error: 'Error al obtener los metadatos del tarifario.' });
+  }
+});
+
+// ==========================================
+// MÓDULO DE COMISIONES (ADMIN)
+// ==========================================
+
+// 1. Obtener todas las comisiones, configuraciones y cálculos
+router.get('/commissions', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+
+  try {
+    let companias = [];
+    let asesores = [];
+    let comisionesAsesores = [];
+    let polizas = [];
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      companias = fData.companias_seguros || [];
+      asesores = fData.asesores || [];
+      comisionesAsesores = fData.comisiones_asesores || [];
+      
+      const rawPolizas = fData.polizas || [];
+      polizas = rawPolizas.map(p => {
+        const advisor = asesores.find(a => a.id === p.asesor_id);
+        const comp = companias.find(c => c.id === p.compania_id);
+        const client = (fData.datos_personales || []).find(dp => dp.id === p.cliente_id);
+        
+        return {
+          id: p.id,
+          codigo_poliza: p.codigo_poliza,
+          plan: p.plan,
+          prima_anual: p.prima_anual,
+          estado: p.estado,
+          pago_estado: p.pago_estado,
+          comision_porcentaje: p.comision_porcentaje,
+          asesor_nombre: advisor ? advisor.nombre : 'N/A',
+          codigo_asesor: advisor ? advisor.codigo_asesor : 'N/A',
+          asesor_id: p.asesor_id,
+          compania_nombre: comp ? comp.nombre : 'N/A',
+          compania_id: p.compania_id,
+          primer_nombre: client ? client.primer_nombre : 'N/A',
+          primer_apellido: client ? client.primer_apellido : ''
+        };
+      });
+    } else {
+      const resComps = await db.query('SELECT id, nombre, comision_estandar, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY id ASC');
+      companias = resComps.rows;
+
+      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo FROM asesores ORDER BY id ASC');
+      asesores = resAsesores.rows;
+
+      const resComs = await db.query('SELECT id, asesor_id, compania_id, porcentaje FROM comisiones_asesores');
+      comisionesAsesores = resComs.rows;
+
+      const resPols = await db.query(`
+        SELECT p.id, p.codigo_poliza, p.plan, p.prima_anual, p.estado, p.pago_estado, p.comision_porcentaje,
+               a.nombre as asesor_nombre, a.codigo_asesor, a.id as asesor_id,
+               c.nombre as compania_nombre, c.id as compania_id,
+               dp.primer_nombre, dp.primer_apellido
+        FROM polizas p
+        LEFT JOIN asesores a ON p.asesor_id = a.id
+        LEFT JOIN companias_seguros c ON p.compania_id = c.id
+        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
+        ORDER BY p.id DESC
+      `);
+      polizas = resPols.rows;
+    }
+
+    const compMap = {};
+    companias.forEach(c => {
+      compMap[c.id] = c;
+    });
+
+    const polizasConCalculos = polizas.map(p => {
+      const comp = compMap[p.compania_id];
+      const comision_compania_pct = comp ? parseFloat(comp.comision_compania || 0) : 0;
+      
+      let porcentaje = 0;
+      let origen = 'Aseguradora';
+
+      if (p.comision_porcentaje !== null && p.comision_porcentaje !== undefined) {
+        porcentaje = parseFloat(p.comision_porcentaje);
+        origen = 'Poliza';
+      } else if (p.asesor_id && p.compania_id) {
+        const custom = comisionesAsesores.find(c => c.asesor_id === p.asesor_id && c.compania_id === p.compania_id);
+        if (custom) {
+          porcentaje = parseFloat(custom.porcentaje);
+          origen = 'Asesor';
+        } else {
+          porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
+          origen = 'Aseguradora';
+        }
+      } else {
+        porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
+        origen = 'Aseguradora';
+      }
+
+      const prima = parseFloat(p.prima_anual || 0);
+      const comision_jka = (prima * comision_compania_pct) / 100;
+      const comision_calculada = (comision_jka * porcentaje) / 100;
+
+      return {
+        ...p,
+        comision_compania_pct,
+        comision_jka: parseFloat(comision_jka.toFixed(2)),
+        porcentaje_aplicado: porcentaje,
+        origen_comision: origen,
+        comision_calculada: parseFloat(comision_calculada.toFixed(2))
+      };
+    });
+
+    res.json({
+      companias,
+      asesores,
+      comisiones_asesores: comisionesAsesores,
+      polizas: polizasConCalculos
+    });
+  } catch (err) {
+    console.error('Error al obtener comisiones:', err);
+    res.status(500).json({ error: 'Error del servidor al obtener comisiones.' });
+  }
+});
+
+// 2. Establecer porcentaje estándar para una aseguradora
+router.post('/commissions/standard', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { compania_id, comision_compania, comision_asesor_estandar } = req.body;
+
+  if (compania_id === undefined || comision_compania === undefined || comision_asesor_estandar === undefined) {
+    return res.status(400).json({ error: 'Faltan parámetros: compania_id, comision_compania y comision_asesor_estandar.' });
+  }
+
+  try {
+    const compVal = parseFloat(comision_compania);
+    const advVal = parseFloat(comision_asesor_estandar);
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const idx = fData.companias_seguros.findIndex(c => c.id === parseInt(compania_id));
+      if (idx === -1) return res.status(404).json({ error: 'Aseguradora no encontrada.' });
+      fData.companias_seguros[idx].comision_compania = compVal;
+      fData.companias_seguros[idx].comision_asesor_estandar = advVal;
+      db.saveFallback();
+    } else {
+      await db.query(
+        'UPDATE companias_seguros SET comision_compania = $1, comision_asesor_estandar = $2 WHERE id = $3',
+        [compVal, advVal, compania_id]
+      );
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'COMISION_ESTANDAR_UPDATE', `Comisión de aseguradora ID ${compania_id} actualizada: Compañía: ${compVal}%, Asesor: ${advVal}%`);
+    res.json({ message: 'Comisiones estándares de aseguradora actualizadas correctamente.', comision_compania: compVal, comision_asesor_estandar: advVal });
+  } catch (err) {
+    console.error('Error al actualizar comisiones estándar:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar comisiones estándar.' });
+  }
+});
+
+// 3. Establecer porcentaje personalizado para un asesor y aseguradora
+router.post('/commissions/advisor', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { asesor_id, compania_id, porcentaje } = req.body;
+
+  if (asesor_id === undefined || compania_id === undefined || porcentaje === undefined) {
+    return res.status(400).json({ error: 'Faltan parámetros: asesor_id, compania_id y porcentaje.' });
+  }
+
+  try {
+    const pctVal = parseFloat(porcentaje);
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      if (!fData.comisiones_asesores) fData.comisiones_asesores = [];
+      const idx = fData.comisiones_asesores.findIndex(c => c.asesor_id === parseInt(asesor_id) && c.compania_id === parseInt(compania_id));
+      if (idx !== -1) {
+        fData.comisiones_asesores[idx].porcentaje = pctVal;
+      } else {
+        const newId = fData.comisiones_asesores.length ? Math.max(...fData.comisiones_asesores.map(c => c.id)) + 1 : 1;
+        fData.comisiones_asesores.push({
+          id: newId,
+          asesor_id: parseInt(asesor_id),
+          compania_id: parseInt(compania_id),
+          porcentaje: pctVal
+        });
+      }
+      db.saveFallback();
+    } else {
+      await db.query(`
+        INSERT INTO comisiones_asesores (asesor_id, compania_id, porcentaje)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (asesor_id, compania_id)
+        DO UPDATE SET porcentaje = $3
+      `, [asesor_id, compania_id, pctVal]);
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'COMISION_ASESOR_UPDATE', `Comisión del asesor ID ${asesor_id} para aseguradora ID ${compania_id} cambiada a ${pctVal}%`);
+    res.json({ message: 'Comisión de asesor actualizada correctamente.', porcentaje: pctVal });
+  } catch (err) {
+    console.error('Error al actualizar comisión de asesor:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar comisión de asesor.' });
+  }
+});
+
+// DELETE para eliminar comisión de asesor personalizada
+router.delete('/commissions/advisor/:asesor_id/:compania_id', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { asesor_id, compania_id } = req.params;
+
+  try {
+    const aId = parseInt(asesor_id);
+    const cId = parseInt(compania_id);
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      if (fData.comisiones_asesores) {
+        fData.comisiones_asesores = fData.comisiones_asesores.filter(c => !(c.asesor_id === aId && c.compania_id === cId));
+        db.saveFallback();
+      }
+    } else {
+      await db.query('DELETE FROM comisiones_asesores WHERE asesor_id = $1 AND compania_id = $2', [aId, cId]);
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'COMISION_ASESOR_DELETE', `Comisión personalizada del asesor ID ${aId} para aseguradora ID ${cId} eliminada`);
+    res.json({ message: 'Comisión personalizada de asesor eliminada correctamente.' });
+  } catch (err) {
+    console.error('Error al eliminar comisión de asesor:', err);
+    res.status(500).json({ error: 'Error del servidor al eliminar comisión de asesor.' });
+  }
+});
+
+// 4. Establecer porcentaje personalizado para una póliza
+router.post('/commissions/policy', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { poliza_id, comision_porcentaje } = req.body;
+
+  if (poliza_id === undefined) {
+    return res.status(400).json({ error: 'Falta parámetro: poliza_id.' });
+  }
+
+  try {
+    const pctVal = comision_porcentaje === null ? null : parseFloat(comision_porcentaje);
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const idx = fData.polizas.findIndex(p => p.id === parseInt(poliza_id));
+      if (idx === -1) return res.status(404).json({ error: 'Póliza no encontrada.' });
+      fData.polizas[idx].comision_porcentaje = pctVal;
+      db.saveFallback();
+    } else {
+      await db.query('UPDATE polizas SET comision_porcentaje = $1 WHERE id = $2', [pctVal, poliza_id]);
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'COMISION_POLIZA_UPDATE', `Comisión específica de la póliza ID ${poliza_id} cambiada a ${pctVal !== null ? pctVal + '%' : 'estándar'}`);
+    res.json({ message: 'Comisión de póliza actualizada correctamente.', comision_porcentaje: pctVal });
+  } catch (err) {
+    console.error('Error al actualizar comisión de póliza:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar comisión de póliza.' });
+  }
+});
+
+// 5. Generar reporte TXT de comisiones
+router.get('/commissions/export-txt', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+
+  try {
+    let companias = [];
+    let asesores = [];
+    let comisionesAsesores = [];
+    let polizas = [];
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      companias = fData.companias_seguros || [];
+      asesores = fData.asesores || [];
+      comisionesAsesores = fData.comisiones_asesores || [];
+      
+      const rawPolizas = fData.polizas || [];
+      polizas = rawPolizas.map(p => {
+        const advisor = asesores.find(a => a.id === p.asesor_id);
+        const comp = companias.find(c => c.id === p.compania_id);
+        const client = (fData.datos_personales || []).find(dp => dp.id === p.cliente_id);
+        
+        return {
+          id: p.id,
+          codigo_poliza: p.codigo_poliza,
+          plan: p.plan,
+          prima_anual: p.prima_anual,
+          estado: p.estado,
+          pago_estado: p.pago_estado,
+          comision_porcentaje: p.comision_porcentaje,
+          asesor_nombre: advisor ? advisor.nombre : 'N/A',
+          codigo_asesor: advisor ? advisor.codigo_asesor : 'N/A',
+          asesor_id: p.asesor_id,
+          compania_nombre: comp ? comp.nombre : 'N/A',
+          compania_id: p.compania_id,
+          primer_nombre: client ? client.primer_nombre : 'N/A',
+          primer_apellido: client ? client.primer_apellido : ''
+        };
+      });
+    } else {
+      const resComps = await db.query('SELECT id, nombre, comision_estandar, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY id ASC');
+      companias = resComps.rows;
+
+      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo FROM asesores ORDER BY id ASC');
+      asesores = resAsesores.rows;
+
+      const resComs = await db.query('SELECT id, asesor_id, compania_id, porcentaje FROM comisiones_asesores');
+      comisionesAsesores = resComs.rows;
+
+      const resPols = await db.query(`
+        SELECT p.id, p.codigo_poliza, p.plan, p.prima_anual, p.estado, p.pago_estado, p.comision_porcentaje,
+               a.nombre as asesor_nombre, a.codigo_asesor, a.id as asesor_id,
+               c.nombre as compania_nombre, c.id as compania_id,
+               dp.primer_nombre, dp.primer_apellido
+        FROM polizas p
+        LEFT JOIN asesores a ON p.asesor_id = a.id
+        LEFT JOIN companias_seguros c ON p.compania_id = c.id
+        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
+        ORDER BY p.id DESC
+      `);
+      polizas = resPols.rows;
+    }
+
+    const compMap = {};
+    companias.forEach(c => {
+      compMap[c.id] = c;
+    });
+
+    const polizasConCalculos = polizas.map(p => {
+      const comp = compMap[p.compania_id];
+      const comision_compania_pct = comp ? parseFloat(comp.comision_compania || 0) : 0;
+      
+      let porcentaje = 0;
+      let origen = 'Aseguradora';
+
+      if (p.comision_porcentaje !== null && p.comision_porcentaje !== undefined) {
+        porcentaje = parseFloat(p.comision_porcentaje);
+        origen = 'Poliza';
+      } else if (p.asesor_id && p.compania_id) {
+        const custom = comisionesAsesores.find(c => c.asesor_id === p.asesor_id && c.compania_id === p.compania_id);
+        if (custom) {
+          porcentaje = parseFloat(custom.porcentaje);
+          origen = 'Asesor';
+        } else {
+          porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
+          origen = 'Aseguradora';
+        }
+      } else {
+        porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
+        origen = 'Aseguradora';
+      }
+
+      const prima = parseFloat(p.prima_anual || 0);
+      const comision_jka = (prima * comision_compania_pct) / 100;
+      const comision_calculada = (comision_jka * porcentaje) / 100;
+
+      return {
+        ...p,
+        comision_compania_pct,
+        comision_jka: parseFloat(comision_jka.toFixed(2)),
+        porcentaje_aplicado: porcentaje,
+        origen_comision: origen,
+        comision_calculada: parseFloat(comision_calculada.toFixed(2))
+      };
+    });
+
+    const now = new Date().toLocaleString('es-VE', { timeZone: 'America/Caracas' });
+    let text = `========================================================================\n`;
+    text += `                   JKA CONSULTORES DE SEGUROS\n`;
+    text += `                REPORTE DETALLADO DE COMISIONES\n`;
+    text += `========================================================================\n`;
+    text += `Fecha de Generación: ${now}\n`;
+    text += `Generado por: ${req.user.correo}\n\n`;
+
+    const asesoresMap = {};
+    polizasConCalculos.forEach(p => {
+      const key = p.asesor_id || 'sin_asesor';
+      const name = p.asesor_nombre || 'Sin Asesor Asignado';
+      const code = p.codigo_asesor || 'N/A';
+      if (!asesoresMap[key]) {
+        asesoresMap[key] = {
+          nombre: name,
+          codigo: code,
+          polizas: [],
+          totalPrima: 0,
+          totalComision: 0
+        };
+      }
+      asesoresMap[key].polizas.push(p);
+      asesoresMap[key].totalPrima += parseFloat(p.prima_anual || 0);
+      asesoresMap[key].totalComision += p.comision_calculada;
+    });
+
+    Object.values(asesoresMap).forEach(adv => {
+      text += `------------------------------------------------------------------------\n`;
+      text += `ASESOR: ${adv.nombre} (Código: ${adv.codigo})\n`;
+      text += `------------------------------------------------------------------------\n`;
+      text += `Póliza       | Aseguradora     | Plan       | Cliente              | Prima Anual | % Com. | Com. Ganada \n`;
+      text += `-------------+-----------------+------------+----------------------+-------------+--------+-------------\n`;
+      
+      adv.polizas.forEach(p => {
+        const cod = p.codigo_poliza.padEnd(12).substring(0, 12);
+        const comp = p.compania_nombre.padEnd(15).substring(0, 15);
+        const plan = (p.plan || 'N/A').padEnd(10).substring(0, 10);
+        const cliName = `${p.primer_nombre} ${p.primer_apellido || ''}`.padEnd(20).substring(0, 20);
+        const primaStr = `$${parseFloat(p.prima_anual || 0).toFixed(2)}`.padStart(11);
+        const pctStr = `${p.porcentaje_aplicado}%`.padStart(6);
+        const comStr = `$${p.comision_calculada.toFixed(2)}`.padStart(11);
+        
+        text += `${cod} | ${comp} | ${plan} | ${cliName} | ${primaStr} | ${pctStr} | ${comStr}\n`;
+      });
+      
+      text += `-------------+-----------------+------------+----------------------+-------------+--------+-------------\n`;
+      text += `TOTALES:                                                            | ${`$${adv.totalPrima.toFixed(2)}`.padStart(11)} |        | ${`$${adv.totalComision.toFixed(2)}`.padStart(11)}\n\n`;
+    });
+
+    text += `========================================================================\n`;
+    text += `FIN DEL REPORTE\n`;
+    text += `========================================================================\n`;
+
+    res.setHeader('Content-disposition', 'attachment; filename=comisiones_asesores.txt');
+    res.setHeader('Content-type', 'text/plain; charset=utf-8');
+    res.send(text);
+
+  } catch (err) {
+    console.error('Error al generar TXT de comisiones:', err);
+    res.status(500).json({ error: 'Error del servidor al exportar comisiones.' });
   }
 });
 
