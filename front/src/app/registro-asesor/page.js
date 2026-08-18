@@ -82,23 +82,35 @@ export default function RegistroAsesorPage() {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
 
-      const constraints = {
-        video: { 
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      };
+      let stream;
+      try {
+        // Intentar con configuraciones ideales de alta definición
+        const constraints = {
+          video: { 
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        console.warn('Fallo con constraints ideales, intentando fallback básico para iOS/Brave...', err);
+        // Fallback básico sin especificar resolución (altamente compatible con Safari e iOS Brave)
+        const fallbackConstraints = {
+          video: { facingMode: 'environment' },
+          audio: false
+        };
+        stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      }
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
       console.error('Error de acceso a cámara:', err);
-      setCameraError('No se pudo acceder a la cámara trasera. Asegúrese de otorgar permisos.');
+      setCameraError('No se pudo acceder a la cámara trasera. Asegúrese de otorgar permisos de cámara a su navegador en Ajustes -> Safari/Brave -> Cámara -> Permitir.');
     }
   };
 

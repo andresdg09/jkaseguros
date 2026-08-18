@@ -898,4 +898,34 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
+/* Responsive Navbar */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 1rem !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .nav-brand {
+    font-size: 1.3rem !important;
+  }
+
+  .nav-actions {
+    width: 100% !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+
+  .nav-actions .btn {
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.8rem !important;
+    flex: 1 1 auto !important;
+    min-width: 80px !important;
+    text-align: center !important;
+  }
+}
+
 
