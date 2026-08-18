@@ -116,6 +116,7 @@ router.get('/advisors', authenticateToken, async (req, res) => {
         .join(', ');
 
       return {
+        id: a.id,
         id_asesor: a.id,
         nombre: a.nombre,
         codigo_asesor: a.codigo_asesor,
@@ -863,15 +864,257 @@ router.get('/commissions', authenticateToken, async (req, res) => {
       };
     });
 
+    // Construir tabla de abonos BNC (para copiado directo en excel)
+    const bncPreview = [];
+    const nowTemp = new Date();
+    const dia = String(nowTemp.getDate()).padStart(2, '0');
+    const mes = String(nowTemp.getMonth() + 1).padStart(2, '0');
+    const anio = nowTemp.getFullYear();
+    const fechaPago = `${dia}/${mes}/${anio}`;
+    const cuentaDebitar = '01910100201000123456';
+
+    const asesoresMap = {};
+    polizasConCalculos.forEach(p => {
+      if (!p.asesor_id) return;
+      const key = p.asesor_id;
+      if (!asesoresMap[key]) {
+        const advProfile = asesores.find(a => a.id === p.asesor_id);
+        asesoresMap[key] = {
+          id: key,
+          nombre: p.asesor_nombre,
+          correo: advProfile ? advProfile.correo : 'info@jkaconsultores.com',
+          cedula: advProfile ? advProfile.cedula : 'V00000000',
+          banco: advProfile ? advProfile.banco : 'BNC',
+          numero_cuenta: advProfile ? advProfile.numero_cuenta : '00000000000000000000',
+          totalComision: 0
+        };
+      }
+      asesoresMap[key].totalComision += p.comision_calculada;
+    });
+
+    let refNum = 1001;
+    Object.values(asesoresMap).forEach(adv => {
+      if (adv.totalComision <= 0) return;
+
+      const rawCta = adv.numero_cuenta || '';
+      const cleanCtaBenef = rawCta.replace(/\D/g, '').substring(0, 20).padEnd(20, '0');
+      
+      const rawCed = adv.cedula || '';
+      const cleanCedula = rawCed.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+      
+      const rawNombre = adv.nombre || 'Asesor Sin Nombre';
+      const cleanNombre = rawNombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 80);
+      
+      const rawDesc = `Abono de Comisiones Asesor ${rawNombre}`;
+      const cleanDesc = rawDesc.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 60);
+
+      bncPreview.push({
+        fecha_pago: fechaPago,
+        cuenta_debitar: cuentaDebitar,
+        cuenta_beneficiario: cleanCtaBenef,
+        monto: adv.totalComision.toFixed(2).replace('.', ','),
+        descripcion: cleanDesc,
+        id_beneficiario: cleanCedula,
+        nombre_beneficiario: cleanNombre,
+        email_beneficiario: (adv.correo || '').substring(0, 100),
+        referencia: String(refNum++)
+      });
+    });
+
     res.json({
       companias,
       asesores,
       comisiones_asesores: comisionesAsesores,
-      polizas: polizasConCalculos
+      polizas: polizasConCalculos,
+      bnc_preview: bncPreview
     });
   } catch (err) {
     console.error('Error al obtener comisiones:', err);
     res.status(500).json({ error: 'Error del servidor al obtener comisiones.' });
+  }
+});
+
+// Generar archivo TXT para Pago de Proveedores del BNC (Delimitado por Tabulaciones)
+router.get('/commissions/export-bnc-txt', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const cuentaDebitarParam = req.query.cuenta_debitar || '01910100201000123456';
+
+  try {
+    let companias = [];
+    let asesores = [];
+    let comisionesAsesores = [];
+    let polizas = [];
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      companias = fData.companias_seguros || [];
+      asesores = fData.asesores || [];
+      comisionesAsesores = fData.comisiones_asesores || [];
+      
+      const rawPolizas = fData.polizas || [];
+      polizas = rawPolizas.map(p => {
+        const advisor = asesores.find(a => a.id === p.asesor_id);
+        const comp = companias.find(c => c.id === p.compania_id);
+        const client = (fData.datos_personales || []).find(dp => dp.id === p.cliente_id);
+        
+        return {
+          id: p.id,
+          codigo_poliza: p.codigo_poliza,
+          plan: p.plan,
+          prima_anual: p.prima_anual,
+          estado: p.estado,
+          pago_estado: p.pago_estado,
+          comision_porcentaje: p.comision_porcentaje,
+          asesor_nombre: advisor ? advisor.nombre : 'N/A',
+          codigo_asesor: advisor ? advisor.codigo_asesor : 'N/A',
+          asesor_id: p.asesor_id,
+          compania_nombre: comp ? comp.nombre : 'N/A',
+          compania_id: p.compania_id,
+          primer_nombre: client ? client.primer_nombre : 'N/A',
+          primer_apellido: client ? client.primer_apellido : ''
+        };
+      });
+    } else {
+      const resComps = await db.query('SELECT id, nombre, comision_estandar, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY id ASC');
+      companias = resComps.rows;
+
+      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo, cedula, telefono, banco, numero_cuenta FROM asesores ORDER BY id ASC');
+      asesores = resAsesores.rows;
+
+      const resComs = await db.query('SELECT id, asesor_id, compania_id, porcentaje FROM comisiones_asesores');
+      comisionesAsesores = resComs.rows;
+
+      const resPols = await db.query(`
+        SELECT p.id, p.codigo_poliza, p.plan, p.prima_anual, p.estado, p.pago_estado, p.comision_porcentaje,
+               a.nombre as asesor_nombre, a.codigo_asesor, a.id as asesor_id,
+               c.nombre as compania_nombre, c.id as compania_id,
+               dp.primer_nombre, dp.primer_apellido
+        FROM polizas p
+        LEFT JOIN asesores a ON p.asesor_id = a.id
+        LEFT JOIN companias_seguros c ON p.compania_id = c.id
+        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
+        ORDER BY p.id DESC
+      `);
+      polizas = resPols.rows;
+    }
+
+    const compMap = {};
+    companias.forEach(c => {
+      compMap[c.id] = c;
+    });
+
+    const polizasConCalculos = polizas.map(p => {
+      const comp = compMap[p.compania_id];
+      const comision_compania_pct = comp ? parseFloat(comp.comision_compania || 0) : 0;
+      
+      let porcentaje = 0;
+      let origen = 'Aseguradora';
+
+      if (p.comision_porcentaje !== null && p.comision_porcentaje !== undefined) {
+        porcentaje = parseFloat(p.comision_porcentaje);
+        origen = 'Poliza';
+      } else if (p.asesor_id && p.compania_id) {
+        const custom = comisionesAsesores.find(c => c.asesor_id === p.asesor_id && c.compania_id === p.compania_id);
+        if (custom) {
+          porcentaje = parseFloat(custom.porcentaje);
+          origen = 'Asesor';
+        } else {
+          porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
+          origen = 'Aseguradora';
+        }
+      } else {
+        porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
+        origen = 'Aseguradora';
+      }
+
+      const prima = parseFloat(p.prima_anual || 0);
+      const comision_jka = (prima * comision_compania_pct) / 100;
+      const comision_calculada = (comision_jka * porcentaje) / 100;
+
+      return {
+        ...p,
+        comision_compania_pct,
+        comision_jka: parseFloat(comision_jka.toFixed(2)),
+        porcentaje_aplicado: porcentaje,
+        origen_comision: origen,
+        comision_calculada: parseFloat(comision_calculada.toFixed(2))
+      };
+    });
+
+    // Agrupar por Asesor
+    const asesoresMap = {};
+    polizasConCalculos.forEach(p => {
+      if (!p.asesor_id) return;
+      const key = p.asesor_id;
+      if (!asesoresMap[key]) {
+        const advProfile = asesores.find(a => a.id === p.asesor_id);
+        asesoresMap[key] = {
+          id: key,
+          nombre: p.asesor_nombre,
+          correo: advProfile ? advProfile.correo : 'info@jkaconsultores.com',
+          cedula: advProfile ? advProfile.cedula : 'V00000000',
+          banco: advProfile ? advProfile.banco : 'BNC',
+          numero_cuenta: advProfile ? advProfile.numero_cuenta : '00000000000000000000',
+          totalComision: 0
+        };
+      }
+      asesoresMap[key].totalComision += p.comision_calculada;
+    });
+
+    const nowTemp = new Date();
+    const dia = String(nowTemp.getDate()).padStart(2, '0');
+    const mes = String(nowTemp.getMonth() + 1).padStart(2, '0');
+    const anio = nowTemp.getFullYear();
+    const fechaPago = `${dia}/${mes}/${anio}`;
+
+    const cuentaDebitar = cuentaDebitarParam.replace(/\D/g, '').substring(0, 20).padEnd(20, '0');
+
+    let lines = [];
+    let refNum = 1001;
+
+    Object.values(asesoresMap).forEach(adv => {
+      if (adv.totalComision <= 0) return;
+
+      const col1 = fechaPago;
+      const col2 = cuentaDebitar;
+      
+      const rawCta = adv.numero_cuenta || '';
+      const col3 = rawCta.replace(/\D/g, '').substring(0, 20).padEnd(20, '0');
+      
+      const col4 = adv.totalComision.toFixed(2).replace('.', ',');
+      
+      const rawNombre = adv.nombre || 'Asesor Sin Nombre';
+      const cleanDesc = `Abono de Comisiones Asesor ${rawNombre}`
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .substring(0, 60);
+      const col5 = cleanDesc;
+      
+      const rawCed = adv.cedula || '';
+      const cleanCedula = rawCed.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+      const col6 = cleanCedula;
+      
+      const cleanNombre = rawNombre
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .substring(0, 80);
+      const col7 = cleanNombre;
+      
+      const col8 = (adv.correo || '').substring(0, 100);
+      const col9 = String(refNum++);
+
+      lines.push(`${col1}\t${col2}\t${col3}\t${col4}\t${col5}\t${col6}\t${col7}\t${col8}\t${col9}`);
+    });
+
+    const fileContent = lines.join('\n');
+
+    res.setHeader('Content-disposition', 'attachment; filename=bnc_pago_proveedores.txt');
+    res.setHeader('Content-type', 'text/plain; charset=utf-8');
+    res.send(fileContent);
+
+  } catch (err) {
+    console.error('Error al generar BNC TXT de comisiones:', err);
+    res.status(500).json({ error: 'Error del servidor al generar archivo de pagos BNC.' });
   }
 });
 

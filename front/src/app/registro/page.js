@@ -59,7 +59,7 @@ export default function RegistroPage() {
         <Link href="/" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>Volver</Link>
       </h3>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-        Complete sus datos personales para registrarse en JKA Consultores y poder cotizar seguros de salud.
+        Complete sus datos personales para registrarse en JKA Consultores. Si usted es Asesor Comercial, por favor <Link href="/registro-asesor" style={{ color: 'var(--accent)', fontWeight: 600 }}>regístrese aquí</Link>.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="form-grid">

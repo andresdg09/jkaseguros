@@ -1191,7 +1191,7 @@ export default function AdminDashboard() {
                           <tr><td colSpan="4" className="text-center">No hay asesores registrados.</td></tr>
                         ) : (
                           advisorsPerformance.map(adv => (
-                            <tr key={adv.id}>
+                            <tr key={adv.id || adv.id_asesor || adv.codigo_asesor}>
                               <td><strong>{adv.nombre}</strong></td>
                               <td>{adv.clientsCount}</td>
                               <td>{adv.activePolicies}</td>

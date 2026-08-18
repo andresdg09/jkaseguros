@@ -22,12 +22,14 @@ export default function ComisionesPage() {
   const [asesores, setAsesores] = useState([]);
   const [comisionesAsesores, setComisionesAsesores] = useState([]);
   const [polizas, setPolizas] = useState([]);
+  const [bncPreview, setBncPreview] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // --- ESTADOS DE EDICIÓN / FORMULARIOS ---
-  const [activeTab, setActiveTab] = useState('polizas'); // 'polizas', 'estandar', 'personalizado'
+  const [activeTab, setActiveTab] = useState('polizas'); // 'polizas', 'estandar', 'personalizado', 'bnc'
   const [standardEdits, setStandardEdits] = useState({}); // { [companiaId]: percentage }
+  const [cuentaDebitar, setCuentaDebitar] = useState('01910100201000123456');
   
   // Formulario de comisión por asesor y aseguradora
   const [advisorForm, setAdvisorForm] = useState({
@@ -66,6 +68,7 @@ export default function ComisionesPage() {
       setAsesores(data.asesores || []);
       setComisionesAsesores(data.comisiones_asesores || []);
       setPolizas(data.polizas || []);
+      setBncPreview(data.bnc_preview || []);
 
       // Inicializar el estado de edición estándar
       const edits = {};
@@ -261,6 +264,37 @@ export default function ComisionesPage() {
     }
   };
 
+  // Exportar TXT para el BNC (Pago de Proveedores)
+  const handleExportBncTxt = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/commissions/export-bnc-txt?cuenta_debitar=${cuentaDebitar}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Error al descargar el archivo para el BNC.');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bnc_pago_proveedores.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast('Archivo TXT para abonos BNC descargado con éxito.');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleCopyBncTable = () => {
+    const header = "Fecha de Pago\tCuenta a Debitar\tCuenta Beneficiario\tMonto\tDescripción\tID Beneficiario\tNombre Beneficiario\tEmail Beneficiario\tReferencia del Cliente";
+    const rows = bncPreview.map(r => 
+      `${r.fecha_pago}\t${r.cuenta_debitar}\t${r.cuenta_beneficiario}\t${r.monto}\t${r.descripcion}\t${r.id_beneficiario}\t${r.nombre_beneficiario}\t${r.email_beneficiario}\t${r.referencia}`
+    ).join('\n');
+    navigator.clipboard.writeText(`${header}\n${rows}`);
+    showToast('Datos copiados al portapapeles. Listo para pegar en Excel.');
+  };
+
   // --- CÁLCULO DE MÉTRICAS ---
   const totalPolizas = polizas.length;
   const totalPrimas = polizas.reduce((sum, p) => sum + parseFloat(p.prima_anual || 0), 0);
@@ -281,9 +315,12 @@ export default function ComisionesPage() {
             Defina y gestione las comisiones estándar, por asesor o individuales por póliza.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={handleExportTxt} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            📄 Descargar TXT
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button onClick={handleExportTxt} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#6366f1' }}>
+            📄 Reporte Detallado
+          </button>
+          <button onClick={handleExportBncTxt} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#d97706' }}>
+            🏦 TXT Abonos BNC
           </button>
           <Link href="/dashboard/admin" className="btn btn-secondary">
             Volver al Panel
@@ -362,6 +399,24 @@ export default function ComisionesPage() {
           }}
         >
           👤 Comisiones por Asesor
+        </button>
+        <button 
+          onClick={() => setActiveTab('bnc')}
+          style={{
+            padding: '0.75rem 0.5rem',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            color: activeTab === 'bnc' ? 'var(--primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'bnc' ? '3px solid var(--primary)' : '3px solid transparent',
+            background: 'none',
+            borderTop: 'none',
+            borderLeft: 'none',
+            borderRight: 'none',
+            cursor: 'pointer',
+            transition: 'var(--transition)'
+          }}
+        >
+          🏦 Abonos BNC (TXT/Excel)
         </button>
       </div>
 
@@ -687,6 +742,100 @@ export default function ComisionesPage() {
                           </tr>
                         );
                       })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          )}
+
+          {/* PESTAÑA: ABONOS BNC (TXT/EXCEL) */}
+          {activeTab === 'bnc' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+              
+              {/* Formulario y Configuración de Cuenta de Débito */}
+              <div className="card" style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+                <h3 style={{ color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>Configuración de Pago a Proveedores BNC</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                  Ingrese la cuenta a debitar de JKA Consultores para generar la estructura del TXT de abono a proveedores.
+                </p>
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label className="form-label">Cuenta a Debitar JKA (20 dígitos numéricos) *</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={cuentaDebitar} 
+                    onChange={e => setCuentaDebitar(e.target.value.replace(/\D/g, '').substring(0, 20))}
+                    placeholder="Ej: 01910100201000123456" 
+                    maxLength="20"
+                    required
+                  />
+                  {cuentaDebitar.length !== 20 && (
+                    <span style={{ color: 'red', fontSize: '0.8rem', display: 'block', marginTop: '0.25rem' }}>
+                      La cuenta debe tener exactamente 20 caracteres numéricos (actualmente: {cuentaDebitar.length})
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button 
+                    onClick={handleExportBncTxt} 
+                    className="btn btn-primary"
+                    disabled={cuentaDebitar.length !== 20}
+                    style={{ flex: 1 }}
+                  >
+                    Descargar TXT para BNC
+                  </button>
+                  <button 
+                    onClick={handleCopyBncTable} 
+                    className="btn btn-secondary"
+                    disabled={bncPreview.length === 0}
+                    style={{ flex: 1 }}
+                  >
+                    Copiar Tabla para Excel
+                  </button>
+                </div>
+              </div>
+
+              {/* Previsualización del archivo Tabular */}
+              <div className="card" style={{ padding: '1.5rem', width: '100%', overflowX: 'auto' }}>
+                <h3 style={{ color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>Previsualización Tabular BNC (Pago de Proveedores)</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                  Esta tabla simula exactamente la estructura requerida por el validador del BNC. Puede copiarla y pegarla directamente.
+                </p>
+                <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--secondary)' }}>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Fecha de Pago (Col 1)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Cuenta Debitar (Col 2)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Cuenta Beneficiario (Col 3)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Monto (Col 4)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Descripción (Col 5)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>ID Beneficiario (Col 6)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Nombre Beneficiario (Col 7)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Email Beneficiario (Col 8)</th>
+                      <th style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>Referencia (Col 9)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bncPreview.length === 0 ? (
+                      <tr>
+                        <td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay abonos calculados para asesores.</td>
+                      </tr>
+                    ) : (
+                      bncPreview.map((r, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)', fontSize: '0.8rem' }}>
+                          <td style={{ padding: '0.5rem' }}>{r.fecha_pago}</td>
+                          <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{cuentaDebitar}</td>
+                          <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{r.cuenta_beneficiario}</td>
+                          <td style={{ padding: '0.5rem', fontWeight: 600, color: 'var(--accent)' }}>{r.monto}</td>
+                          <td style={{ padding: '0.5rem' }}>{r.descripcion}</td>
+                          <td style={{ padding: '0.5rem' }}>{r.id_beneficiario}</td>
+                          <td style={{ padding: '0.5rem', fontWeight: 500 }}>{r.nombre_beneficiario}</td>
+                          <td style={{ padding: '0.5rem' }}>{r.email_beneficiario}</td>
+                          <td style={{ padding: '0.5rem' }}>{r.referencia}</td>
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>

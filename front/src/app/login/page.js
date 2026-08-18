@@ -82,9 +82,14 @@ export default function LoginPage() {
           {loading ? 'Validando...' : 'Entrar'}
         </button>
       </form>
-      <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-        ¿No tienes cuenta? <Link href="/registro" style={{ color: 'var(--primary)', fontWeight: 600 }}>Regístrate aquí</Link>
-      </p>
+      <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1rem', fontSize: '0.85rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div>
+          ¿Quieres cotizar? <Link href="/registro" style={{ color: 'var(--primary)', fontWeight: 600 }}>Regístrate como Cliente</Link>
+        </div>
+        <div>
+          ¿Eres Asesor Comercial? <Link href="/registro-asesor" style={{ color: 'var(--accent)', fontWeight: 600 }}>Afíliate aquí</Link>
+        </div>
+      </div>
     </div>
   );
 }

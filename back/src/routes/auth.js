@@ -132,6 +132,93 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Registro de Asesores Autónomos (Público)
+router.post('/register-asesor', async (req, res) => {
+  const { correo, contrasena, nombre, cedula, telefono, banco, fecha_nacimiento, numero_cuenta } = req.body;
+
+  if (!correo || !contrasena || !nombre || !cedula || !telefono || !banco || !fecha_nacimiento || !numero_cuenta) {
+    return res.status(400).json({ error: 'Todos los campos obligatorios deben estar rellenos.' });
+  }
+
+  try {
+    // Verificar si el usuario ya existe
+    let exists = false;
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      exists = fData.usuarios.some(u => u.correo.toLowerCase() === correo.toLowerCase());
+    } else {
+      const checkRes = await db.query('SELECT id FROM usuarios WHERE correo = $1', [correo.toLowerCase()]);
+      exists = checkRes.rows.length > 0;
+    }
+
+    if (exists) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado.' });
+    }
+
+    // Hash contraseña
+    const salt = await bcrypt.genSalt(10);
+    const hashContrasena = await bcrypt.hash(contrasena, salt);
+
+    let newUserId;
+    const code = `ASE-${Math.floor(100 + Math.random() * 900)}`;
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      newUserId = fData.usuarios.length ? Math.max(...fData.usuarios.map(u => u.id)) + 1 : 1;
+      
+      fData.usuarios.push({
+        id: newUserId,
+        correo: correo.toLowerCase(),
+        contrasena: hashContrasena,
+        rango: 'asesor',
+        created_at: new Date().toISOString()
+      });
+
+      const newAdvId = fData.asesores.length ? Math.max(...fData.asesores.map(a => a.id)) + 1 : 1;
+      fData.asesores.push({
+        id: newAdvId,
+        usuario_id: newUserId,
+        nombre,
+        codigo_asesor: code,
+        correo: correo.toLowerCase(),
+        telefono,
+        cedula,
+        fecha_nacimiento,
+        banco,
+        numero_cuenta,
+        created_at: new Date().toISOString()
+      });
+      db.saveFallback();
+    } else {
+      const userRes = await db.query(
+        'INSERT INTO usuarios (correo, contrasena, rango) VALUES ($1, $2, $3) RETURNING id',
+        [correo.toLowerCase(), hashContrasena, 'asesor']
+      );
+      newUserId = userRes.rows[0].id;
+
+      await db.query(
+        `INSERT INTO asesores (usuario_id, nombre, codigo_asesor, correo, telefono, cedula, fecha_nacimiento, banco, numero_cuenta) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [newUserId, nombre, code, correo.toLowerCase(), telefono, cedula, fecha_nacimiento, banco, numero_cuenta]
+      );
+    }
+
+    // Generar JWT
+    const token = jwt.sign({ id: newUserId, correo: correo.toLowerCase(), rango: 'asesor' }, JWT_SECRET, { expiresIn: '24h' });
+
+    await registrarAccion(newUserId, correo.toLowerCase(), 'REGISTRO_ASESOR_PUBLICO', `Asesor ${nombre} se registró con éxito. Código: ${code}`);
+
+    res.status(201).json({
+      message: 'Asesor registrado exitosamente.',
+      token,
+      user: { id: newUserId, correo: correo.toLowerCase(), rango: 'asesor' }
+    });
+  } catch (err) {
+    console.error('Error al registrar asesor autónomo:', err);
+    res.status(500).json({ error: 'Error del servidor al registrar el asesor.' });
+  }
+});
+
 // Inicio de Sesión
 router.post('/login', async (req, res) => {
   const { correo, contrasena } = req.body;
