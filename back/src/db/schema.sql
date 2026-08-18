@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS asesores (
     fecha_nacimiento DATE,
     banco VARCHAR(100),
     numero_cuenta VARCHAR(50),
+    estado VARCHAR(50) DEFAULT 'pendiente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

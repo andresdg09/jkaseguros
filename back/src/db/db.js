@@ -81,7 +81,8 @@ function initFallback() {
         cedula: a.cedula || '',
         fecha_nacimiento: a.fecha_nacimiento || '',
         banco: a.banco || '',
-        numero_cuenta: a.numero_cuenta || ''
+        numero_cuenta: a.numero_cuenta || '',
+        estado: a.estado || 'pendiente'
       }));
 
       seedFallbackElearning();
@@ -519,6 +520,7 @@ try {
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS banco VARCHAR(100);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
+  await client.query("ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT 'pendiente';");
   await client.query(`
     CREATE TABLE IF NOT EXISTS comisiones_asesores (
       id SERIAL PRIMARY KEY,

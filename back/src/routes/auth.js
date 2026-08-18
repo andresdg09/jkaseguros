@@ -203,15 +203,11 @@ router.post('/register-asesor', async (req, res) => {
       );
     }
 
-    // Generar JWT
-    const token = jwt.sign({ id: newUserId, correo: correo.toLowerCase(), rango: 'asesor' }, JWT_SECRET, { expiresIn: '24h' });
-
-    await registrarAccion(newUserId, correo.toLowerCase(), 'REGISTRO_ASESOR_PUBLICO', `Asesor ${nombre} se registró con éxito. Código: ${code}`);
+    await registrarAccion(newUserId, correo.toLowerCase(), 'REGISTRO_ASESOR_PUBLICO', `Asesor ${nombre} se registró. Solicitud pendiente de aprobación. Código: ${code}`);
 
     res.status(201).json({
-      message: 'Asesor registrado exitosamente.',
-      token,
-      user: { id: newUserId, correo: correo.toLowerCase(), rango: 'asesor' }
+      message: 'Solicitud de afiliación recibida con éxito. Su perfil se encuentra bajo revisión por el administrador.',
+      requires_approval: true
     });
   } catch (err) {
     console.error('Error al registrar asesor autónomo:', err);
@@ -251,6 +247,15 @@ router.post('/login', async (req, res) => {
     if (user.rango === 'asesor') {
       const asesorRes = await db.query('SELECT * FROM asesores WHERE usuario_id = $1', [user.id]);
       asesor = asesorRes.rows[0] || null;
+      
+      if (asesor) {
+        if (asesor.estado === 'pendiente') {
+          return res.status(403).json({ error: 'Su solicitud de registro como asesor se encuentra pendiente de aprobación.' });
+        }
+        if (asesor.estado === 'rechazado') {
+          return res.status(403).json({ error: 'Su solicitud de afiliación como asesor ha sido rechazada.' });
+        }
+      }
     }
 
     // Generar Token

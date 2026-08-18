@@ -228,6 +228,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateAdvisorStatus = async (id, status) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/advisors/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ estado: status })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cambiar estado del asesor.');
+
+      showToast(`Asesor actualizado a estado: ${status}.`);
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
   const loadElearningData = async () => {
     if (!token) return;
     setElearningLoading(true);
@@ -1723,6 +1743,7 @@ export default function AdminDashboard() {
                       <th>Fecha Nac.</th>
                       <th>Datos Bancarios</th>
                       <th>Clientes</th>
+                      <th>Estado</th>
                       <th style={{ textAlign: 'right' }}>Acciones</th>
                     </tr>
                   </thead>
@@ -1765,14 +1786,39 @@ export default function AdminDashboard() {
                           <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.clientes}>
                             {a.clientes}
                           </td>
+                          <td>
+                            {a.estado === 'aprobado' && <span className="badge badge-vigente" style={{ background: '#10b981', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Aprobado</span>}
+                            {a.estado === 'pendiente' && <span className="badge badge-negociacion" style={{ background: '#f59e0b', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Pendiente</span>}
+                            {a.estado === 'rechazado' && <span className="badge badge-vencida" style={{ background: '#ef4444', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Rechazado</span>}
+                          </td>
                           <td style={{ textAlign: 'right' }}>
-                            <button 
-                              onClick={() => handleDeleteAdvisor(a.id_asesor)} 
-                              className="btn btn-accent" 
-                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', background: '#e11d48' }}
-                            >
-                              Eliminar
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                              {a.estado === 'pendiente' && (
+                                <>
+                                  <button 
+                                    onClick={() => handleUpdateAdvisorStatus(a.id_asesor, 'aprobado')} 
+                                    className="btn btn-primary" 
+                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#10b981', margin: 0 }}
+                                  >
+                                    ✓ Aprobar
+                                  </button>
+                                  <button 
+                                    onClick={() => handleUpdateAdvisorStatus(a.id_asesor, 'rechazado')} 
+                                    className="btn btn-accent" 
+                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#f59e0b', margin: 0 }}
+                                  >
+                                    ✗ Rechazar
+                                  </button>
+                                </>
+                              )}
+                              <button 
+                                onClick={() => handleDeleteAdvisor(a.id_asesor)} 
+                                className="btn btn-accent" 
+                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#e11d48', margin: 0 }}
+                              >
+                                Eliminar
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))

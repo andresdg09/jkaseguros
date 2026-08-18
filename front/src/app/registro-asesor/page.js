@@ -99,7 +99,6 @@ export default function RegistroAsesorPage() {
     } catch (err) {
       console.error('Error de acceso a cámara:', err);
       setCameraError('No se pudo acceder a la cámara trasera. Asegúrese de otorgar permisos.');
-      setStep('form'); // Fallback inmediato a formulario manual
     }
   };
 
@@ -274,8 +273,27 @@ export default function RegistroAsesorPage() {
   if (!hydrated) return null;
 
   return (
-    <div style={{ maxWidth: '600px', margin: '2rem auto', padding: '1rem' }}>
-      <div className="card" style={{ padding: '2rem', boxShadow: 'var(--shadow-lg)' }}>
+    <div style={{ maxWidth: '600px', margin: '1rem auto', padding: '0.5rem' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .form-grid-custom {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .col-span-2-custom {
+          grid-column: span 2;
+        }
+        @media (max-width: 600px) {
+          .form-grid-custom {
+            grid-template-columns: 1fr !important;
+            gap: 0.75rem;
+          }
+          .col-span-2-custom {
+            grid-column: span 1 !important;
+          }
+        }
+      `}} />
+      <div className="card" style={{ padding: '1.5rem', boxShadow: 'var(--shadow-lg)', borderRadius: '12px' }}>
         
         {/* ENCABEZADO */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
@@ -295,63 +313,96 @@ export default function RegistroAsesorPage() {
               Active su cámara, encuadre su <strong>Cédula de Identidad</strong> en el recuadro y presione <strong>Escanear Cédula</strong> para auto-completar sus datos.
             </p>
 
-            <div style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: '450px',
-              height: '280px',
-              backgroundColor: '#000',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              margin: '0 auto 1.5rem auto',
-              border: '3px solid var(--primary)',
-              boxShadow: 'var(--shadow)'
-            }}>
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                muted
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              
-              {/* Frame de ayuda para encuadre de la tarjeta */}
+            {cameraError ? (
               <div style={{
-                position: 'absolute',
-                top: '10%',
-                left: '10%',
-                right: '10%',
-                bottom: '10%',
-                border: '2.5px dashed rgba(255, 255, 255, 0.7)',
-                borderRadius: '8px',
-                pointerEvents: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1.5px solid #ef4444',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                margin: '0 auto 1.5rem auto',
+                maxWidth: '450px',
+                textAlign: 'left'
               }}>
-                <span style={{
-                  color: '#fff',
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  fontSize: '0.75rem',
-                  padding: '0.2rem 0.5rem',
-                  borderRadius: '4px'
-                }}>
-                  Coloque su Cédula aquí
-                </span>
+                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                  ⚠️ Acceso a Cámara Denegado o No Soportado
+                </strong>
+                <p style={{ fontSize: '0.8rem', color: '#991b1b', lineHeight: '1.4', marginBottom: '0.75rem' }}>
+                  {cameraError}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                  <strong>Nota sobre Seguridad:</strong> Los navegadores modernos en dispositivos móviles bloquean el acceso a la cámara en entornos locales que no usen <strong>HTTPS</strong>. Al subir el sistema a <strong>Vercel (HTTPS)</strong>, la cámara funcionará automáticamente.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '450px',
+                height: '280px',
+                backgroundColor: '#000',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                margin: '0 auto 1.5rem auto',
+                border: '3px solid var(--primary)',
+                boxShadow: 'var(--shadow)'
+              }}>
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                
+                {/* Frame de ayuda para encuadre de la tarjeta */}
+                <div style={{
+                  position: 'absolute',
+                  top: '10%',
+                  left: '10%',
+                  right: '10%',
+                  bottom: '10%',
+                  border: '2.5px dashed rgba(255, 255, 255, 0.7)',
+                  borderRadius: '8px',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <span style={{
+                    color: '#fff',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    fontSize: '0.75rem',
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '4px'
+                  }}>
+                    Coloque su Cédula aquí
+                  </span>
+                </div>
+              </div>
+            )}
 
             <canvas ref={canvasRef} style={{ display: 'none' }} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button 
-                onClick={captureAndScan} 
-                className="btn btn-primary"
-                style={{ padding: '0.75rem', fontSize: '1rem', fontWeight: 'bold' }}
-                disabled={!tesseractReady}
-              >
-                {tesseractReady ? '📸 Capturar y Escanear Cédula' : 'Cargando lector inteligente...'}
-              </button>
+              {!cameraError ? (
+                <button 
+                  onClick={captureAndScan} 
+                  className="btn btn-primary"
+                  style={{ padding: '0.75rem', fontSize: '1rem', fontWeight: 'bold' }}
+                  disabled={!tesseractReady}
+                >
+                  {tesseractReady ? '📸 Capturar y Escanear Cédula' : 'Cargando lector inteligente...'}
+                </button>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={startCamera} 
+                  className="btn btn-primary"
+                  style={{ padding: '0.7rem' }}
+                >
+                  🔄 Reintentar Activar Cámara
+                </button>
+              )}
               
               <button 
                 type="button" 
@@ -402,10 +453,10 @@ export default function RegistroAsesorPage() {
               Valide los datos escaneados e introduzca sus datos de contacto y de abono de comisiones.
             </p>
 
-            <div className="form-grid">
+            <div className="form-grid-custom">
               
               {/* DATOS GENERALES */}
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group col-span-2-custom">
                 <label className="form-label">Nombre Completo *</label>
                 <input 
                   type="text" 
@@ -440,7 +491,7 @@ export default function RegistroAsesorPage() {
                 />
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group col-span-2-custom">
                 <label className="form-label">Teléfono Celular *</label>
                 <input 
                   type="text" 
@@ -478,13 +529,13 @@ export default function RegistroAsesorPage() {
               </div>
 
               {/* DATOS BANCARIOS */}
-              <div className="form-group" style={{ gridColumn: 'span 2', marginTop: '0.5rem' }}>
-                <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem' }}>
+              <div className="form-group col-span-2-custom" style={{ marginTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem' }}>
                   Datos para Abono de Comisiones
                 </span>
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group col-span-2-custom">
                 <label className="form-label">Banco de Destino *</label>
                 <input 
                   type="text" 
@@ -496,7 +547,7 @@ export default function RegistroAsesorPage() {
                 />
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group col-span-2-custom">
                 <label className="form-label">Número de Cuenta Bancaria (Exactamente 20 dígitos) *</label>
                 <input 
                   type="text" 
@@ -549,13 +600,13 @@ export default function RegistroAsesorPage() {
         {/* PASO 4: REGISTRO EXITOSO */}
         {step === 'success' && (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-            <span style={{ fontSize: '3rem' }}>✅</span>
-            <h4 style={{ color: 'var(--primary)', fontWeight: 'bold', margin: '1rem 0 0.5rem 0' }}>¡Registro Completado con éxito!</h4>
+            <span style={{ fontSize: '3rem' }}>⏰</span>
+            <h4 style={{ color: 'var(--primary)', fontWeight: 'bold', margin: '1rem 0 0.5rem 0' }}>¡Solicitud Recibida!</h4>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              Su cuenta de asesor ha sido afiliada correctamente. Ahora puede iniciar sesión.
+              Su solicitud de afiliación como asesor ha sido enviada con éxito. Para mantener la seguridad del portal, su cuenta se encuentra bajo revisión y debe ser aprobada por el administrador antes de poder acceder al sistema.
             </p>
             <Link href="/login" className="btn btn-primary">
-              Iniciar Sesión en el Portal
+              Volver al Inicio
             </Link>
           </div>
         )}

@@ -126,6 +126,7 @@ router.get('/advisors', authenticateToken, async (req, res) => {
         fecha_nacimiento: a.fecha_nacimiento ? (typeof a.fecha_nacimiento === 'object' ? a.fecha_nacimiento.toISOString().split('T')[0] : String(a.fecha_nacimiento).split('T')[0]) : 'N/A',
         banco: a.banco || 'N/A',
         numero_cuenta: a.numero_cuenta || 'N/A',
+        estado: a.estado || 'pendiente',
         clientes: clientNames || 'Ninguno'
       };
     });
@@ -258,6 +259,42 @@ router.delete('/advisors/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar asesor:', err);
     res.status(500).json({ error: 'Error del servidor al eliminar el asesor.' });
+  }
+});
+
+// Actualizar el estado de aprobación de un asesor
+router.put('/advisors/:id/status', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { id } = req.params;
+  const { estado } = req.body;
+
+  if (!['aprobado', 'pendiente', 'rechazado'].includes(estado)) {
+    return res.status(400).json({ error: 'Estado de aprobación no válido.' });
+  }
+
+  try {
+    const aId = parseInt(id);
+    let name = '';
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const idx = fData.asesores.findIndex(a => a.id === aId);
+      if (idx === -1) return res.status(404).json({ error: 'Asesor no encontrado.' });
+      fData.asesores[idx].estado = estado;
+      name = fData.asesores[idx].nombre;
+      db.saveFallback();
+    } else {
+      const checkRes = await db.query('SELECT nombre FROM asesores WHERE id = $1', [aId]);
+      if (checkRes.rows.length === 0) return res.status(404).json({ error: 'Asesor no encontrado.' });
+      name = checkRes.rows[0].nombre;
+      await db.query('UPDATE asesores SET estado = $1 WHERE id = $2', [estado, aId]);
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'APROBACION_ASESOR', `Estado de asesor ${name} (ID: ${aId}) cambiado a ${estado}.`);
+    res.json({ message: `Estado de aprobación del asesor cambiado a ${estado}.`, estado });
+  } catch (err) {
+    console.error('Error al actualizar estado del asesor:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar estado del asesor.' });
   }
 });
 
