@@ -24,11 +24,12 @@ export default function RegistroAsesorPage() {
     correo: '',
     contrasena: '',
     telefono: '',
-    banco: 'Banco Nacional de Crédito (BNC)',
+    banco: '',
     fecha_nacimiento: '',
     numero_cuenta: ''
   });
 
+  const [accountParts, setAccountParts] = useState(['', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [cameraError, setCameraError] = useState(null);
 
@@ -216,30 +217,83 @@ export default function RegistroAsesorPage() {
     for (const line of lines) {
       const match = line.match(dateRegex);
       if (match) {
-        // Formato YYYY-MM-DD para input date
         fecha_nacimiento = `${match[3]}-${match[2]}-${match[1]}`;
         break;
       }
     }
 
-    // Nombres y Apellidos
-    const nombresIdx = lines.findIndex(l => l.includes('NOMBRE') || l.includes('NOMBRES'));
-    const apellidosIdx = lines.findIndex(l => l.includes('APELLIDO') || l.includes('APELLIDOS'));
-    
-    if (nombresIdx !== -1 && nombresIdx + 1 < lines.length) {
-      nombre = lines[nombresIdx + 1].replace(/[^A-Z ]/g, '').trim();
-    }
-    if (apellidosIdx !== -1 && apellidosIdx + 1 < lines.length) {
-      apellido = lines[apellidosIdx + 1].replace(/[^A-Z ]/g, '').trim();
+    // Nombres
+    const nombresIdx = lines.findIndex(l => l.includes('NOMBRE'));
+    if (nombresIdx !== -1) {
+      const line = lines[nombresIdx];
+      const match = line.match(/NOMBRE[S]?\s*[:\-\s]\s*(.+)/i);
+      if (match && match[1].trim()) {
+        nombre = match[1].trim();
+      } else if (nombresIdx + 1 < lines.length) {
+        nombre = lines[nombresIdx + 1].trim();
+      }
     }
 
-    const cleanNombre = `${nombre} ${apellido}`.trim();
+    // Apellidos
+    const apellidosIdx = lines.findIndex(l => l.includes('APELLIDO'));
+    if (apellidosIdx !== -1) {
+      const line = lines[apellidosIdx];
+      const match = line.match(/APELLIDO[S]?\s*[:\-\s]\s*(.+)/i);
+      if (match && match[1].trim()) {
+        apellido = match[1].trim();
+      } else if (apellidosIdx + 1 < lines.length) {
+        apellido = lines[apellidosIdx + 1].trim();
+      }
+    }
+
+    // Limpiar caracteres no alfabéticos y formatear espacios
+    const cleanNombre = `${nombre.replace(/[^A-Z ]/g, '')} ${apellido.replace(/[^A-Z ]/g, '')}`.replace(/\s+/g, ' ').trim();
 
     return {
       nombre: cleanNombre,
       cedula,
       fecha_nacimiento
     };
+  };
+
+  const handlePartChange = (index, value) => {
+    const clean = value.replace(/\D/g, '').substring(0, 4);
+    const newParts = [...accountParts];
+    newParts[index] = clean;
+    setAccountParts(newParts);
+    setForm(prev => ({ ...prev, numero_cuenta: newParts.join('') }));
+
+    // Auto-focus al siguiente input si se llenan los 4 dígitos
+    if (clean.length === 4 && index < 4) {
+      const nextInput = document.getElementById(`cta-part-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    // Si presiona borrar y está vacío, enfoca el input anterior
+    if (e.key === 'Backspace' && !accountParts[index] && index > 0) {
+      const prevInput = document.getElementById(`cta-part-${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('Text').replace(/\D/g, '').substring(0, 20);
+    if (pastedData.length > 0) {
+      const newParts = ['', '', '', '', ''];
+      for (let i = 0; i < 5; i++) {
+        newParts[i] = pastedData.substring(i * 4, (i + 1) * 4);
+      }
+      setAccountParts(newParts);
+      setForm(prev => ({ ...prev, numero_cuenta: newParts.join('') }));
+      
+      // Enfocar el último input rellenado
+      const lastIndex = Math.min(Math.floor((pastedData.length - 1) / 4), 4);
+      const targetInput = document.getElementById(`cta-part-${lastIndex >= 0 ? lastIndex : 0}`);
+      if (targetInput) targetInput.focus();
+    }
   };
 
   // Guardar Registro de Asesor
@@ -286,25 +340,6 @@ export default function RegistroAsesorPage() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '1rem auto', padding: '0.5rem' }}>
-      <style dangerouslySetInnerHTML={{__html: `
-        .form-grid-custom {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-        .col-span-2-custom {
-          grid-column: span 2;
-        }
-        @media (max-width: 600px) {
-          .form-grid-custom {
-            grid-template-columns: 1fr !important;
-            gap: 0.75rem;
-          }
-          .col-span-2-custom {
-            grid-column: span 1 !important;
-          }
-        }
-      `}} />
       <div className="card" style={{ padding: '1.5rem', boxShadow: 'var(--shadow-lg)', borderRadius: '12px' }}>
         
         {/* ENCABEZADO */}
@@ -465,17 +500,18 @@ export default function RegistroAsesorPage() {
               Valide los datos escaneados e introduzca sus datos de contacto y de abono de comisiones.
             </p>
 
-            <div className="form-grid-custom">
+            <div className="form-grid">
               
               {/* DATOS GENERALES */}
-              <div className="form-group col-span-2-custom">
+              <div className="form-group col-span-2">
                 <label className="form-label">Nombre Completo *</label>
                 <input 
                   type="text" 
                   className="form-input" 
                   value={form.nombre} 
                   onChange={e => setForm({...form, nombre: e.target.value})} 
-                  placeholder="Escanee su cédula o escríbalo aquí"
+                  placeholder="Escriba su nombre completo"
+                  autoComplete="off"
                   required 
                 />
               </div>
@@ -487,7 +523,8 @@ export default function RegistroAsesorPage() {
                   className="form-input" 
                   value={form.cedula} 
                   onChange={e => setForm({...form, cedula: e.target.value})} 
-                  placeholder="V-12345678"
+                  placeholder="V-00000000"
+                  autoComplete="off"
                   required 
                 />
               </div>
@@ -499,18 +536,20 @@ export default function RegistroAsesorPage() {
                   className="form-input" 
                   value={form.fecha_nacimiento} 
                   onChange={e => setForm({...form, fecha_nacimiento: e.target.value})} 
+                  autoComplete="off"
                   required 
                 />
               </div>
 
-              <div className="form-group col-span-2-custom">
+              <div className="form-group col-span-2">
                 <label className="form-label">Teléfono Celular *</label>
                 <input 
                   type="text" 
                   className="form-input" 
                   value={form.telefono} 
                   onChange={e => setForm({...form, telefono: e.target.value})} 
-                  placeholder="Ej: 0412-1234567"
+                  placeholder="0400-0000000"
+                  autoComplete="off"
                   required 
                 />
               </div>
@@ -523,7 +562,8 @@ export default function RegistroAsesorPage() {
                   className="form-input" 
                   value={form.correo} 
                   onChange={e => setForm({...form, correo: e.target.value})} 
-                  placeholder="correo@asesor.com"
+                  placeholder="usuario@dominio.com"
+                  autoComplete="off"
                   required 
                 />
               </div>
@@ -535,41 +575,56 @@ export default function RegistroAsesorPage() {
                   className="form-input" 
                   value={form.contrasena} 
                   onChange={e => setForm({...form, contrasena: e.target.value})} 
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
                   required 
                 />
               </div>
 
               {/* DATOS BANCARIOS */}
-              <div className="form-group col-span-2-custom" style={{ marginTop: '0.5rem' }}>
+              <div className="form-group col-span-2" style={{ marginTop: '0.5rem' }}>
                 <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.2rem' }}>
                   Datos para Abono de Comisiones
                 </span>
               </div>
 
-              <div className="form-group col-span-2-custom">
+              <div className="form-group col-span-2">
                 <label className="form-label">Banco de Destino *</label>
                 <input 
                   type="text" 
                   className="form-input" 
                   value={form.banco} 
                   onChange={e => setForm({...form, banco: e.target.value})} 
-                  placeholder="Ej: Banco Nacional de Crédito (BNC), Banesco"
+                  placeholder="Nombre de la Institución Bancaria"
+                  autoComplete="off"
                   required 
                 />
               </div>
 
-              <div className="form-group col-span-2-custom">
+              <div className="form-group col-span-2">
                 <label className="form-label">Número de Cuenta Bancaria (Exactamente 20 dígitos) *</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={form.numero_cuenta} 
-                  onChange={e => setForm({...form, numero_cuenta: e.target.value.replace(/\D/g, '').substring(0, 20)})} 
-                  placeholder="0191..."
-                  maxLength="20"
-                  required 
-                />
+                
+                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'nowrap', width: '100%', maxWidth: '400px', margin: '0.25rem 0' }}>
+                  {accountParts.map((part, idx) => (
+                    <React.Fragment key={idx}>
+                      <input 
+                        id={`cta-part-${idx}`}
+                        type="text"
+                        className="form-input text-center"
+                        value={part}
+                        onChange={e => handlePartChange(idx, e.target.value)}
+                        onKeyDown={e => handleKeyDown(idx, e)}
+                        onPaste={idx === 0 ? handlePaste : undefined}
+                        maxLength="4"
+                        placeholder="0000"
+                        autoComplete="off"
+                        style={{ flex: 1, minWidth: '40px', padding: '0.45rem', fontSize: '0.9rem', textAlign: 'center', fontFamily: 'monospace' }}
+                        required
+                      />
+                      {idx < 4 && <span style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>-</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
                 
                 {/* AVISO / DISCLAIMER DE RESPONSABILIDAD */}
                 <div style={{

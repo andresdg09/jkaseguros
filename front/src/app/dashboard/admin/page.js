@@ -1137,7 +1137,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* --- DISTRIBUCIÓN Y RENDIMIENTO DE ASESORES --- */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 
                 {/* Card: Distribución de Pólizas */}
                 <div className="card" style={{ padding: '1.5rem', boxShadow: 'var(--shadow-lg)' }}>

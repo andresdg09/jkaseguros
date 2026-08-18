@@ -641,7 +641,7 @@ export default function ComisionesPage() {
               <div className="card" style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
                 <h3 style={{ color: 'var(--primary)', marginBottom: '1.25rem', fontWeight: 700 }}>Asignar Comisión Personalizada</h3>
                 <form onSubmit={handleSaveAdvisorCustom}>
-                  <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
                     <div className="form-group">
                       <label className="form-label">Asesor Comercial *</label>
                       <select 
