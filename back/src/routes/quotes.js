@@ -1,7 +1,10 @@
 import express from 'express';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { db } from '../db/db.js';
 import { generarPdfCotizacion, generarPdfBuffer } from '../services/pdfGenerator.js';
 import { registrarAccion } from '../db/logger.js';
+import { generarPagosFraccionados } from './policies.js';
 
 const router = express.Router();
 
@@ -376,6 +379,278 @@ router.post('/email', async (req, res) => {
   } catch (err) {
     console.error('Error al enviar correo de cotización:', err);
     res.status(500).json({ error: 'Error del servidor al procesar y enviar el correo electrónico.' });
+  }
+});
+
+// 5. Guardar cotización para compartir por WhatsApp
+router.post('/share', async (req, res) => {
+  const { cliente, suma_asegurada, suma_asegurada_2, dependientes, comparativa, comparativa_2, asesor_id } = req.body;
+
+  if (!cliente || !cliente.nro_documento || !cliente.correo) {
+    return res.status(400).json({ error: 'Los datos del cliente son requeridos para guardar la cotización.' });
+  }
+
+  try {
+    const token = crypto.randomUUID();
+    const cleanAsesorId = asesor_id ? parseInt(asesor_id) : null;
+
+    const query = `
+      INSERT INTO cotizaciones (
+        token, asesor_id, cliente_datos, suma_asegurada, suma_asegurada_2, dependientes, comparativa, comparativa_2
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
+    `;
+    const params = [
+      token,
+      cleanAsesorId,
+      JSON.stringify(cliente),
+      parseFloat(suma_asegurada),
+      suma_asegurada_2 ? parseFloat(suma_asegurada_2) : null,
+      JSON.stringify(dependientes || []),
+      JSON.stringify(comparativa || []),
+      JSON.stringify(comparativa_2 || [])
+    ];
+
+    await db.query(query, params);
+    
+    res.json({ token, message: 'Cotización guardada correctamente.' });
+  } catch (err) {
+    console.error('Error al guardar cotización compartida:', err);
+    res.status(500).json({ error: 'Error del servidor al guardar la cotización.' });
+  }
+});
+
+// 6. Obtener cotización compartida por token
+router.get('/share/:token', async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const quoteRes = await db.query('SELECT * FROM cotizaciones WHERE token = $1', [token]);
+    if (quoteRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Cotización no encontrada o enlace vencido.' });
+    }
+
+    const quote = quoteRes.rows[0];
+
+    // Obtener información del asesor si tiene uno asignado
+    let asesor = null;
+    if (quote.asesor_id) {
+      const aseRes = await db.query('SELECT * FROM asesores WHERE id = $1', [quote.asesor_id]);
+      if (aseRes.rows.length > 0) {
+        asesor = aseRes.rows[0];
+      }
+    }
+
+    res.json({
+      token: quote.token,
+      cliente_datos: typeof quote.cliente_datos === 'string' ? JSON.parse(quote.cliente_datos) : quote.cliente_datos,
+      suma_asegurada: parseFloat(quote.suma_asegurada),
+      suma_asegurada_2: quote.suma_asegurada_2 ? parseFloat(quote.suma_asegurada_2) : null,
+      dependientes: typeof quote.dependientes === 'string' ? JSON.parse(quote.dependientes) : quote.dependientes,
+      comparativa: typeof quote.comparativa === 'string' ? JSON.parse(quote.comparativa) : quote.comparativa,
+      comparativa_2: typeof quote.comparativa_2 === 'string' ? JSON.parse(quote.comparativa_2) : quote.comparativa_2,
+      estado: quote.estado,
+      created_at: quote.created_at,
+      asesor
+    });
+  } catch (err) {
+    console.error('Error al obtener cotización compartida:', err);
+    res.status(500).json({ error: 'Error del servidor al recuperar la cotización.' });
+  }
+});
+
+// 7. Aceptar cotización por parte del cliente (Public Link click en "Quiero esta")
+router.post('/share/:token/accept', async (req, res) => {
+  const { token } = req.params;
+  const { compania_id, plan, prima_anual, suma_asegurada } = req.body;
+
+  if (!compania_id || !plan || isNaN(prima_anual) || isNaN(suma_asegurada)) {
+    return res.status(400).json({ error: 'Faltan parámetros de la oferta de seguro seleccionada.' });
+  }
+
+  try {
+    // 1. Obtener la cotización
+    const quoteRes = await db.query('SELECT * FROM cotizaciones WHERE token = $1', [token]);
+    if (quoteRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Cotización no encontrada.' });
+    }
+
+    const quote = quoteRes.rows[0];
+    if (quote.estado === 'aceptada') {
+      return res.status(400).json({ error: 'Esta cotización ya fue aceptada previamente.' });
+    }
+
+    const clienteDatos = typeof quote.cliente_datos === 'string' ? JSON.parse(quote.cliente_datos) : quote.cliente_datos;
+    const { correo, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular } = clienteDatos;
+
+    // 2. Registrar/buscar cliente en el sistema
+    let finalClienteId = null;
+    let clientEmail = correo.toLowerCase();
+    let clientName = `${primer_nombre} ${primer_apellido}`;
+
+    // Buscar si el número de documento ya existe en datos_personales
+    const docExistRes = await db.query('SELECT * FROM datos_personales WHERE nro_documento = $1', [nro_documento]);
+    
+    if (docExistRes.rows.length > 0) {
+      // El cliente ya existe
+      finalClienteId = docExistRes.rows[0].id;
+    } else {
+      // No existe, buscar si el correo está registrado en usuarios
+      const userExistRes = await db.query('SELECT * FROM usuarios WHERE correo = $1', [clientEmail]);
+      let userId;
+
+      if (userExistRes.rows.length > 0) {
+        userId = userExistRes.rows[0].id;
+      } else {
+        // Registrar nuevo usuario
+        const tempPassword = `JKA-${nro_documento}`;
+        const salt = await bcrypt.genSalt(10);
+        const hashContrasena = await bcrypt.hash(tempPassword, salt);
+
+        const newUserRes = await db.query(
+          'INSERT INTO usuarios (correo, contrasena, rango) VALUES ($1, $2, $3) RETURNING id',
+          [clientEmail, hashContrasena, 'cliente']
+        );
+        userId = newUserRes.rows[0].id;
+      }
+
+      // Insertar Datos Personales del cliente
+      const newPersonRes = await db.query(
+        `INSERT INTO datos_personales (
+          usuario_id, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+          fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil, codigo_area, numero_celular, asesor_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+        [
+          userId, primer_nombre, segundo_nombre || '', primer_apellido, segundo_apellido || '',
+          fecha_nacimiento, tipo_documento, nro_documento, genero, estado_civil || 'Soltero',
+          codigo_area, numero_celular, quote.asesor_id
+        ]
+      );
+      finalClienteId = newPersonRes.rows[0].id;
+
+      // Registrar acción de auditoría
+      await registrarAccion(userId, clientEmail, 'AUTOREGISTRO_CLIENTE', `Cliente se autoregistró desde link de WhatsApp. Nombre: ${clientName}`);
+    }
+
+    // 3. Crear Póliza
+    let areaVal = 'Salud';
+    try {
+      const tRes = await db.query(
+        'SELECT ramo FROM tarifas WHERE compania_id = $1 AND plan = $2 AND prima = $3 AND suma_asegurada = $4 LIMIT 1',
+        [parseInt(compania_id), plan, parseFloat(prima_anual), parseFloat(suma_asegurada)]
+      );
+      if (tRes.rows.length > 0) {
+        areaVal = tRes.rows[0].ramo;
+      } else {
+        const tResFallback = await db.query(
+          'SELECT ramo FROM tarifas WHERE compania_id = $1 AND plan = $2 LIMIT 1',
+          [parseInt(compania_id), plan]
+        );
+        if (tResFallback.rows.length > 0) areaVal = tResFallback.rows[0].ramo;
+      }
+    } catch (errRamo) {
+      console.error('Error al recuperar el ramo de la tarifa aceptada:', errRamo);
+    }
+
+    const codPoliza = `POL-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newPolRes = await db.query(
+      `INSERT INTO polizas (
+        codigo_poliza, cliente_id, asesor_id, compania_id, plan, area, suma_asegurada, prima_anual, estado, pago_estado, frecuencia_pago
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [
+        codPoliza,
+        finalClienteId,
+        quote.asesor_id,
+        parseInt(compania_id),
+        plan,
+        areaVal,
+        parseFloat(suma_asegurada),
+        parseFloat(prima_anual),
+        'negociacion',
+        'pendiente',
+        'contado'
+      ]
+    );
+
+    const newPol = newPolRes.rows[0];
+
+    // 4. Generar Pagos Fraccionados (Contado = 1 cuota)
+    await generarPagosFraccionados(newPol.id, parseFloat(prima_anual), 'contado');
+
+    // 5. Actualizar estado de la cotización
+    await db.query("UPDATE cotizaciones SET estado = 'aceptada' WHERE token = $1", [token]);
+
+    // 6. Obtener nombre de la compañía
+    let compName = 'Aseguradora';
+    const compRes = await db.query('SELECT nombre FROM companias_seguros WHERE id = $1', [parseInt(compania_id)]);
+    if (compRes.rows.length > 0) {
+      compName = compRes.rows[0].nombre;
+    }
+
+    // 7. Enviar Correo de condicionado/bienvenida vía EmailJS
+    let pdfFilename = 'SM.764_Solic_Pol_Seg_Salud_Global_Benefits.pdf'; // Default
+    const lowerName = compName.toLowerCase();
+    if (lowerName.includes('mercantil')) pdfFilename = 'SM.764_Solic_Pol_Seg_Salud_Global_Benefits.pdf';
+    else if (lowerName.includes('caracas')) pdfFilename = 'SolicitudSegurosSaludIndividualMonedaExtranjera.pdf';
+    else if (lowerName.includes('venezuela')) pdfFilename = 'Solicitud de Seguro HCM Individual 08-2025.pdf';
+    else if (lowerName.includes('mapfre')) pdfFilename = 'E0306021_Solicitud de Seguro salud individual_2026.pdf';
+
+    const hostname = req.get('host');
+    const protocol = req.protocol;
+    const baseUrl = `${protocol}://${hostname}`;
+    const downloadUrl = `${baseUrl}/docs/${pdfFilename}`;
+
+    const emailHtml = `
+      <div style="background-color: #f8fafc; border: 1.5px solid #2563eb; border-radius: 8px; padding: 25px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <h3 style="color: #1e3a8a; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Documentación de Seguro - ${compName}</h3>
+        <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 15px 0 15px 0;">
+          Estimado cliente, te hacemos llegar el condicionado oficial y los documentos correspondientes para tu solicitud de seguro <strong>${plan || 'Salud'}</strong> con la compañía <strong>${compName}</strong>.
+        </p>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0; background-color: #f1f5f9; padding: 12px 15px; border-radius: 6px;">
+          <strong>Código de Solicitud:</strong> ${codPoliza}<br>
+          <strong>Suma Asegurada:</strong> $${Number(suma_asegurada).toLocaleString('en-US')}<br>
+          <strong>Prima Anual:</strong> $${Number(prima_anual).toLocaleString('en-US')}
+        </p>
+        <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 20px 0;">
+          Por favor haz clic en el botón de abajo para descargar el condicionado de <strong>${compName}</strong>:
+        </p>
+        <div style="text-align: center; margin-bottom: 15px;">
+          <a href="${downloadUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 28px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 6px rgba(37,99,235,0.15);">
+            📥 Descargar Condicionado de ${compName}
+          </a>
+        </div>
+      </div>
+    `;
+
+    // Disparar EmailJS sin await para no bloquear la respuesta
+    fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: 'service_271yuq8',
+        template_id: 'template_068mrut',
+        user_id: 'jgnK_ClSfIQ6PBYqd',
+        accessToken: 's2Qg_q1KjxfL6H28PVCIQ',
+        template_params: {
+          user_name: clientName,
+          to_email: clientEmail,
+          fecha: new Date().toLocaleDateString('es-VE'),
+          solicitud_ref: `Confirmación de Póliza en Negociación - ${codPoliza}`,
+          plan_cards: emailHtml,
+          cotizacion_pdf: ''
+        }
+      })
+    }).catch(errMail => {
+      console.error('Error al enviar correo de cotización aceptada a EmailJS:', errMail);
+    });
+
+    res.json({
+      message: '¡Cotización aceptada con éxito! Su solicitud de póliza ha sido creada.',
+      poliza: newPol
+    });
+
+  } catch (err) {
+    console.error('Error al aceptar cotización compartida:', err);
+    res.status(500).json({ error: 'Error del servidor al procesar la cotización.' });
   }
 });
 

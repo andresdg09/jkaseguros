@@ -31,7 +31,10 @@ let fallbackData = {
   elearning_courses: [],
   elearning_modules: [],
   elearning_attempts: [],
-  comisiones_asesores: []
+  comisiones_asesores: [],
+  matriz_comisiones: [],
+  corridas_comisiones: [],
+  historico_comisiones: []
 };
 
 const fallbackFilePath = path.join(__dirname, '../../data/fallback_db.json');
@@ -64,8 +67,12 @@ function initFallback() {
       if (!fallbackData.elearning_modules) fallbackData.elearning_modules = [];
       if (!fallbackData.elearning_attempts) fallbackData.elearning_attempts = [];
       if (!fallbackData.comisiones_asesores) fallbackData.comisiones_asesores = [];
+      if (!fallbackData.matriz_comisiones) fallbackData.matriz_comisiones = [];
+      if (!fallbackData.corridas_comisiones) fallbackData.corridas_comisiones = [];
+      if (!fallbackData.historico_comisiones) fallbackData.historico_comisiones = [];
+      if (!fallbackData.cotizaciones) fallbackData.cotizaciones = [];
       
-      // Asegurar campos de comisiones
+      // Asegurar campos de comisiones y nuevos campos
       fallbackData.companias_seguros = fallbackData.companias_seguros.map(c => ({
         ...c,
         comision_estandar: c.comision_estandar !== undefined ? parseFloat(c.comision_estandar) : 0,
@@ -74,7 +81,12 @@ function initFallback() {
       }));
       fallbackData.polizas = fallbackData.polizas.map(p => ({
         ...p,
-        comision_porcentaje: p.comision_porcentaje !== undefined ? (p.comision_porcentaje === null ? null : parseFloat(p.comision_porcentaje)) : null
+        comision_porcentaje: p.comision_porcentaje !== undefined ? (p.comision_porcentaje === null ? null : parseFloat(p.comision_porcentaje)) : null,
+        frecuencia_pago: p.frecuencia_pago || 'contado',
+        tipo_negocio: p.tipo_negocio || 'nuevo',
+        tipo_cobertura: p.tipo_cobertura || 'individual',
+        bono_pronto_pago: p.bono_pronto_pago || false,
+        emision_online: p.emision_online || false
       }));
       fallbackData.asesores = fallbackData.asesores.map(a => ({
         ...a,
@@ -82,7 +94,20 @@ function initFallback() {
         fecha_nacimiento: a.fecha_nacimiento || '',
         banco: a.banco || '',
         numero_cuenta: a.numero_cuenta || '',
-        estado: a.estado || 'pendiente'
+        estado: a.estado || 'pendiente',
+        tipo_asesor: a.tipo_asesor || 'consultor_1'
+      }));
+      fallbackData.pagos = fallbackData.pagos.map(pa => ({
+        ...pa,
+        cuota_numero: pa.cuota_numero !== undefined ? pa.cuota_numero : null,
+        cuota_total: pa.cuota_total !== undefined ? pa.cuota_total : null
+      }));
+      fallbackData.tarifas = fallbackData.tarifas.map(t => ({
+        ...t,
+        pago_contado: t.pago_contado !== undefined ? t.pago_contado : false,
+        pago_semestral: t.pago_semestral !== undefined ? t.pago_semestral : false,
+        pago_trimestral: t.pago_trimestral !== undefined ? t.pago_trimestral : false,
+        pago_mensual: t.pago_mensual !== undefined ? t.pago_mensual : false
       }));
 
       seedFallbackElearning();
@@ -218,10 +243,16 @@ function seedFallback() {
   fallbackData.tarifas = tarifasSemilla.map((t, i) => {
     const comp = fallbackData.companias_seguros.find(c => c.nombre === t.compania);
     const { compania, ...rest } = t;
+    const s = String(t.pago || '').toUpperCase();
     return {
       id: i + 1,
       compania_id: comp ? comp.id : null,
       ...rest,
+      ramo: t.ramo || 'Salud',
+      pago_contado: s.includes('CONT') || s.includes('ANUAL') || s.includes('CONTADO'),
+      pago_semestral: s.includes('SEM') || s.includes('SEMESTRAL'),
+      pago_trimestral: s.includes('TRIM') || s.includes('TRIMESTRAL'),
+      pago_mensual: s.includes('MENS') || s.includes('MEN') || s.includes('MENSUAL'),
       created_at: new Date().toISOString()
     };
   });
@@ -385,6 +416,59 @@ function seedFallback() {
     created_at: new Date().toISOString()
   });
 
+  // Sembrar Matriz de Comisiones en Fallback
+  const scComp = fallbackData.companias_seguros.find(c => c.nombre === 'Seguros Caracas') || { id: 2 };
+  const mfComp = fallbackData.companias_seguros.find(c => c.nombre === 'Mapfre Seguros') || { id: 4 };
+  const msComp = fallbackData.companias_seguros.find(c => c.nombre === 'Mercantil Seguros') || { id: 1 };
+
+  fallbackData.matriz_comisiones = [
+    {
+      id: 1,
+      mercado: 'Nacionales',
+      compania_id: scComp.id,
+      ramo: 'Salud',
+      producto_modalidad: 'Cobertura Nacionales - Nuevo - Renovacion',
+      total_comision: 22.5,
+      consultor_1: 17.0,
+      consultor_2: 15.0,
+      johans: 17.0,
+      nivel_1_subagente: 0,
+      nivel_2_agente: 0,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      mercado: 'Nacionales',
+      compania_id: mfComp.id,
+      ramo: 'Patrimoniales',
+      producto_modalidad: 'Incendio',
+      total_comision: 40.0,
+      consultor_1: 30.0,
+      consultor_2: 28.0,
+      johans: 30.0,
+      nivel_1_subagente: 0,
+      nivel_2_agente: 0,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 3,
+      mercado: 'Internacionales',
+      compania_id: msComp.id,
+      ramo: 'Salud',
+      producto_modalidad: 'Nuevo',
+      total_comision: 15.0,
+      consultor_1: 0,
+      consultor_2: 0,
+      johans: 0,
+      nivel_1_subagente: 10.0,
+      nivel_2_agente: 8.0,
+      created_at: new Date().toISOString()
+    }
+  ];
+
+  fallbackData.corridas_comisiones = [];
+  fallbackData.historico_comisiones = [];
+
   fallbackData.tarifario_metadata = {
     version: '1.0.0',
     ultima_modificacion: new Date().toISOString(),
@@ -446,7 +530,8 @@ try {
   await client.query(`
     DO $$
     BEGIN
-      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='polizas' AND column_name='tipo_cobertura') THEN
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='polizas' AND column_name='tipo_cobertura')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='polizas' AND column_name='plan') THEN
         ALTER TABLE polizas RENAME COLUMN tipo_cobertura TO plan;
       END IF;
     END $$;
@@ -511,16 +596,42 @@ try {
     );
   `);
 
-  // Migraciones de Comisiones
+  // Migraciones de Comisiones y Nuevos Campos
   await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_estandar NUMERIC DEFAULT 0;');
   await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_compania NUMERIC DEFAULT 0;');
   await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_asesor_estandar NUMERIC DEFAULT 0;');
+  
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS comision_porcentaje NUMERIC;');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS frecuencia_pago VARCHAR(50) DEFAULT \'contado\';');
+  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
+  await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN (\'contado\', \'semestral\', \'trimestral\', \'mensual\'));');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_negocio VARCHAR(50) DEFAULT \'nuevo\';');
+  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_negocio_check;');
+  await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_negocio_check CHECK (tipo_negocio IN (\'nuevo\', \'renovacion\'));');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_cobertura VARCHAR(50) DEFAULT \'individual\';');
+  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check2;');
+  await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_cobertura_check2 CHECK (tipo_cobertura IN (\'individual\', \'colectivo\'));');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS bono_pronto_pago BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS emision_online BOOLEAN DEFAULT FALSE;');
+
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_numero INT;');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_total INT;');
+
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS cedula VARCHAR(50);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS banco VARCHAR(100);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
-  await client.query("ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT 'pendiente';");
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT \'pendiente\';');
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS tipo_asesor VARCHAR(50) DEFAULT \'consultor_1\';');
+  await client.query('ALTER TABLE asesores DROP CONSTRAINT IF EXISTS asesores_tipo_asesor_check;');
+  await client.query('ALTER TABLE asesores ADD CONSTRAINT asesores_tipo_asesor_check CHECK (tipo_asesor IN (\'consultor_1\', \'consultor_2\', \'johans\', \'nivel_1_subagente\', \'nivel_2_agente\'));');
+
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT \'Salud\';');
+
   await client.query(`
     CREATE TABLE IF NOT EXISTS comisiones_asesores (
       id SERIAL PRIMARY KEY,
@@ -528,6 +639,70 @@ try {
       compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
       porcentaje NUMERIC NOT NULL,
       UNIQUE(asesor_id, compania_id)
+    );
+  `);
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS matriz_comisiones (
+      id SERIAL PRIMARY KEY,
+      mercado VARCHAR(100) NOT NULL,
+      compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
+      ramo VARCHAR(100) NOT NULL,
+      producto_modalidad VARCHAR(255) NOT NULL,
+      total_comision NUMERIC NOT NULL DEFAULT 0,
+      consultor_1 NUMERIC DEFAULT 0,
+      consultor_2 NUMERIC DEFAULT 0,
+      johans NUMERIC DEFAULT 0,
+      nivel_1_subagente NUMERIC DEFAULT 0,
+      nivel_2_agente NUMERIC DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS corridas_comisiones (
+      id SERIAL PRIMARY KEY,
+      fecha_ejecucion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      tipo_ejecucion VARCHAR(50) NOT NULL,
+      total_pagado NUMERIC NOT NULL,
+      cantidad_asesores INT NOT NULL,
+      archivo_txt TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS historico_comisiones (
+      id SERIAL PRIMARY KEY,
+      pago_id INT REFERENCES pagos(id) ON DELETE CASCADE,
+      poliza_id INT REFERENCES polizas(id) ON DELETE CASCADE,
+      asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
+      monto_pago NUMERIC NOT NULL,
+      total_comision_porcentaje NUMERIC NOT NULL,
+      asesor_porcentaje NUMERIC NOT NULL,
+      comision_bruta NUMERIC NOT NULL,
+      pago_asesor NUMERIC NOT NULL,
+      margen_broker NUMERIC NOT NULL,
+      fecha_pago DATE NOT NULL,
+      estado_corrida VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado_corrida IN ('pendiente', 'procesado')),
+      corrida_id INT REFERENCES corridas_comisiones(id) ON DELETE SET NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS cotizaciones (
+        id SERIAL PRIMARY KEY,
+        token VARCHAR(100) UNIQUE NOT NULL,
+        asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
+        cliente_datos JSONB NOT NULL,
+        suma_asegurada NUMERIC NOT NULL,
+        suma_asegurada_2 NUMERIC,
+        dependientes JSONB NOT NULL DEFAULT '[]',
+        comparativa JSONB NOT NULL DEFAULT '[]',
+        comparativa_2 JSONB DEFAULT '[]',
+        estado VARCHAR(50) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
@@ -866,21 +1041,6 @@ function fallbackQuery(text, params = []) {
     };
     fallbackData.polizas.push(newPol);
 
-    // Crear un pago automático pendiente para esta póliza
-    const payId = fallbackData.pagos.length ? Math.max(...fallbackData.pagos.map(pa => pa.id)) + 1 : 1;
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    fallbackData.pagos.push({
-      id: payId,
-      poliza_id: newId,
-      monto: newPol.prima_anual,
-      fecha_pago: new Date().toISOString().split('T')[0],
-      estado_pago: 'pendiente',
-      referencia: null,
-      fecha_vencimiento: nextMonth.toISOString().split('T')[0],
-      created_at: new Date().toISOString()
-    });
-
     saveFallback();
     return { rows: [newPol] };
   }
@@ -1038,6 +1198,92 @@ function fallbackQuery(text, params = []) {
   if (cleanSql.startsWith('SELECT * FROM logs_actividad') || cleanSql.includes('FROM logs_actividad')) {
     const sorted = [...fallbackData.logs_actividad].sort((a, b) => b.id - a.id);
     return { rows: sorted };
+  }
+
+  // 23. SELECT FROM matriz_comisiones
+  if (cleanSql.includes('FROM matriz_comisiones')) {
+    return { rows: fallbackData.matriz_comisiones };
+  }
+
+  // 24. SELECT FROM corridas_comisiones
+  if (cleanSql.includes('FROM corridas_comisiones')) {
+    return { rows: fallbackData.corridas_comisiones };
+  }
+
+  // 25. SELECT FROM historico_comisiones
+  if (cleanSql.includes('FROM historico_comisiones')) {
+    let result = [...fallbackData.historico_comisiones];
+    if (cleanSql.includes('estado_corrida = $1')) {
+      const state = params[0];
+      result = result.filter(h => h.estado_corrida === state);
+    }
+    return { rows: result };
+  }
+
+  // 26. INSERT INTO historico_comisiones
+  if (cleanSql.startsWith('INSERT INTO historico_comisiones')) {
+    const [pago_id, poliza_id, asesor_id, monto_pago, total_comision_porcentaje, asesor_porcentaje, comision_bruta, pago_asesor, margen_broker, fecha_pago, estado_corrida] = params;
+    const newId = fallbackData.historico_comisiones.length ? Math.max(...fallbackData.historico_comisiones.map(h => h.id)) + 1 : 1;
+    const newHist = {
+      id: newId,
+      pago_id: parseInt(pago_id),
+      poliza_id: parseInt(poliza_id),
+      asesor_id: asesor_id ? parseInt(asesor_id) : null,
+      monto_pago: parseFloat(monto_pago),
+      total_comision_porcentaje: parseFloat(total_comision_porcentaje),
+      asesor_porcentaje: parseFloat(asesor_porcentaje),
+      comision_bruta: parseFloat(comision_bruta),
+      pago_asesor: parseFloat(pago_asesor),
+      margen_broker: parseFloat(margen_broker),
+      fecha_pago: fecha_pago || new Date().toISOString().split('T')[0],
+      estado_corrida: estado_corrida || 'pendiente',
+      corrida_id: null,
+      created_at: new Date().toISOString()
+    };
+    fallbackData.historico_comisiones.push(newHist);
+    saveFallback();
+    return { rows: [newHist] };
+  }
+
+  // 27. INSERT INTO cotizaciones
+  if (cleanSql.startsWith('INSERT INTO cotizaciones')) {
+    const [token, asesor_id, cliente_datos, suma_asegurada, suma_asegurada_2, dependientes, comparativa, comparativa_2] = params;
+    const newId = fallbackData.cotizaciones.length ? Math.max(...fallbackData.cotizaciones.map(c => c.id)) + 1 : 1;
+    const newQuote = {
+      id: newId,
+      token,
+      asesor_id: asesor_id ? parseInt(asesor_id) : null,
+      cliente_datos: typeof cliente_datos === 'string' ? JSON.parse(cliente_datos) : cliente_datos,
+      suma_asegurada: parseFloat(suma_asegurada),
+      suma_asegurada_2: suma_asegurada_2 ? parseFloat(suma_asegurada_2) : null,
+      dependientes: typeof dependientes === 'string' ? JSON.parse(dependientes) : (dependientes || []),
+      comparativa: typeof comparativa === 'string' ? JSON.parse(comparativa) : (comparativa || []),
+      comparativa_2: typeof comparativa_2 === 'string' ? JSON.parse(comparativa_2) : (comparativa_2 || []),
+      estado: 'pendiente',
+      created_at: new Date().toISOString()
+    };
+    fallbackData.cotizaciones.push(newQuote);
+    saveFallback();
+    return { rows: [newQuote] };
+  }
+
+  // 28. SELECT * FROM cotizaciones WHERE token = $1
+  if (cleanSql.includes('FROM cotizaciones WHERE token =')) {
+    const tokenVal = params[0];
+    const quote = fallbackData.cotizaciones.find(c => c.token === tokenVal);
+    return { rows: quote ? [quote] : [] };
+  }
+
+  // 29. UPDATE cotizaciones SET estado = $1 WHERE token = $2
+  if (cleanSql.startsWith('UPDATE cotizaciones SET estado =')) {
+    const [estado, tokenVal] = params;
+    const idx = fallbackData.cotizaciones.findIndex(c => c.token === tokenVal);
+    if (idx !== -1) {
+      fallbackData.cotizaciones[idx].estado = estado;
+      saveFallback();
+      return { rows: [fallbackData.cotizaciones[idx]], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
   }
 
   console.log(`⚠️ Consulta SQL no emulada en fallback: "${cleanSql}"`);

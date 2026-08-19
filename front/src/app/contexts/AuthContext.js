@@ -160,18 +160,13 @@ export function AuthProvider({ children }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al actualizar perfil');
 
-      localStorage.setItem('jka_cliente', JSON.stringify(data.cliente));
-      setCliente(data.cliente);
-      
-      // Si el usuario es asesor, también actualizamos su información de asesor local
-      if (user?.rango === 'asesor') {
-        const updatedAsesor = {
-          ...asesor,
-          nombre: `${profileData.primer_nombre} ${profileData.primer_apellido}`,
-          telefono: `${profileData.codigo_area}-${profileData.numero_celular}`
-        };
-        localStorage.setItem('jka_asesor', JSON.stringify(updatedAsesor));
-        setAsesor(updatedAsesor);
+      if (data.cliente) {
+        localStorage.setItem('jka_cliente', JSON.stringify(data.cliente));
+        setCliente(data.cliente);
+      }
+      if (data.asesor) {
+        localStorage.setItem('jka_asesor', JSON.stringify(data.asesor));
+        setAsesor(data.asesor);
       }
 
       return data;

@@ -5,10 +5,33 @@ import bcrypt from 'bcryptjs';
 import { db } from '../db/db.js';
 import { authenticateToken } from './auth.js';
 import { registrarAccion } from '../db/logger.js';
+import { ejecutarCorridaComisiones } from '../services/commissionService.js';
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+function parsePagoMetodos(pagoStr) {
+  const s = String(pagoStr || '').toUpperCase();
+  return {
+    pago_contado: s.includes('CONT') || s.includes('ANUAL') || s.includes('CONTADO'),
+    pago_semestral: s.includes('SEM') || s.includes('SEMESTRAL'),
+    pago_trimestral: s.includes('TRIM') || s.includes('TRIMESTRAL'),
+    pago_mensual: s.includes('MENS') || s.includes('MEN') || s.includes('MENSUAL')
+  };
+}
+
+function getPagoBooleans(body) {
+  if (body.pago_contado !== undefined || body.pago_semestral !== undefined || body.pago_trimestral !== undefined || body.pago_mensual !== undefined) {
+    return {
+      pago_contado: body.pago_contado === true || body.pago_contado === 'true' || body.pago_contado === 1,
+      pago_semestral: body.pago_semestral === true || body.pago_semestral === 'true' || body.pago_semestral === 1,
+      pago_trimestral: body.pago_trimestral === true || body.pago_trimestral === 'true' || body.pago_trimestral === 1,
+      pago_mensual: body.pago_mensual === true || body.pago_mensual === 'true' || body.pago_mensual === 1
+    };
+  }
+  return parsePagoMetodos(body.pago);
+}
 
 // Helper: Actualizar metadatos de tarifario (versión y fecha de última modificación)
 async function actualizarTarifarioMetadata(usuarioCorreo) {
@@ -434,6 +457,11 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           created_at: new Date().toISOString()
         };
         BENEFIT_FIELDS.forEach(f => { row[f] = t[f] || ''; });
+        const metodos = parsePagoMetodos(row.pago);
+        row.pago_contado = metodos.pago_contado;
+        row.pago_semestral = metodos.pago_semestral;
+        row.pago_trimestral = metodos.pago_trimestral;
+        row.pago_mensual = metodos.pago_mensual;
         nuevasTarifas.push(row);
       });
 
@@ -459,16 +487,21 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           compMap[t.compania] = cId;
         }
 
+        const metodos = parsePagoMetodos(t.pago);
         await db.query(
           `INSERT INTO tarifas (
             compania_id, edad_min, edad_max, suma_asegurada, prima,
-            plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
-            funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+            plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
+            maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+            funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
           [
             cId, parseInt(t.edad_min), parseInt(t.edad_max), parseFloat(t.suma_asegurada), parseFloat(t.prima),
-            t.plan || '', t.pago || '', t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
-            t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || '', t.consultas_medicas || '', t.examenes_lab_imagenologia || '', t.ambulancia || ''
+            t.plan || '', t.pago || '',
+            metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
+            t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
+            t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || '', t.consultas_medicas || '', t.examenes_lab_imagenologia || '', t.ambulancia || '',
+            t.ramo || 'Salud'
           ]
         );
       }
@@ -521,6 +554,8 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
   }
 
   try {
+    const metodos = getPagoBooleans(req.body);
+
     if (db.isFallback()) {
       const fallbackFilePath = './data/fallback_db.json';
       const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
@@ -534,6 +569,11 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         edad_max: parseInt(edad_max),
         suma_asegurada: parseFloat(suma_asegurada),
         prima: parseFloat(prima),
+        pago_contado: metodos.pago_contado,
+        pago_semestral: metodos.pago_semestral,
+        pago_trimestral: metodos.pago_trimestral,
+        pago_mensual: metodos.pago_mensual,
+        ramo: req.body.ramo || 'Salud',
         created_at: new Date().toISOString()
       };
       TARIFF_BENEFIT_FIELDS.forEach(f => { row[f] = req.body[f] || ''; });
@@ -543,13 +583,18 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
       const q = `
         INSERT INTO tarifas (
           compania_id, edad_min, edad_max, suma_asegurada, prima,
-          plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
-          funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
+          maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+          funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       `;
       await db.query(q, [
         parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
-        ...TARIFF_BENEFIT_FIELDS.map(f => req.body[f] || '')
+        req.body.plan || '', req.body.pago || '',
+        metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
+        req.body.maternidad_suma || '', req.body.maternidad_costo || '', req.body.asist_intl_suma || '', req.body.asist_intl_costo || '',
+        req.body.funeral_suma || '', req.body.funeral_costo || '', req.body.at_situ_medicamentos || '', req.body.consultas_medicas || '', req.body.examenes_lab_imagenologia || '', req.body.ambulancia || '',
+        req.body.ramo || 'Salud'
       ]);
     }
 
@@ -573,6 +618,8 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
   }
 
   try {
+    const metodos = getPagoBooleans(req.body);
+
     if (db.isFallback()) {
       const fallbackFilePath = './data/fallback_db.json';
       const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
@@ -587,7 +634,11 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         edad_min: parseInt(edad_min),
         edad_max: parseInt(edad_max),
         suma_asegurada: parseFloat(suma_asegurada),
-        prima: parseFloat(prima)
+        prima: parseFloat(prima),
+        pago_contado: metodos.pago_contado,
+        pago_semestral: metodos.pago_semestral,
+        pago_trimestral: metodos.pago_trimestral,
+        pago_mensual: metodos.pago_mensual
       };
       TARIFF_BENEFIT_FIELDS.forEach(f => { updated[f] = req.body[f] ?? updated[f] ?? ''; });
       fData.tarifas[idx] = updated;
@@ -596,14 +647,18 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
       const q = `
         UPDATE tarifas
         SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, prima = $5,
-            plan = $6, pago = $7, maternidad_suma = $8, maternidad_costo = $9, asist_intl_suma = $10, asist_intl_costo = $11,
-            funeral_suma = $12, funeral_costo = $13, at_situ_medicamentos = $14, consultas_medicas = $15,
-            examenes_lab_imagenologia = $16, ambulancia = $17
-        WHERE id = $18
+            plan = $6, pago = $7, pago_contado = $8, pago_semestral = $9, pago_trimestral = $10, pago_mensual = $11,
+            maternidad_suma = $12, maternidad_costo = $13, asist_intl_suma = $14, asist_intl_costo = $15,
+            funeral_suma = $16, funeral_costo = $17, at_situ_medicamentos = $18, consultas_medicas = $19,
+            examenes_lab_imagenologia = $20, ambulancia = $21
+        WHERE id = $22
       `;
       const resUp = await db.query(q, [
         parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
-        ...TARIFF_BENEFIT_FIELDS.map(f => req.body[f] || ''),
+        req.body.plan || '', req.body.pago || '',
+        metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
+        req.body.maternidad_suma || '', req.body.maternidad_costo || '', req.body.asist_intl_suma || '', req.body.asist_intl_costo || '',
+        req.body.funeral_suma || '', req.body.funeral_costo || '', req.body.at_situ_medicamentos || '', req.body.consultas_medicas || '', req.body.examenes_lab_imagenologia || '', req.body.ambulancia || '',
         parseInt(id)
       ]);
       if (resUp.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
@@ -639,6 +694,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
           continue;
         }
 
+        const metodos = getPagoBooleans(t);
         const isNew = String(id).startsWith('new-');
         if (isNew) {
           const newId = fData.tarifas.length > 0 ? Math.max(...fData.tarifas.map(item => item.id)) + 1 : 1;
@@ -649,6 +705,11 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             edad_max: parseInt(edad_max),
             suma_asegurada: parseFloat(suma_asegurada),
             prima: parseFloat(prima),
+            pago_contado: metodos.pago_contado,
+            pago_semestral: metodos.pago_semestral,
+            pago_trimestral: metodos.pago_trimestral,
+            pago_mensual: metodos.pago_mensual,
+            ramo: t.ramo || 'Salud',
             created_at: new Date().toISOString()
           };
           TARIFF_BENEFIT_FIELDS.forEach(f => { row[f] = t[f] || ''; });
@@ -662,7 +723,12 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               edad_min: parseInt(edad_min),
               edad_max: parseInt(edad_max),
               suma_asegurada: parseFloat(suma_asegurada),
-              prima: parseFloat(prima)
+              prima: parseFloat(prima),
+              pago_contado: metodos.pago_contado,
+              pago_semestral: metodos.pago_semestral,
+              pago_trimestral: metodos.pago_trimestral,
+              pago_mensual: metodos.pago_mensual,
+              ramo: t.ramo || fData.tarifas[idx].ramo || 'Salud'
             };
             TARIFF_BENEFIT_FIELDS.forEach(f => { updated[f] = t[f] ?? updated[f] ?? ''; });
             fData.tarifas[idx] = updated;
@@ -677,31 +743,42 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
           continue;
         }
 
+        const metodos = getPagoBooleans(t);
         const isNew = String(id).startsWith('new-');
         if (isNew) {
           const q = `
             INSERT INTO tarifas (
               compania_id, edad_min, edad_max, suma_asegurada, prima,
-              plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
-              funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+              plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
+              maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+              funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
           `;
           await db.query(q, [
             parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
-            ...TARIFF_BENEFIT_FIELDS.map(f => t[f] || '')
+            t.plan || '', t.pago || '',
+            metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
+            t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
+            t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || '', t.consultas_medicas || '', t.examenes_lab_imagenologia || '', t.ambulancia || '',
+            t.ramo || 'Salud'
           ]);
         } else {
           const q = `
             UPDATE tarifas
             SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, prima = $5,
-                plan = $6, pago = $7, maternidad_suma = $8, maternidad_costo = $9, asist_intl_suma = $10, asist_intl_costo = $11,
-                funeral_suma = $12, funeral_costo = $13, at_situ_medicamentos = $14, consultas_medicas = $15,
-                examenes_lab_imagenologia = $16, ambulancia = $17
-            WHERE id = $18
+                plan = $6, pago = $7, pago_contado = $8, pago_semestral = $9, pago_trimestral = $10, pago_mensual = $11,
+                maternidad_suma = $12, maternidad_costo = $13, asist_intl_suma = $14, asist_intl_costo = $15,
+                funeral_suma = $16, funeral_costo = $17, at_situ_medicamentos = $18, consultas_medicas = $19,
+                examenes_lab_imagenologia = $20, ambulancia = $21, ramo = $22
+            WHERE id = $23
           `;
           await db.query(q, [
             parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
-            ...TARIFF_BENEFIT_FIELDS.map(f => t[f] || ''),
+            t.plan || '', t.pago || '',
+            metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
+            t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
+            t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || '', t.consultas_medicas || '', t.examenes_lab_imagenologia || '', t.ambulancia || '',
+            t.ramo || 'Salud',
             parseInt(id)
           ]);
         }
@@ -802,106 +879,56 @@ router.get('/commissions', authenticateToken, async (req, res) => {
   try {
     let companias = [];
     let asesores = [];
-    let comisionesAsesores = [];
-    let polizas = [];
+    let matriz = [];
+    let historico = [];
+    let corridas = [];
 
     if (db.isFallback()) {
       const fData = db.getFallbackData();
       companias = fData.companias_seguros || [];
       asesores = fData.asesores || [];
-      comisionesAsesores = fData.comisiones_asesores || [];
+      matriz = fData.matriz_comisiones || [];
+      corridas = fData.corridas_comisiones || [];
       
-      const rawPolizas = fData.polizas || [];
-      polizas = rawPolizas.map(p => {
-        const advisor = asesores.find(a => a.id === p.asesor_id);
-        const comp = companias.find(c => c.id === p.compania_id);
-        const client = (fData.datos_personales || []).find(dp => dp.id === p.cliente_id);
-        
+      const rawHist = fData.historico_comisiones || [];
+      historico = rawHist.map(h => {
+        const p = (fData.polizas || []).find(pol => pol.id === h.poliza_id);
+        const a = (fData.asesores || []).find(adv => adv.id === h.asesor_id);
+        const comp = companias.find(c => c.id === (p ? p.compania_id : null));
         return {
-          id: p.id,
-          codigo_poliza: p.codigo_poliza,
-          plan: p.plan,
-          prima_anual: p.prima_anual,
-          estado: p.estado,
-          pago_estado: p.pago_estado,
-          comision_porcentaje: p.comision_porcentaje,
-          asesor_nombre: advisor ? advisor.nombre : 'N/A',
-          codigo_asesor: advisor ? advisor.codigo_asesor : 'N/A',
-          asesor_id: p.asesor_id,
-          compania_nombre: comp ? comp.nombre : 'N/A',
-          compania_id: p.compania_id,
-          primer_nombre: client ? client.primer_nombre : 'N/A',
-          primer_apellido: client ? client.primer_apellido : ''
+          ...h,
+          codigo_poliza: p ? p.codigo_poliza : 'N/A',
+          plan: p ? p.plan : 'N/A',
+          asesor_nombre: a ? a.nombre : 'N/A',
+          codigo_asesor: a ? a.codigo_asesor : 'N/A',
+          compania_nombre: comp ? comp.nombre : 'N/A'
         };
       });
     } else {
-      const resComps = await db.query('SELECT id, nombre, comision_estandar, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY id ASC');
+      const resComps = await db.query('SELECT id, nombre, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY nombre ASC');
       companias = resComps.rows;
 
-      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo FROM asesores ORDER BY id ASC');
+      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo, tipo_asesor FROM asesores ORDER BY id ASC');
       asesores = resAsesores.rows;
 
-      const resComs = await db.query('SELECT id, asesor_id, compania_id, porcentaje FROM comisiones_asesores');
-      comisionesAsesores = resComs.rows;
+      const resMat = await db.query('SELECT m.*, c.nombre AS compania_nombre FROM matriz_comisiones m LEFT JOIN companias_seguros c ON m.compania_id = c.id');
+      matriz = resMat.rows;
 
-      const resPols = await db.query(`
-        SELECT p.id, p.codigo_poliza, p.plan, p.prima_anual, p.estado, p.pago_estado, p.comision_porcentaje,
-               a.nombre as asesor_nombre, a.codigo_asesor, a.id as asesor_id,
-               c.nombre as compania_nombre, c.id as compania_id,
-               dp.primer_nombre, dp.primer_apellido
-        FROM polizas p
-        LEFT JOIN asesores a ON p.asesor_id = a.id
+      const resRuns = await db.query('SELECT * FROM corridas_comisiones ORDER BY id DESC');
+      corridas = resRuns.rows;
+
+      const resHist = await db.query(`
+        SELECT h.*, p.codigo_poliza, p.plan, a.nombre AS asesor_nombre, a.codigo_asesor, c.nombre AS compania_nombre
+        FROM historico_comisiones h
+        LEFT JOIN polizas p ON h.poliza_id = p.id
+        LEFT JOIN asesores a ON h.asesor_id = a.id
         LEFT JOIN companias_seguros c ON p.compania_id = c.id
-        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
-        ORDER BY p.id DESC
+        ORDER BY h.id DESC
       `);
-      polizas = resPols.rows;
+      historico = resHist.rows;
     }
 
-    const compMap = {};
-    companias.forEach(c => {
-      compMap[c.id] = c;
-    });
-
-    const polizasConCalculos = polizas.map(p => {
-      const comp = compMap[p.compania_id];
-      const comision_compania_pct = comp ? parseFloat(comp.comision_compania || 0) : 0;
-      
-      let porcentaje = 0;
-      let origen = 'Aseguradora';
-
-      if (p.comision_porcentaje !== null && p.comision_porcentaje !== undefined) {
-        porcentaje = parseFloat(p.comision_porcentaje);
-        origen = 'Poliza';
-      } else if (p.asesor_id && p.compania_id) {
-        const custom = comisionesAsesores.find(c => c.asesor_id === p.asesor_id && c.compania_id === p.compania_id);
-        if (custom) {
-          porcentaje = parseFloat(custom.porcentaje);
-          origen = 'Asesor';
-        } else {
-          porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
-          origen = 'Aseguradora';
-        }
-      } else {
-        porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
-        origen = 'Aseguradora';
-      }
-
-      const prima = parseFloat(p.prima_anual || 0);
-      const comision_jka = (prima * comision_compania_pct) / 100;
-      const comision_calculada = (comision_jka * porcentaje) / 100;
-
-      return {
-        ...p,
-        comision_compania_pct,
-        comision_jka: parseFloat(comision_jka.toFixed(2)),
-        porcentaje_aplicado: porcentaje,
-        origen_comision: origen,
-        comision_calculada: parseFloat(comision_calculada.toFixed(2))
-      };
-    });
-
-    // Construir tabla de abonos BNC (para copiado directo en excel)
+    // Calcular vista previa de BNC a partir de comisiones pendientes
     const bncPreview = [];
     const nowTemp = new Date();
     const dia = String(nowTemp.getDate()).padStart(2, '0');
@@ -910,27 +937,29 @@ router.get('/commissions', authenticateToken, async (req, res) => {
     const fechaPago = `${dia}/${mes}/${anio}`;
     const cuentaDebitar = '01910100201000123456';
 
-    const asesoresMap = {};
-    polizasConCalculos.forEach(p => {
-      if (!p.asesor_id) return;
-      const key = p.asesor_id;
-      if (!asesoresMap[key]) {
-        const advProfile = asesores.find(a => a.id === p.asesor_id);
-        asesoresMap[key] = {
+    const pendingComms = historico.filter(h => h.estado_corrida === 'pendiente');
+    const advisorsMap = {};
+
+    pendingComms.forEach(c => {
+      if (!c.asesor_id) return;
+      const key = c.asesor_id;
+      if (!advisorsMap[key]) {
+        const advProfile = asesores.find(a => a.id === c.asesor_id) || {};
+        advisorsMap[key] = {
           id: key,
-          nombre: p.asesor_nombre,
-          correo: advProfile ? advProfile.correo : 'info@jkaconsultores.com',
-          cedula: advProfile ? advProfile.cedula : 'V00000000',
-          banco: advProfile ? advProfile.banco : 'BNC',
-          numero_cuenta: advProfile ? advProfile.numero_cuenta : '00000000000000000000',
+          nombre: c.asesor_nombre || advProfile.nombre || 'Asesor Sin Nombre',
+          correo: advProfile.correo || 'info@jkaconsultores.com',
+          cedula: advProfile.cedula || 'V00000000',
+          banco: advProfile.banco || 'BNC',
+          numero_cuenta: advProfile.numero_cuenta || '00000000000000000000',
           totalComision: 0
         };
       }
-      asesoresMap[key].totalComision += p.comision_calculada;
+      advisorsMap[key].totalComision += parseFloat(c.pago_asesor || 0);
     });
 
     let refNum = 1001;
-    Object.values(asesoresMap).forEach(adv => {
+    Object.values(advisorsMap).forEach(adv => {
       if (adv.totalComision <= 0) return;
 
       const rawCta = adv.numero_cuenta || '';
@@ -961,8 +990,9 @@ router.get('/commissions', authenticateToken, async (req, res) => {
     res.json({
       companias,
       asesores,
-      comisiones_asesores: comisionesAsesores,
-      polizas: polizasConCalculos,
+      matriz_comisiones: matriz,
+      historico_comisiones: historico,
+      corridas_comisiones: corridas,
       bnc_preview: bncPreview
     });
   } catch (err) {
@@ -971,187 +1001,37 @@ router.get('/commissions', authenticateToken, async (req, res) => {
   }
 });
 
+// Generar corrida de comisiones de forma manual
+router.post('/commissions/run', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  try {
+    const result = await ejecutarCorridaComisiones('manual');
+    res.json(result);
+  } catch (err) {
+    console.error('Error al ejecutar corrida manual:', err);
+    res.status(500).json({ error: 'Error del servidor al ejecutar corrida de comisiones.' });
+  }
+});
+
 // Generar archivo TXT para Pago de Proveedores del BNC (Delimitado por Tabulaciones)
 router.get('/commissions/export-bnc-txt', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
-  const cuentaDebitarParam = req.query.cuenta_debitar || '01910100201000123456';
-
+  
   try {
-    let companias = [];
-    let asesores = [];
-    let comisionesAsesores = [];
-    let polizas = [];
-
-    if (db.isFallback()) {
-      const fData = db.getFallbackData();
-      companias = fData.companias_seguros || [];
-      asesores = fData.asesores || [];
-      comisionesAsesores = fData.comisiones_asesores || [];
-      
-      const rawPolizas = fData.polizas || [];
-      polizas = rawPolizas.map(p => {
-        const advisor = asesores.find(a => a.id === p.asesor_id);
-        const comp = companias.find(c => c.id === p.compania_id);
-        const client = (fData.datos_personales || []).find(dp => dp.id === p.cliente_id);
-        
-        return {
-          id: p.id,
-          codigo_poliza: p.codigo_poliza,
-          plan: p.plan,
-          prima_anual: p.prima_anual,
-          estado: p.estado,
-          pago_estado: p.pago_estado,
-          comision_porcentaje: p.comision_porcentaje,
-          asesor_nombre: advisor ? advisor.nombre : 'N/A',
-          codigo_asesor: advisor ? advisor.codigo_asesor : 'N/A',
-          asesor_id: p.asesor_id,
-          compania_nombre: comp ? comp.nombre : 'N/A',
-          compania_id: p.compania_id,
-          primer_nombre: client ? client.primer_nombre : 'N/A',
-          primer_apellido: client ? client.primer_apellido : ''
-        };
-      });
-    } else {
-      const resComps = await db.query('SELECT id, nombre, comision_estandar, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY id ASC');
-      companias = resComps.rows;
-
-      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo, cedula, telefono, banco, numero_cuenta FROM asesores ORDER BY id ASC');
-      asesores = resAsesores.rows;
-
-      const resComs = await db.query('SELECT id, asesor_id, compania_id, porcentaje FROM comisiones_asesores');
-      comisionesAsesores = resComs.rows;
-
-      const resPols = await db.query(`
-        SELECT p.id, p.codigo_poliza, p.plan, p.prima_anual, p.estado, p.pago_estado, p.comision_porcentaje,
-               a.nombre as asesor_nombre, a.codigo_asesor, a.id as asesor_id,
-               c.nombre as compania_nombre, c.id as compania_id,
-               dp.primer_nombre, dp.primer_apellido
-        FROM polizas p
-        LEFT JOIN asesores a ON p.asesor_id = a.id
-        LEFT JOIN companias_seguros c ON p.compania_id = c.id
-        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
-        ORDER BY p.id DESC
-      `);
-      polizas = resPols.rows;
+    const result = await ejecutarCorridaComisiones('manual');
+    
+    if (result.count === 0) {
+      res.setHeader('Content-disposition', 'attachment; filename=bnc_vacio.txt');
+      res.setHeader('Content-type', 'text/plain; charset=utf-8');
+      return res.send("No hay comisiones pendientes para liquidar en este momento.");
     }
-
-    const compMap = {};
-    companias.forEach(c => {
-      compMap[c.id] = c;
-    });
-
-    const polizasConCalculos = polizas.map(p => {
-      const comp = compMap[p.compania_id];
-      const comision_compania_pct = comp ? parseFloat(comp.comision_compania || 0) : 0;
-      
-      let porcentaje = 0;
-      let origen = 'Aseguradora';
-
-      if (p.comision_porcentaje !== null && p.comision_porcentaje !== undefined) {
-        porcentaje = parseFloat(p.comision_porcentaje);
-        origen = 'Poliza';
-      } else if (p.asesor_id && p.compania_id) {
-        const custom = comisionesAsesores.find(c => c.asesor_id === p.asesor_id && c.compania_id === p.compania_id);
-        if (custom) {
-          porcentaje = parseFloat(custom.porcentaje);
-          origen = 'Asesor';
-        } else {
-          porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
-          origen = 'Aseguradora';
-        }
-      } else {
-        porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
-        origen = 'Aseguradora';
-      }
-
-      const prima = parseFloat(p.prima_anual || 0);
-      const comision_jka = (prima * comision_compania_pct) / 100;
-      const comision_calculada = (comision_jka * porcentaje) / 100;
-
-      return {
-        ...p,
-        comision_compania_pct,
-        comision_jka: parseFloat(comision_jka.toFixed(2)),
-        porcentaje_aplicado: porcentaje,
-        origen_comision: origen,
-        comision_calculada: parseFloat(comision_calculada.toFixed(2))
-      };
-    });
-
-    // Agrupar por Asesor
-    const asesoresMap = {};
-    polizasConCalculos.forEach(p => {
-      if (!p.asesor_id) return;
-      const key = p.asesor_id;
-      if (!asesoresMap[key]) {
-        const advProfile = asesores.find(a => a.id === p.asesor_id);
-        asesoresMap[key] = {
-          id: key,
-          nombre: p.asesor_nombre,
-          correo: advProfile ? advProfile.correo : 'info@jkaconsultores.com',
-          cedula: advProfile ? advProfile.cedula : 'V00000000',
-          banco: advProfile ? advProfile.banco : 'BNC',
-          numero_cuenta: advProfile ? advProfile.numero_cuenta : '00000000000000000000',
-          totalComision: 0
-        };
-      }
-      asesoresMap[key].totalComision += p.comision_calculada;
-    });
-
-    const nowTemp = new Date();
-    const dia = String(nowTemp.getDate()).padStart(2, '0');
-    const mes = String(nowTemp.getMonth() + 1).padStart(2, '0');
-    const anio = nowTemp.getFullYear();
-    const fechaPago = `${dia}/${mes}/${anio}`;
-
-    const cuentaDebitar = cuentaDebitarParam.replace(/\D/g, '').substring(0, 20).padEnd(20, '0');
-
-    let lines = [];
-    let refNum = 1001;
-
-    Object.values(asesoresMap).forEach(adv => {
-      if (adv.totalComision <= 0) return;
-
-      const col1 = fechaPago;
-      const col2 = cuentaDebitar;
-      
-      const rawCta = adv.numero_cuenta || '';
-      const col3 = rawCta.replace(/\D/g, '').substring(0, 20).padEnd(20, '0');
-      
-      const col4 = adv.totalComision.toFixed(2).replace('.', ',');
-      
-      const rawNombre = adv.nombre || 'Asesor Sin Nombre';
-      const cleanDesc = `Abono de Comisiones Asesor ${rawNombre}`
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9 ]/g, '')
-        .substring(0, 60);
-      const col5 = cleanDesc;
-      
-      const rawCed = adv.cedula || '';
-      const cleanCedula = rawCed.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
-      const col6 = cleanCedula;
-      
-      const cleanNombre = rawNombre
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9 ]/g, '')
-        .substring(0, 80);
-      const col7 = cleanNombre;
-      
-      const col8 = (adv.correo || '').substring(0, 100);
-      const col9 = String(refNum++);
-
-      lines.push(`${col1}\t${col2}\t${col3}\t${col4}\t${col5}\t${col6}\t${col7}\t${col8}\t${col9}`);
-    });
-
-    const fileContent = lines.join('\n');
-
-    res.setHeader('Content-disposition', 'attachment; filename=bnc_pago_proveedores.txt');
+    
+    res.setHeader('Content-disposition', `attachment; filename=bnc_pago_proveedores_run_${result.runId}.txt`);
     res.setHeader('Content-type', 'text/plain; charset=utf-8');
-    res.send(fileContent);
-
+    res.send(result.archivo_txt);
   } catch (err) {
-    console.error('Error al generar BNC TXT de comisiones:', err);
-    res.status(500).json({ error: 'Error del servidor al generar archivo de pagos BNC.' });
+    console.error('Error al exportar TXT:', err);
+    res.status(500).json({ error: 'Error del servidor al generar archivo TXT.' });
   }
 });
 
@@ -1295,162 +1175,91 @@ router.get('/commissions/export-txt', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
 
   try {
-    let companias = [];
-    let asesores = [];
-    let comisionesAsesores = [];
-    let polizas = [];
-
+    let historico = [];
     if (db.isFallback()) {
       const fData = db.getFallbackData();
-      companias = fData.companias_seguros || [];
-      asesores = fData.asesores || [];
-      comisionesAsesores = fData.comisiones_asesores || [];
-      
-      const rawPolizas = fData.polizas || [];
-      polizas = rawPolizas.map(p => {
-        const advisor = asesores.find(a => a.id === p.asesor_id);
-        const comp = companias.find(c => c.id === p.compania_id);
-        const client = (fData.datos_personales || []).find(dp => dp.id === p.cliente_id);
-        
+      const companias = fData.companias_seguros || [];
+      const rawHist = fData.historico_comisiones || [];
+      historico = rawHist.map(h => {
+        const p = (fData.polizas || []).find(pol => pol.id === h.poliza_id);
+        const a = (fData.asesores || []).find(adv => adv.id === h.asesor_id);
+        const comp = companias.find(c => c.id === (p ? p.compania_id : null));
         return {
-          id: p.id,
-          codigo_poliza: p.codigo_poliza,
-          plan: p.plan,
-          prima_anual: p.prima_anual,
-          estado: p.estado,
-          pago_estado: p.pago_estado,
-          comision_porcentaje: p.comision_porcentaje,
-          asesor_nombre: advisor ? advisor.nombre : 'N/A',
-          codigo_asesor: advisor ? advisor.codigo_asesor : 'N/A',
-          asesor_id: p.asesor_id,
-          compania_nombre: comp ? comp.nombre : 'N/A',
-          compania_id: p.compania_id,
-          primer_nombre: client ? client.primer_nombre : 'N/A',
-          primer_apellido: client ? client.primer_apellido : ''
+          ...h,
+          codigo_poliza: p ? p.codigo_poliza : 'N/A',
+          plan: p ? p.plan : 'N/A',
+          asesor_nombre: a ? a.nombre : 'N/A',
+          codigo_asesor: a ? a.codigo_asesor : 'N/A',
+          compania_nombre: comp ? comp.nombre : 'N/A'
         };
       });
     } else {
-      const resComps = await db.query('SELECT id, nombre, comision_estandar, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY id ASC');
-      companias = resComps.rows;
-
-      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo FROM asesores ORDER BY id ASC');
-      asesores = resAsesores.rows;
-
-      const resComs = await db.query('SELECT id, asesor_id, compania_id, porcentaje FROM comisiones_asesores');
-      comisionesAsesores = resComs.rows;
-
-      const resPols = await db.query(`
-        SELECT p.id, p.codigo_poliza, p.plan, p.prima_anual, p.estado, p.pago_estado, p.comision_porcentaje,
-               a.nombre as asesor_nombre, a.codigo_asesor, a.id as asesor_id,
-               c.nombre as compania_nombre, c.id as compania_id,
-               dp.primer_nombre, dp.primer_apellido
-        FROM polizas p
-        LEFT JOIN asesores a ON p.asesor_id = a.id
+      const resHist = await db.query(`
+        SELECT h.*, p.codigo_poliza, p.plan, a.nombre AS asesor_nombre, a.codigo_asesor, c.nombre AS compania_nombre
+        FROM historico_comisiones h
+        LEFT JOIN polizas p ON h.poliza_id = p.id
+        LEFT JOIN asesores a ON h.asesor_id = a.id
         LEFT JOIN companias_seguros c ON p.compania_id = c.id
-        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
-        ORDER BY p.id DESC
+        ORDER BY h.id DESC
       `);
-      polizas = resPols.rows;
+      historico = resHist.rows;
     }
-
-    const compMap = {};
-    companias.forEach(c => {
-      compMap[c.id] = c;
-    });
-
-    const polizasConCalculos = polizas.map(p => {
-      const comp = compMap[p.compania_id];
-      const comision_compania_pct = comp ? parseFloat(comp.comision_compania || 0) : 0;
-      
-      let porcentaje = 0;
-      let origen = 'Aseguradora';
-
-      if (p.comision_porcentaje !== null && p.comision_porcentaje !== undefined) {
-        porcentaje = parseFloat(p.comision_porcentaje);
-        origen = 'Poliza';
-      } else if (p.asesor_id && p.compania_id) {
-        const custom = comisionesAsesores.find(c => c.asesor_id === p.asesor_id && c.compania_id === p.compania_id);
-        if (custom) {
-          porcentaje = parseFloat(custom.porcentaje);
-          origen = 'Asesor';
-        } else {
-          porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
-          origen = 'Aseguradora';
-        }
-      } else {
-        porcentaje = comp ? parseFloat(comp.comision_asesor_estandar || 0) : 0;
-        origen = 'Aseguradora';
-      }
-
-      const prima = parseFloat(p.prima_anual || 0);
-      const comision_jka = (prima * comision_compania_pct) / 100;
-      const comision_calculada = (comision_jka * porcentaje) / 100;
-
-      return {
-        ...p,
-        comision_compania_pct,
-        comision_jka: parseFloat(comision_jka.toFixed(2)),
-        porcentaje_aplicado: porcentaje,
-        origen_comision: origen,
-        comision_calculada: parseFloat(comision_calculada.toFixed(2))
-      };
-    });
 
     const now = new Date().toLocaleString('es-VE', { timeZone: 'America/Caracas' });
     let text = `========================================================================\n`;
     text += `                   JKA CONSULTORES DE SEGUROS\n`;
-    text += `                REPORTE DETALLADO DE COMISIONES\n`;
+    text += `                REPORTE DETALLADO DE COMISIONES HISTÓRICAS\n`;
     text += `========================================================================\n`;
     text += `Fecha de Generación: ${now}\n`;
     text += `Generado por: ${req.user.correo}\n\n`;
 
     const asesoresMap = {};
-    polizasConCalculos.forEach(p => {
-      const key = p.asesor_id || 'sin_asesor';
-      const name = p.asesor_nombre || 'Sin Asesor Asignado';
-      const code = p.codigo_asesor || 'N/A';
+    historico.forEach(h => {
+      const key = h.asesor_id || 'sin_asesor';
+      const name = h.asesor_nombre || 'Sin Asesor Asignado';
+      const code = h.codigo_asesor || 'N/A';
       if (!asesoresMap[key]) {
         asesoresMap[key] = {
           nombre: name,
           codigo: code,
-          polizas: [],
-          totalPrima: 0,
+          comisiones: [],
+          totalMontoPago: 0,
           totalComision: 0
         };
       }
-      asesoresMap[key].polizas.push(p);
-      asesoresMap[key].totalPrima += parseFloat(p.prima_anual || 0);
-      asesoresMap[key].totalComision += p.comision_calculada;
+      asesoresMap[key].comisiones.push(h);
+      asesoresMap[key].totalMontoPago += parseFloat(h.monto_pago || 0);
+      asesoresMap[key].totalComision += parseFloat(h.pago_asesor || 0);
     });
 
     Object.values(asesoresMap).forEach(adv => {
       text += `------------------------------------------------------------------------\n`;
       text += `ASESOR: ${adv.nombre} (Código: ${adv.codigo})\n`;
       text += `------------------------------------------------------------------------\n`;
-      text += `Póliza       | Aseguradora     | Plan       | Cliente              | Prima Anual | % Com. | Com. Ganada \n`;
-      text += `-------------+-----------------+------------+----------------------+-------------+--------+-------------\n`;
+      text += `Póliza       | Aseguradora     | Plan       | Monto Pago  | % Com. | Com. Ganada | Estado Corrida \n`;
+      text += `-------------+-----------------+------------+-------------+--------+-------------+----------------\n`;
       
-      adv.polizas.forEach(p => {
-        const cod = p.codigo_poliza.padEnd(12).substring(0, 12);
-        const comp = p.compania_nombre.padEnd(15).substring(0, 15);
-        const plan = (p.plan || 'N/A').padEnd(10).substring(0, 10);
-        const cliName = `${p.primer_nombre} ${p.primer_apellido || ''}`.padEnd(20).substring(0, 20);
-        const primaStr = `$${parseFloat(p.prima_anual || 0).toFixed(2)}`.padStart(11);
-        const pctStr = `${p.porcentaje_aplicado}%`.padStart(6);
-        const comStr = `$${p.comision_calculada.toFixed(2)}`.padStart(11);
+      adv.comisiones.forEach(c => {
+        const cod = (c.codigo_poliza || 'N/A').padEnd(12).substring(0, 12);
+        const comp = (c.compania_nombre || 'N/A').padEnd(15).substring(0, 15);
+        const plan = (c.plan || 'N/A').padEnd(10).substring(0, 10);
+        const pagoStr = `$${parseFloat(c.monto_pago || 0).toFixed(2)}`.padStart(11);
+        const pctStr = `${c.asesor_porcentaje}%`.padStart(6);
+        const comStr = `$${parseFloat(c.pago_asesor || 0).toFixed(2)}`.padStart(11);
+        const stateStr = (c.estado_corrida || 'pendiente').padEnd(14);
         
-        text += `${cod} | ${comp} | ${plan} | ${cliName} | ${primaStr} | ${pctStr} | ${comStr}\n`;
+        text += `${cod} | ${comp} | ${plan} | ${pagoStr} | ${pctStr} | ${comStr} | ${stateStr}\n`;
       });
       
-      text += `-------------+-----------------+------------+----------------------+-------------+--------+-------------\n`;
-      text += `TOTALES:                                                            | ${`$${adv.totalPrima.toFixed(2)}`.padStart(11)} |        | ${`$${adv.totalComision.toFixed(2)}`.padStart(11)}\n\n`;
+      text += `-------------+-----------------+------------+-------------+--------+-------------+----------------\n`;
+      text += `TOTALES:                                 | ${`$${adv.totalMontoPago.toFixed(2)}`.padStart(11)} |        | ${`$${adv.totalComision.toFixed(2)}`.padStart(11)}\n\n`;
     });
 
     text += `========================================================================\n`;
     text += `FIN DEL REPORTE\n`;
     text += `========================================================================\n`;
 
-    res.setHeader('Content-disposition', 'attachment; filename=comisiones_asesores.txt');
+    res.setHeader('Content-disposition', 'attachment; filename=comisiones_asesores_historico.txt');
     res.setHeader('Content-type', 'text/plain; charset=utf-8');
     res.send(text);
 

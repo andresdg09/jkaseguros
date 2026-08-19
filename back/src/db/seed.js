@@ -12,6 +12,15 @@ const __dirname = path.dirname(__filename);
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/jkaseguros';
 
 async function seed() {
+  function parsePagoMetodos(pagoStr) {
+    const s = String(pagoStr || '').toUpperCase();
+    return {
+      pago_contado: s.includes('CONT') || s.includes('ANUAL') || s.includes('CONTADO'),
+      pago_semestral: s.includes('SEM') || s.includes('SEMESTRAL'),
+      pago_trimestral: s.includes('TRIM') || s.includes('TRIMESTRAL'),
+      pago_mensual: s.includes('MENS') || s.includes('MEN') || s.includes('MENSUAL')
+    };
+  }
   console.log('🌱 Iniciando siembra de base de datos PostgreSQL...');
   
   const pool = new pg.Pool({ connectionString });
@@ -38,7 +47,10 @@ async function seed() {
         asesores, 
         polizas, 
         pagos, 
-        logs_actividad 
+        logs_actividad,
+        matriz_comisiones,
+        corridas_comisiones,
+        historico_comisiones
       RESTART IDENTITY CASCADE
     `);
 
@@ -61,17 +73,21 @@ async function seed() {
       const compania_id = idMap[t.compania];
       if (!compania_id) continue;
 
+      const metodos = parsePagoMetodos(t.pago);
       const q = `
         INSERT INTO tarifas (
           compania_id, edad_min, edad_max, suma_asegurada, prima,
-          plan, pago, maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
-          funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
+          maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
+          funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       `;
       await client.query(q, [
         compania_id, t.edad_min, t.edad_max, t.suma_asegurada, t.prima,
-        t.plan, t.pago, t.maternidad_suma, t.maternidad_costo, t.asist_intl_suma, t.asist_intl_costo,
-        t.funeral_suma, t.funeral_costo, t.at_situ_medicamentos, t.consultas_medicas, t.examenes_lab_imagenologia, t.ambulancia
+        t.plan, t.pago, metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
+        t.maternidad_suma, t.maternidad_costo, t.asist_intl_suma, t.asist_intl_costo,
+        t.funeral_suma, t.funeral_costo, t.at_situ_medicamentos, t.consultas_medicas, t.examenes_lab_imagenologia, t.ambulancia,
+        t.ramo || 'Salud'
       ]);
     }
     console.log('✅ Tarifas registradas.');
@@ -188,7 +204,22 @@ async function seed() {
       `, [resPol2.rows[0].id]);
     }
     console.log('✅ Pólizas y pagos sembrados.');
- 
+
+    // 6.5 Sembrar Matriz de Comisiones
+    console.log('📊 Sembrando matriz de comisiones...');
+    const scId = idMap['Seguros Caracas'] || 2;
+    const mfId = idMap['Mapfre Seguros'] || 4;
+    const msId = idMap['Mercantil Seguros'] || 1;
+
+    await client.query(`
+      INSERT INTO matriz_comisiones (mercado, compania_id, ramo, producto_modalidad, total_comision, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente)
+      VALUES 
+        ('Nacionales', $1, 'Salud', 'Cobertura Nacionales - Nuevo - Renovacion', 22.5, 17.0, 15.0, 17.0, 0, 0),
+        ('Nacionales', $2, 'Patrimoniales', 'Incendio', 40.0, 30.0, 28.0, 30.0, 0, 0),
+        ('Internacionales', $3, 'Salud', 'Nuevo', 15.0, 0, 0, 0, 10.0, 8.0)
+    `, [scId, mfId, msId]);
+    console.log('✅ Matriz de comisiones sembrada.');
+
     // 7. Sembrar Historial de Logs
     console.log('📝 Sembrando logs de trazabilidad...');
     const logsCheck = await client.query('SELECT COUNT(*) FROM logs_actividad');

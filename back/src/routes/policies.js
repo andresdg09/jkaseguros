@@ -6,6 +6,30 @@ import { registrarAccion } from '../db/logger.js';
 
 const router = express.Router();
 
+export async function generarPagosFraccionados(polizaId, primaAnual, frecuenciaPago) {
+  const freq = frecuenciaPago || 'contado';
+  const numCuotas = freq === 'contado' ? 1 : freq === 'semestral' ? 2 : freq === 'trimestral' ? 4 : 12;
+  const mesesIntervalo = freq === 'contado' ? 0 : freq === 'semestral' ? 6 : freq === 'trimestral' ? 3 : 1;
+  const montoBase = parseFloat((primaAnual / numCuotas).toFixed(2));
+  
+  for (let i = 1; i <= numCuotas; i++) {
+    const monto = (i === numCuotas)
+      ? parseFloat((primaAnual - (montoBase * (numCuotas - 1))).toFixed(2))
+      : montoBase;
+      
+    const mesesMas = 1 + (i - 1) * mesesIntervalo;
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + mesesMas);
+    const fechaVencimiento = nextMonth.toISOString().split('T')[0];
+
+    await db.query(
+      `INSERT INTO pagos (poliza_id, monto, estado_pago, referencia, fecha_vencimiento, cuota_numero, cuota_total)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [parseInt(polizaId), monto, 'pendiente', null, fechaVencimiento, i, numCuotas]
+    );
+  }
+}
+
 // Obtener pólizas según el rango
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -74,7 +98,10 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // Crear una póliza (Solicitud tras cotizar o creación directa por Admin/Asesor)
 router.post('/', authenticateToken, async (req, res) => {
-  const { compania_id, plan, suma_asegurada, prima_anual, asesor_id, cliente_id } = req.body;
+  const { 
+    compania_id, plan, suma_asegurada, prima_anual, asesor_id, cliente_id,
+    frecuencia_pago, tipo_negocio, tipo_cobertura, bono_pronto_pago, emision_online
+  } = req.body;
 
   if (!compania_id || !suma_asegurada || !prima_anual) {
     return res.status(400).json({ error: 'Faltan detalles de la póliza para proceder.' });
@@ -107,31 +134,45 @@ router.post('/', authenticateToken, async (req, res) => {
     // Si es cliente, se crea en estado de "negociacion"
     const initialStatus = req.user.rango === 'admin' ? 'vigente' : 'negociacion';
 
+    const freq = frecuencia_pago || 'contado';
+    const bizType = tipo_negocio || 'nuevo';
+    const covType = tipo_cobertura || 'individual';
+    const pronto = bono_pronto_pago === true || bono_pronto_pago === 'true';
+    const online = emision_online === true || emision_online === 'true';
+
+    let areaVal = req.body.area;
+    if (!areaVal && plan && compania_id) {
+      try {
+        const tRes = await db.query(
+          'SELECT ramo FROM tarifas WHERE compania_id = $1 AND plan = $2 LIMIT 1',
+          [parseInt(compania_id), plan]
+        );
+        if (tRes.rows.length > 0) areaVal = tRes.rows[0].ramo;
+      } catch (err) {
+        console.error('Error al buscar ramo de la tarifa:', err);
+      }
+    }
+    if (!areaVal) areaVal = 'Salud';
+
     const q = `
       INSERT INTO polizas (
         codigo_poliza, cliente_id, asesor_id, compania_id, plan,
-        area, suma_asegurada, deducible, prima_anual, estado, pago_estado
-      ) VALUES ($1, $2, $3, $4, $5, 'Salud', $6, 0, $7, $8, 'pendiente')
+        area, suma_asegurada, deducible, prima_anual, estado, pago_estado,
+        frecuencia_pago, tipo_negocio, tipo_cobertura, bono_pronto_pago, emision_online
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, 'pendiente', $10, $11, $12, $13, $14)
       RETURNING *
     `;
     const newPolRes = await db.query(q, [
       codPoliza, finalClienteId, finalAsesorId, parseInt(compania_id), plan || null,
-      parseFloat(suma_asegurada), parseFloat(prima_anual), initialStatus
+      areaVal,
+      parseFloat(suma_asegurada), parseFloat(prima_anual), initialStatus,
+      freq, bizType, covType, pronto, online
     ]);
 
     const newPol = newPolRes.rows[0];
 
-    // Crear pago pendiente automático en PostgreSQL (en Fallback ya se maneja internamente)
-    if (!db.isFallback()) {
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const fechaVencimiento = nextMonth.toISOString().split('T')[0];
-      
-      await db.query(
-        `INSERT INTO pagos (poliza_id, monto, estado_pago, fecha_vencimiento) VALUES ($1, $2, 'pendiente', $3)`,
-        [newPol.id, parseFloat(prima_anual), fechaVencimiento]
-      );
-    }
+    // Crear cuotas de pago fraccionados
+    await generarPagosFraccionados(newPol.id, parseFloat(prima_anual), freq);
 
     // Registrar en logs de actividad
     await registrarAccion(req.user.id, req.user.correo, 'CREACION_POLIZA', `Póliza ${codPoliza} creada en estado ${initialStatus} por ${req.user.correo}.`);
@@ -301,7 +342,7 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       // Postgres
-      const oldRes = await db.query('SELECT estado, prima_anual, asesor_id FROM polizas WHERE id = $1', [parseInt(id)]);
+      const oldRes = await db.query('SELECT estado, prima_anual, asesor_id, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);
       if (oldRes.rows.length === 0) return res.status(404).json({ error: 'Póliza no encontrada.' });
       
       // Si es asesor, verificar que le pertenezca la póliza
@@ -323,13 +364,7 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       if (estado === 'vigente' && oldStatus !== 'vigente') {
         const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
         if (checkPay.rows.length === 0) {
-          const nextMonth = new Date();
-          nextMonth.setMonth(nextMonth.getMonth() + 1);
-          const fechaVencimiento = nextMonth.toISOString().split('T')[0];
-          await db.query(
-            `INSERT INTO pagos (poliza_id, monto, estado_pago, fecha_vencimiento) VALUES ($1, $2, 'pendiente', $3)`,
-            [parseInt(id), primaAnual, fechaVencimiento]
-          );
+          await generarPagosFraccionados(parseInt(id), primaAnual, oldRes.rows[0].frecuencia_pago || 'contado');
         }
       }
     }
@@ -460,7 +495,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     } else {
       for (const policy of policies) {
         const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = policy;
-        const oldRes = await db.query('SELECT estado, asesor_id FROM polizas WHERE id = $1', [parseInt(id)]);
+        const oldRes = await db.query('SELECT estado, asesor_id, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);
         if (oldRes.rows.length === 0) continue;
 
         // Si es asesor, verificar que le pertenezca la póliza
@@ -495,13 +530,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
         if (estado === 'vigente' && oldStatus !== 'vigente') {
           const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
           if (checkPay.rows.length === 0) {
-            const nextMonth = new Date();
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            const fechaVencimiento = nextMonth.toISOString().split('T')[0];
-            await db.query(
-              `INSERT INTO pagos (poliza_id, monto, estado_pago, fecha_vencimiento) VALUES ($1, $2, 'pendiente', $3)`,
-              [parseInt(id), parseFloat(prima_anual), fechaVencimiento]
-            );
+            await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), oldRes.rows[0].frecuencia_pago || 'contado');
           }
         }
       }
@@ -521,7 +550,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'No autorizado.' });
   }
   const { id } = req.params;
-  const { asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = req.body;
+  const { 
+    asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo,
+    frecuencia_pago, tipo_negocio, tipo_cobertura, bono_pronto_pago, emision_online 
+  } = req.body;
 
   try {
     if (db.isFallback()) {
@@ -542,56 +574,51 @@ router.put('/:id', authenticateToken, async (req, res) => {
         suma_asegurada: parseFloat(suma_asegurada),
         prima_anual: parseFloat(prima_anual),
         estado,
-        motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null
+        motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null,
+        frecuencia_pago: frecuencia_pago || fData.polizas[idx].frecuencia_pago || 'contado',
+        tipo_negocio: tipo_negocio || fData.polizas[idx].tipo_negocio || 'nuevo',
+        tipo_cobertura: tipo_cobertura || fData.polizas[idx].tipo_cobertura || 'individual',
+        bono_pronto_pago: bono_pronto_pago !== undefined ? (bono_pronto_pago === true || bono_pronto_pago === 'true') : fData.polizas[idx].bono_pronto_pago,
+        emision_online: emision_online !== undefined ? (emision_online === true || emision_online === 'true') : fData.polizas[idx].emision_online
       };
 
       // Si cambia a vigente y no tenía pagos, o si queremos regenerar cobro
       if (estado === 'vigente' && oldStatus !== 'vigente') {
         const checkPay = fData.pagos.find(pa => pa.poliza_id === parseInt(id));
         if (!checkPay) {
-          const payId = fData.pagos.length > 0 ? Math.max(...fData.pagos.map(pa => pa.id)) + 1 : 1;
-          const nextMonth = new Date();
-          nextMonth.setMonth(nextMonth.getMonth() + 1);
-          fData.pagos.push({
-            id: payId,
-            poliza_id: parseInt(id),
-            monto: parseFloat(prima_anual),
-            fecha_pago: new Date().toISOString().split('T')[0],
-            estado_pago: 'pendiente',
-            referencia: null,
-            fecha_vencimiento: nextMonth.toISOString().split('T')[0],
-            created_at: new Date().toISOString()
-          });
+          await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), fData.polizas[idx].frecuencia_pago);
         }
       }
 
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       // PostgreSQL
-      const oldRes = await db.query('SELECT estado FROM polizas WHERE id = $1', [parseInt(id)]);
+      const oldRes = await db.query('SELECT estado, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);
       if (oldRes.rows.length === 0) return res.status(404).json({ error: 'Póliza no encontrada.' });
       const oldStatus = oldRes.rows[0].estado;
 
       const q = `
         UPDATE polizas
-        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7
-        WHERE id = $8
+        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7,
+            frecuencia_pago = $8, tipo_negocio = $9, tipo_cobertura = $10, bono_pronto_pago = $11, emision_online = $12
+        WHERE id = $13
       `;
       const motivoVal = estado === 'rechazado' ? (motivo_rechazo || '') : null;
+      const freqVal = frecuencia_pago || oldRes.rows[0].frecuencia_pago || 'contado';
+      const bizType = tipo_negocio || 'nuevo';
+      const covType = tipo_cobertura || 'individual';
+      const pronto = bono_pronto_pago === true || bono_pronto_pago === 'true';
+      const online = emision_online === true || emision_online === 'true';
+
       await db.query(q, [
-        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal, parseInt(id)
+        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), 
+        estado, motivoVal, freqVal, bizType, covType, pronto, online, parseInt(id)
       ]);
 
       if (estado === 'vigente' && oldStatus !== 'vigente') {
         const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
         if (checkPay.rows.length === 0) {
-          const nextMonth = new Date();
-          nextMonth.setMonth(nextMonth.getMonth() + 1);
-          const fechaVencimiento = nextMonth.toISOString().split('T')[0];
-          await db.query(
-            `INSERT INTO pagos (poliza_id, monto, estado_pago, fecha_vencimiento) VALUES ($1, $2, 'pendiente', $3)`,
-            [parseInt(id), parseFloat(prima_anual), fechaVencimiento]
-          );
+          await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), freqVal);
         }
       }
     }

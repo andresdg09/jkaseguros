@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS asesores (
     banco VARCHAR(100),
     numero_cuenta VARCHAR(50),
     estado VARCHAR(50) DEFAULT 'pendiente',
+    tipo_asesor VARCHAR(50) DEFAULT 'consultor_1' CHECK (tipo_asesor IN ('consultor_1', 'consultor_2', 'johans', 'nivel_1_subagente', 'nivel_2_agente')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -50,6 +51,8 @@ CREATE TABLE IF NOT EXISTS companias_seguros (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) UNIQUE NOT NULL,
     comision_estandar NUMERIC DEFAULT 0,
+    comision_compania NUMERIC DEFAULT 0,
+    comision_asesor_estandar NUMERIC DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -66,8 +69,17 @@ CREATE TABLE IF NOT EXISTS polizas (
     deducible NUMERIC DEFAULT 0,
     prima_anual NUMERIC NOT NULL,
     comision_porcentaje NUMERIC,
-    estado VARCHAR(50) NOT NULL DEFAULT 'negociacion' CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado')),
+    estado VARCHAR(50) NOT NULL DEFAULT 'negociacion' CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada')),
     pago_estado VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (pago_estado IN ('pendiente', 'pagado', 'parcial')),
+    frecuencia_pago VARCHAR(50) DEFAULT 'contado' CHECK (frecuencia_pago IN ('contado', 'semestral', 'trimestral', 'mensual')),
+    tipo_negocio VARCHAR(50) DEFAULT 'nuevo' CHECK (tipo_negocio IN ('nuevo', 'renovacion')),
+    tipo_cobertura VARCHAR(50) DEFAULT 'individual' CHECK (tipo_cobertura IN ('individual', 'colectivo')),
+    bono_pronto_pago BOOLEAN DEFAULT FALSE,
+    emision_online BOOLEAN DEFAULT FALSE,
+    recordatorio_24h BOOLEAN DEFAULT FALSE,
+    recordatorio_48h BOOLEAN DEFAULT FALSE,
+    recordatorio_5d BOOLEAN DEFAULT FALSE,
+    motivo_rechazo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -80,6 +92,8 @@ CREATE TABLE IF NOT EXISTS pagos (
     estado_pago VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado_pago IN ('pagado', 'pendiente', 'vencido')),
     referencia VARCHAR(100),
     fecha_vencimiento DATE,
+    cuota_numero INT,
+    cuota_total INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -87,11 +101,27 @@ CREATE TABLE IF NOT EXISTS pagos (
 CREATE TABLE IF NOT EXISTS tarifas (
     id SERIAL PRIMARY KEY,
     compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
-    tipo_cobertura VARCHAR(50) NOT NULL CHECK (tipo_cobertura IN ('colectivo', 'individual')),
     edad_min INT NOT NULL,
     edad_max INT NOT NULL,
     suma_asegurada NUMERIC NOT NULL,
     prima NUMERIC NOT NULL,
+    plan VARCHAR(100),
+    pago VARCHAR(100),
+    pago_contado BOOLEAN DEFAULT FALSE,
+    pago_semestral BOOLEAN DEFAULT FALSE,
+    pago_trimestral BOOLEAN DEFAULT FALSE,
+    pago_mensual BOOLEAN DEFAULT FALSE,
+    maternidad_suma VARCHAR(50),
+    maternidad_costo VARCHAR(50),
+    asist_intl_suma VARCHAR(50),
+    asist_intl_costo VARCHAR(50),
+    funeral_suma VARCHAR(50),
+    funeral_costo VARCHAR(50),
+    at_situ_medicamentos VARCHAR(50),
+    consultas_medicas VARCHAR(50),
+    examenes_lab_imagenologia VARCHAR(50),
+    ambulancia VARCHAR(50),
+    ramo VARCHAR(100) NOT NULL DEFAULT 'Salud',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -105,11 +135,108 @@ CREATE TABLE IF NOT EXISTS logs_actividad (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Tabla de Configuración de Comisiones Personalizadas por Asesor y Aseguradora
+-- 9. Tabla de Configuración de Comisiones Personalizadas por Asesor y Aseguradora (Fallback/Legacy)
 CREATE TABLE IF NOT EXISTS comisiones_asesores (
     id SERIAL PRIMARY KEY,
     asesor_id INT REFERENCES asesores(id) ON DELETE CASCADE,
     compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
     porcentaje NUMERIC NOT NULL,
     UNIQUE(asesor_id, compania_id)
+);
+
+-- 10. Tabla de Matriz de Comisiones Jerárquica (Excel)
+CREATE TABLE IF NOT EXISTS matriz_comisiones (
+    id SERIAL PRIMARY KEY,
+    mercado VARCHAR(100) NOT NULL, -- 'Nacionales' o 'Internacionales'
+    compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
+    ramo VARCHAR(100) NOT NULL, -- Salud, Automovil, etc.
+    producto_modalidad VARCHAR(255) NOT NULL, -- Plan o condición
+    total_comision NUMERIC NOT NULL DEFAULT 0, -- Margen total pagado por aseguradora
+    consultor_1 NUMERIC DEFAULT 0,
+    consultor_2 NUMERIC DEFAULT 0,
+    johans NUMERIC DEFAULT 0,
+    nivel_1_subagente NUMERIC DEFAULT 0,
+    nivel_2_agente NUMERIC DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. Tabla de Corridas de Comisiones (Historial BNC)
+CREATE TABLE IF NOT EXISTS corridas_comisiones (
+    id SERIAL PRIMARY KEY,
+    fecha_ejecucion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    tipo_ejecucion VARCHAR(50) NOT NULL, -- 'automatica' o 'manual'
+    total_pagado NUMERIC NOT NULL,
+    cantidad_asesores INT NOT NULL,
+    archivo_txt TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. Tabla de Histórico de Comisiones (Registro unitario por pago)
+CREATE TABLE IF NOT EXISTS historico_comisiones (
+    id SERIAL PRIMARY KEY,
+    pago_id INT REFERENCES pagos(id) ON DELETE CASCADE,
+    poliza_id INT REFERENCES polizas(id) ON DELETE CASCADE,
+    asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
+    monto_pago NUMERIC NOT NULL,
+    total_comision_porcentaje NUMERIC NOT NULL,
+    asesor_porcentaje NUMERIC NOT NULL,
+    comision_bruta NUMERIC NOT NULL,
+    pago_asesor NUMERIC NOT NULL,
+    margen_broker NUMERIC NOT NULL,
+    fecha_pago DATE NOT NULL,
+    estado_corrida VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado_corrida IN ('pendiente', 'procesado')),
+    corrida_id INT REFERENCES corridas_comisiones(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. Tabla de Metadatos de Tarifario
+CREATE TABLE IF NOT EXISTS tarifario_metadata (
+    id SERIAL PRIMARY KEY,
+    version VARCHAR(50) NOT NULL,
+    ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_correo VARCHAR(150) NOT NULL
+);
+
+-- 14. Tablas de E-Learning
+CREATE TABLE IF NOT EXISTS elearning_cursos (
+    id SERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS elearning_modulos (
+    id SERIAL PRIMARY KEY,
+    curso_id INT REFERENCES elearning_cursos(id) ON DELETE CASCADE,
+    titulo VARCHAR(255) NOT NULL,
+    contenido TEXT NOT NULL,
+    orden INT NOT NULL,
+    quiz_preguntas JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS elearning_intentos (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+    modulo_id INT REFERENCES elearning_modulos(id) ON DELETE CASCADE,
+    puntaje INT NOT NULL,
+    total_preguntas INT NOT NULL,
+    aprobado BOOLEAN NOT NULL,
+    respuestas_usuario JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 15. Tabla de Cotizaciones Compartidas (WhatsApp)
+CREATE TABLE IF NOT EXISTS cotizaciones (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(100) UNIQUE NOT NULL,
+    asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
+    cliente_datos JSONB NOT NULL,
+    suma_asegurada NUMERIC NOT NULL,
+    suma_asegurada_2 NUMERIC,
+    dependientes JSONB NOT NULL DEFAULT '[]',
+    comparativa JSONB NOT NULL DEFAULT '[]',
+    comparativa_2 JSONB DEFAULT '[]',
+    estado VARCHAR(50) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

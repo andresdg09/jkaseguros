@@ -14,6 +14,7 @@ import advisorsRouter from './routes/advisors.js';
 import adminRouter from './routes/admin.js';
 import elearningRouter from './routes/elearning.js';
 import { procesarRecordatoriosPolizas } from './services/reminderService.js';
+import { iniciarCronComisiones } from './services/commissionService.js';
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -51,6 +52,9 @@ async function startServer() {
     // Ejecutar cron de recordatorios al arrancar y luego cada hora
     procesarRecordatoriosPolizas();
     setInterval(procesarRecordatoriosPolizas, 3600000); // 1 hora
+
+    // Iniciar cron automático de corridas de comisiones (Lunes, Miércoles y Viernes)
+    iniciarCronComisiones();
   });
 }
 

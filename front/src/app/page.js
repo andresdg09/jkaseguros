@@ -350,6 +350,57 @@ export default function Home() {
     }
   };
 
+  const shareQuoteWhatsApp = async () => {
+    const activeCli = {
+      primer_nombre: quoteForm.primer_nombre,
+      primer_apellido: quoteForm.primer_apellido,
+      fecha_nacimiento: quoteForm.fecha_nacimiento,
+      tipo_documento: quoteForm.tipo_documento,
+      nro_documento: quoteForm.nro_documento,
+      genero: quoteForm.genero,
+      estado_civil: quoteForm.estado_civil,
+      correo: quoteForm.correo,
+      telefono: `${quoteForm.codigo_area}-${quoteForm.numero_celular}`,
+      tiene_dependientes: quoteForm.tiene_dependientes,
+      cantidad_dependientes: quoteForm.tiene_dependientes === 'Sí' ? parseInt(quoteForm.cantidad_dependientes) || 0 : 0,
+      dependientes: quoteForm.tiene_dependientes === 'Sí' ? quoteForm.dependientes : []
+    };
+
+    if (!quotingResults || !activeCli.fecha_nacimiento) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/quote/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cliente: activeCli,
+          suma_asegurada: quotingResults.suma_asegurada,
+          suma_asegurada_2: quotingResults.suma_asegurada_2 || null,
+          dependientes: activeCli.dependientes,
+          comparativa: quotingResults.comparativa,
+          comparativa_2: quotingResults.comparativa_2 || null,
+          asesor_id: quoteForm.asesor_id || user?.id || null
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al guardar la cotización');
+
+      const shareUrl = `${window.location.origin}/cotizacion/${data.token}`;
+      const cleanPhone = activeCli.telefono.replace(/[^0-9]/g, '');
+      const text = `Hola ${activeCli.primer_nombre}, aquí tienes la cotización de seguro que preparamos para ti. Puedes ver las opciones y seleccionar tu favorita directamente aquí: ${shareUrl}`;
+      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+      
+      window.open(waUrl, '_blank');
+      showToast('Enlace de cotización generado y WhatsApp abierto.');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Crear póliza tras elegir compañía de seguros
   const handleContratarPoliza = async (compania) => {
     if (!token) return showToast('Debe iniciar sesión para realizar esta acción.', 'error');
@@ -841,6 +892,9 @@ export default function Home() {
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button className="btn btn-secondary" onClick={sendEmailPdf} disabled={loading}>
                 Enviar por Correo
+              </button>
+              <button className="btn btn-accent" onClick={shareQuoteWhatsApp} disabled={loading} style={{ backgroundColor: '#25d366', color: '#fff', border: 'none' }}>
+                💬 Compartir por WhatsApp
               </button>
             </div>
           </div>

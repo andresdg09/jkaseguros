@@ -6,6 +6,23 @@ import { useToast } from '../components/ToastProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+const bancosVzla = [
+  { nombre: "Banco de Venezuela", codigo: "102" },
+  { nombre: "Banco Mercantil", codigo: "105" },
+  { nombre: "Banco Provincial", codigo: "108" },
+  { nombre: "Banesco", codigo: "134" },
+  { nombre: "Bicentenario", codigo: "175" },
+  { nombre: "BNC", codigo: "191" },
+  { nombre: "Banco del Tesoro", codigo: "163" },
+  { nombre: "Banco Exterior", codigo: "116" },
+  { nombre: "Banco Caroní", codigo: "128" },
+  { nombre: "Banco Plaza", codigo: "138" },
+  { nombre: "Banco Fondo Común", codigo: "151" },
+  { nombre: "Banco Sofitasa", codigo: "137" },
+  { nombre: "Banco Activo", codigo: "171" },
+  { nombre: "Banco Agrícola", codigo: "166" }
+];
+
 export default function RegistroAsesorPage() {
   const { login, hydrated, isLoggedIn } = useAuth();
   const { showToast } = useToast();
@@ -256,12 +273,37 @@ export default function RegistroAsesorPage() {
     };
   };
 
+  const handleBankChange = (bankName) => {
+    setForm(prev => ({ ...prev, banco: bankName }));
+    const selectedBank = bancosVzla.find(b => b.nombre === bankName);
+    if (selectedBank) {
+      const newParts = [...accountParts];
+      newParts[0] = selectedBank.codigo;
+      setAccountParts(newParts);
+      setForm(prev => ({ ...prev, numero_cuenta: newParts.join('') }));
+      
+      // Enfocar la segunda parte de la cuenta automáticamente
+      setTimeout(() => {
+        const nextInput = document.getElementById('cta-part-1');
+        if (nextInput) nextInput.focus();
+      }, 50);
+    }
+  };
+
   const handlePartChange = (index, value) => {
     const clean = value.replace(/\D/g, '').substring(0, 4);
     const newParts = [...accountParts];
     newParts[index] = clean;
     setAccountParts(newParts);
     setForm(prev => ({ ...prev, numero_cuenta: newParts.join('') }));
+
+    // Auto-detectar banco si se edita el primer fragmento (código del banco)
+    if (index === 0 && clean.length === 4) {
+      const detected = bancosVzla.find(b => b.codigo === clean);
+      if (detected) {
+        setForm(prev => ({ ...prev, banco: detected.nombre }));
+      }
+    }
 
     // Auto-focus al siguiente input si se llenan los 4 dígitos
     if (clean.length === 4 && index < 4) {
@@ -271,7 +313,6 @@ export default function RegistroAsesorPage() {
   };
 
   const handleKeyDown = (index, e) => {
-    // Si presiona borrar y está vacío, enfoca el input anterior
     if (e.key === 'Backspace' && !accountParts[index] && index > 0) {
       const prevInput = document.getElementById(`cta-part-${index - 1}`);
       if (prevInput) prevInput.focus();
@@ -288,8 +329,16 @@ export default function RegistroAsesorPage() {
       }
       setAccountParts(newParts);
       setForm(prev => ({ ...prev, numero_cuenta: newParts.join('') }));
+
+      // Auto-detectar banco desde los primeros 4 dígitos pegados
+      const first4 = newParts[0];
+      if (first4.length === 4) {
+        const detected = bancosVzla.find(b => b.codigo === first4);
+        if (detected) {
+          setForm(prev => ({ ...prev, banco: detected.nombre }));
+        }
+      }
       
-      // Enfocar el último input rellenado
       const lastIndex = Math.min(Math.floor((pastedData.length - 1) / 4), 4);
       const targetInput = document.getElementById(`cta-part-${lastIndex >= 0 ? lastIndex : 0}`);
       if (targetInput) targetInput.focus();
@@ -590,15 +639,17 @@ export default function RegistroAsesorPage() {
 
               <div className="form-group col-span-2">
                 <label className="form-label">Banco de Destino *</label>
-                <input 
-                  type="text" 
+                <select 
                   className="form-input" 
                   value={form.banco} 
-                  onChange={e => setForm({...form, banco: e.target.value})} 
-                  placeholder="Nombre de la Institución Bancaria"
-                  autoComplete="off"
+                  onChange={e => handleBankChange(e.target.value)} 
                   required 
-                />
+                >
+                  <option value="">-- Seleccione un Banco --</option>
+                  {bancosVzla.map((b, idx) => (
+                    <option key={idx} value={b.nombre}>{b.nombre}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group col-span-2">

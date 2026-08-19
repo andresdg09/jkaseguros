@@ -2,6 +2,7 @@ import express from 'express';
 import { db } from '../db/db.js';
 import { authenticateToken } from './auth.js';
 import { registrarAccion } from '../db/logger.js';
+import { procesarComisionPago } from '../services/commissionService.js';
 
 const router = express.Router();
 
@@ -91,6 +92,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
       
       await db.query("UPDATE polizas SET pago_estado = 'pagado' WHERE id = $1", [polizaId]);
 
+      // Procesar comisiones asociadas a este pago aprobado
+      await procesarComisionPago(parseInt(id));
+
       // Trazabilidad
       await registrarAccion(req.user.id, req.user.correo, 'PAGO_REPORTADO', `Cliente reportó pago ID ${id} de póliza ID ${polizaId}. Ref: ${referencia}`);
 
@@ -112,6 +116,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
       const payRecord = updated.rows[0];
       const polState = estado_pago === 'pagado' ? 'pagado' : 'pendiente';
       await db.query("UPDATE polizas SET pago_estado = $1 WHERE id = $2", [polState, payRecord.poliza_id]);
+
+      // Si se aprueba/marca como pagado, procesar comisión
+      if (estado_pago === 'pagado') {
+        await procesarComisionPago(parseInt(id));
+      }
 
       // Trazabilidad
       await registrarAccion(req.user.id, req.user.correo, 'ACTUALIZACION_PAGO', `Estado de pago ID ${id} cambiado a ${estado_pago}`);

@@ -84,6 +84,7 @@ export default function AdminDashboard() {
     consultas_medicas: 120,
     examenes_lab_imagenologia: 130,
     ambulancia: 110,
+    ramo: 100,
     acciones: 110
   });
   const [comparativeColWidths, setComparativeColWidths] = useState({});
@@ -462,7 +463,12 @@ export default function AdminDashboard() {
           plan: policy.plan,
           suma_asegurada: parseFloat(policy.suma_asegurada),
           prima_anual: parseFloat(policy.prima_anual),
-          estado: policy.estado
+          estado: policy.estado,
+          frecuencia_pago: policy.frecuencia_pago || 'contado',
+          tipo_negocio: policy.tipo_negocio || 'nuevo',
+          tipo_cobertura: policy.tipo_cobertura || 'individual',
+          bono_pronto_pago: !!policy.bono_pronto_pago,
+          emision_online: !!policy.emision_online
         })
       });
       const data = await res.json();
@@ -601,7 +607,10 @@ export default function AdminDashboard() {
           suma_asegurada: parseFloat(tariff.suma_asegurada),
           prima: parseFloat(tariff.prima),
           plan: tariff.plan || '',
-          pago: tariff.pago || '',
+          pago_contado: !!tariff.pago_contado,
+          pago_semestral: !!tariff.pago_semestral,
+          pago_trimestral: !!tariff.pago_trimestral,
+          pago_mensual: !!tariff.pago_mensual,
           maternidad_suma: tariff.maternidad_suma || '',
           maternidad_costo: tariff.maternidad_costo || '',
           asist_intl_suma: tariff.asist_intl_suma || '',
@@ -665,7 +674,11 @@ export default function AdminDashboard() {
       id: tempId,
       compania_id: defaultCompanyId,
       plan: '',
-      pago: '',
+      pago_contado: true,
+      pago_semestral: false,
+      pago_trimestral: false,
+      pago_mensual: false,
+      ramo: 'Salud',
       edad_min: 30,
       edad_max: 39,
       suma_asegurada: 5000,
@@ -1303,7 +1316,7 @@ export default function AdminDashboard() {
                 />
               </div>
               <div className="table-container">
-                <table className="table" style={{ minWidth: '1250px' }}>
+                <table className="table" style={{ minWidth: '1800px' }}>
                   <thead>
                     <tr>
                       <th>Código</th>
@@ -1312,6 +1325,11 @@ export default function AdminDashboard() {
                       <th>Plan</th>
                       <th>Suma Asegurada ($)</th>
                       <th>Prima Anual ($)</th>
+                      <th>Frecuencia Pago</th>
+                      <th>Negocio</th>
+                      <th>Cobertura</th>
+                      <th style={{ textAlign: 'center' }}>Pronto Pago</th>
+                      <th style={{ textAlign: 'center' }}>Online</th>
                       <th>Asesor Asignado</th>
                       <th>Estado</th>
                       <th>Motivo Rechazo</th>
@@ -1320,7 +1338,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="10" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="15" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies.map((p) => {
                         const isModified = !!modifiedPolicies[p.id];
@@ -1351,6 +1369,54 @@ export default function AdminDashboard() {
                                 value={p.prima_anual ?? ''}
                                 onChange={(e) => handlePolicyCellChange(p.id, 'prima_anual', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '90px', outline: 'none', borderBottom: '1px dashed var(--border)', fontWeight: 'bold', padding: '0.2rem' }}
+                              />
+                            </td>
+                            <td>
+                              <select
+                                value={p.frecuencia_pago || 'contado'}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'frecuencia_pago', e.target.value)}
+                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+                              >
+                                <option value="contado">Contado</option>
+                                <option value="semestral">Semestral</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="mensual">Mensual</option>
+                              </select>
+                            </td>
+                            <td>
+                              <select
+                                value={p.tipo_negocio || 'nuevo'}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'tipo_negocio', e.target.value)}
+                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+                              >
+                                <option value="nuevo">Nuevo</option>
+                                <option value="renovacion">Renovación</option>
+                              </select>
+                            </td>
+                            <td>
+                              <select
+                                value={p.tipo_cobertura || 'individual'}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'tipo_cobertura', e.target.value)}
+                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+                              >
+                                <option value="individual">Individual</option>
+                                <option value="colectivo">Colectivo</option>
+                              </select>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!p.bono_pronto_pago}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'bono_pronto_pago', e.target.checked)}
+                                style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                              />
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!p.emision_online}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'emision_online', e.target.checked)}
+                                style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
                               />
                             </td>
                             <td>
@@ -2048,7 +2114,11 @@ export default function AdminDashboard() {
                     <colgroup>
                       <col style={{ width: `${detailedColWidths.compania_id}px` }} />
                       <col style={{ width: `${detailedColWidths.plan}px` }} />
-                      <col style={{ width: `${detailedColWidths.pago}px` }} />
+                      <col style={{ width: `${detailedColWidths.ramo}px` }} />
+                      <col style={{ width: '80px' }} />
+                      <col style={{ width: '80px' }} />
+                      <col style={{ width: '80px' }} />
+                      <col style={{ width: '80px' }} />
                       <col style={{ width: `${detailedColWidths.edad_min}px` }} />
                       <col style={{ width: `${detailedColWidths.edad_max}px` }} />
                       <col style={{ width: `${detailedColWidths.suma_asegurada}px` }} />
@@ -2076,9 +2146,13 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'plan' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'plan')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          Forma de Pago
-                          <div className={`resize-handle ${resizingCol === 'pago' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago')} />
+                          Ramo / Tipo
+                          <div className={`resize-handle ${resizingCol === 'ramo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ramo')} />
                         </th>
+                        <th style={{ textAlign: 'center' }}>Contado</th>
+                        <th style={{ textAlign: 'center' }}>Semestral</th>
+                        <th style={{ textAlign: 'center' }}>Trimestral</th>
+                        <th style={{ textAlign: 'center' }}>Mensual</th>
                         <th style={{ position: 'relative' }}>
                           Edad Mín
                           <div className={`resize-handle ${resizingCol === 'edad_min' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'edad_min')} />
@@ -2144,7 +2218,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredTariffs.length === 0 ? (
                         <tr>
-                          <td colSpan="18" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan="21" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas registradas en la planilla.
                           </td>
                         </tr>
@@ -2178,7 +2252,49 @@ export default function AdminDashboard() {
                               </td>
 
                               <td>{textInput('plan')}</td>
-                              <td>{textInput('pago')}</td>
+                              <td>
+                                <select
+                                  value={t.ramo || 'Salud'}
+                                  onChange={(e) => handleCellChange(t.id, 'ramo', e.target.value)}
+                                  className="excel-input"
+                                >
+                                  <option value="Salud">Salud</option>
+                                  <option value="Patrimoniales">Patrimoniales</option>
+                                  <option value="Visa">Visa</option>
+                                </select>
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_contado}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_contado', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_semestral}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_semestral', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_trimestral}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_trimestral', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_mensual}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_mensual', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              </td>
 
                               {/* Edad Mín */}
                               <td>
