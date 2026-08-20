@@ -248,6 +248,214 @@ function dibujarGraficoDistribucion(doc, cx, cy, radius, legendX, legendY) {
 }
 
 /**
+ * Dibuja el bloque "Contacta a tu asesor" (nombre, teléfono y correo del asesor
+ * que generó la cotización). Se repite en todas las páginas del PDF.
+ * Devuelve la altura ocupada, para que quien llame pueda seguir posicionando.
+ */
+function dibujarContactoAsesor(doc, asesor, x, y, width) {
+  const h = 50;
+  doc.roundedRect(x, y, width, h, 6).fill('#eff6ff');
+  doc.roundedRect(x, y, width, h, 6).stroke('#bfdbfe');
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9).text('CONTACTA A TU ASESOR', x + 12, y + 8, { lineBreak: false });
+
+  if (asesor && asesor.nombre) {
+    doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8).text(asesor.nombre, x + 12, y + 22, { lineBreak: false });
+    doc.font('Helvetica').fontSize(7.5)
+       .text(`Tel/WhatsApp: ${asesor.telefono || 'N/A'}   |   Correo: ${asesor.correo || 'N/A'}`, x + 12, y + 34, { lineBreak: false });
+  } else {
+    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5)
+       .text('Comunícate con tu corredor de seguros para ser atendido por un asesor certificado.', x + 12, y + 24, { width: width - 24 });
+  }
+
+  return h;
+}
+
+// Contenido legal de Términos y Condiciones, mostrado al final del PDF (a partir
+// de la página 3, continuando en tantas páginas adicionales como haga falta).
+const TERMINOS_CONTENIDO = [
+  { tipo: 'h1', texto: 'LA PÓLIZA DE SEGURO: ES UN CONTRATO' },
+  { tipo: 'p', texto: 'La póliza de seguro es un contrato que nace de la buena fe de las partes; será suscrita y emitida basada en la información solicitada y suministrada por el solicitante. La omisión de información con relación a alguna condición de salud actual, antecedente quirúrgico o médico (incluyendo la toma de medicamentos de forma rutinaria) de cualquiera de los solicitantes, puede tener consecuencias, por ejemplo: la no indemnización ante un reclamo, la anulación de la póliza y la imposibilidad de brindarle una asesoría y atención adecuada.' },
+
+  { tipo: 'h1', texto: '¿CUÁLES GASTOS CUBRE UNA PÓLIZA DE SEGURO? CONCEPTOS APLICABLES' },
+  { tipo: 'p', texto: 'La póliza de salud brinda cobertura para gastos médicos por enfermedades y accidentes bajo los siguientes criterios:' },
+  { tipo: 'bullets', items: ['COSTOS RAZONABLES', 'COSTOS USUALES Y RAZONABLES', 'COSTOS RAZONABLES, USUALES Y ACOSTUMBRADOS'] },
+  { tipo: 'p', texto: 'Esto significa que algunos costos no serán asumidos por la compañía aseguradora, debiendo ser negociados y cubiertos por el asegurado con sus propios fondos.' },
+
+  { tipo: 'h1', texto: 'PLAZOS DE ESPERA, EXCLUSIONES TEMPORALES Y DEFINITIVAS' },
+  { tipo: 'p', texto: 'Toda póliza de salud emitida tiene PLAZOS DE ESPERA, EXCLUSIONES TEMPORALES Y DEFINITIVAS, desde la fecha de su emisión.' },
+  { tipo: 'h2', texto: 'COBERTURA INMEDIATA' },
+  { tipo: 'bullets', items: ['Accidentes amparados por la póliza y enfermedades virales'] },
+
+  { tipo: 'h1', texto: 'AVISO LEGAL Y CONDICIONES DE USO' },
+  { tipo: 'p', texto: 'Bienvenido al sitio web www.proteccionyseguros360.com, propiedad de Johann Joubert. El acceso y uso de este sitio web atribuyen la condición de usuario e implican la aceptación plena y sin reservas de todas y cada una de las disposiciones incluidas en este Aviso Legal.' },
+
+  { tipo: 'h2', texto: '1. Información General y Regulatoria' },
+  { tipo: 'p', texto: 'De conformidad con la Ley de la Actividad Aseguradora de la República Bolivariana de Venezuela, se informa que el titular de este sitio web es Johann Joubert, titular de la Cédula de Identidad N° V-11.414.838, actuando en su carácter de Corredor de Seguros debidamente autorizado, certificado e inscrito ante la Superintendencia de la Actividad Aseguradora (SUDEASEG) bajo la Credencial de la Actividad Aseguradora N° CAA-005236. Su actividad principal es la mediación y asesoría independiente en la celebración de contratos de seguros.' },
+
+  { tipo: 'h2', texto: '2. Exclusión de Responsabilidad por el Contenido' },
+  { tipo: 'bullets', items: [
+    'Carácter Informativo: Toda la información, herramientas de simulación, tarifas referenciales, artículos de opinión o descripciones de productos publicados en este sitio web se ofrecen exclusivamente a título informativo y orientativo basados en la información suministrada por las compañías de seguro. No constituyen una oferta vinculante ni un contrato de seguro.',
+    'Modificaciones: Johann Joubert se reserva el derecho de modificar, actualizar o retirar cualquier contenido de este sitio web sin previo aviso. Las condiciones definitivas de cualquier seguro serán las que consten formalmente en la póliza emitida por la empresa de seguros correspondiente.'
+  ] },
+
+  { tipo: 'h2', texto: '3. Alcance de los Servicios y Limitación de Responsabilidad' },
+  { tipo: 'bullets', items: [
+    'Naturaleza del Intermediario: El corredor no es una empresa de seguros. Johann Joubert no asume riesgos, no emite pólizas de forma autónoma ni realiza el pago directo de indemnizaciones o reembolsos. Dichas obligaciones corresponden única y exclusivamente a las empresas de seguros autorizadas por la SUDEASEG con las que se contrate la póliza.',
+    'Insolvencia de las Aseguradoras: El corredor no asume responsabilidad civil, financiera ni solidaria ante el retraso, negativa de pago, insolvencia, liquidación o quiebra de la empresa de seguros seleccionada por el cliente.',
+    'Veracidad de los Datos: El usuario es el único responsable de la exactitud y veracidad de los datos introducidos en los formularios de cotización o contacto del sitio web. El corredor no se hace responsable por la pérdida de cobertura o el rechazo de suscripción derivados de información falsa, inexacta u omitida por el usuario.'
+  ] },
+
+  { tipo: 'h2', texto: '4. Uso del Sitio Web y Seguridad Tecnológica' },
+  { tipo: 'bullets', items: [
+    'Disponibilidad: No se garantiza la disponibilidad continua e ininterrumpida del sitio web debido a fallas técnicas, de conectividad o mantenimiento.',
+    'Daños Tecnológicos: Johann Joubert no se hace responsable por los daños o perjuicios que puedan causar virus, malware o cualquier otro componente tecnológico lesivo en los sistemas informáticos del usuario a raíz del acceso o navegación en este portal.'
+  ] },
+
+  { tipo: 'h2', texto: '5. Propiedad Intelectual' },
+  { tipo: 'p', texto: 'Todos los contenidos de este sitio web (textos, gráficos, logotipos, iconos, imágenes, así como el diseño gráfico y código fuente) son propiedad de Johann Joubert o de terceros que han autorizado su uso. Queda prohibida su reproducción, distribución o comunicación pública, total o parcial, con fines comerciales sin autorización expresa.' },
+
+  { tipo: 'h2', texto: '6. Enlaces a Terceros (Links)' },
+  { tipo: 'p', texto: 'Este sitio web puede contener enlaces a páginas de empresas de seguros u otros terceros. El corredor no ejerce ningún control sobre dichos sitios ni se hace responsable por sus contenidos, políticas de privacidad o el cumplimiento de sus obligaciones legales.' },
+
+  { tipo: 'h2', texto: '7. Legislación Aplicable y Jurisdicción' },
+  { tipo: 'p', texto: 'Las presentes condiciones se rigen en su totalidad por las leyes de la República Bolivariana de Venezuela. Para la resolución de cualquier controversia judicial derivada del uso de este sitio web, las partes se someten expresamente a la jurisdicción de los tribunales competentes de la ciudad de Caracas, Distrito Capital.' },
+
+  { tipo: 'h1', texto: 'NUESTRO COMPROMISO COMO SU INTERMEDIARIO DE SEGUROS' },
+  { tipo: 'p', texto: 'Nuestro compromiso durante la vigencia del contrato de seguro, es ofrecerle una asesoría especializada y orientación en cuanto al uso de la póliza y sus productos asociados, procesos de reclamos (reembolsos - carta aval) y/o resolución de conflictos exclusivamente ante la compañía de seguros, no ante instancias públicas administrativas centrales o descentralizadas.' },
+  { tipo: 'p', texto: 'Son actividades propias de los intermediarios de seguros, las siguientes:' },
+  { tipo: 'numbered', items: [
+    'Promover y en su caso concluir, la contratación de seguro.',
+    'Informar con oportunidad al asegurador sobre las verdaderas circunstancias del riesgo y agravaciones importantes que de éste tenga noticia.',
+    'Ofrecer al asegurado el contrato más adecuado y conveniente a sus necesidades particulares e informarle sobre las condiciones, coberturas y requisitos de la misma.',
+    'Vigilar para que los seguros contratados por su mediación permanezcan en vigor y sean plenamente eficaces.',
+    'Asesorar a los asegurados y beneficiarios y asistirlos en los casos de siniestro, procurando se lleven a cabo las diligencias necesarias para la mayor discusión del riesgo.',
+    'Procurar que en caso de siniestro se utilicen los elementos necesarios para que tanto el asegurador como el asegurado conozcan la verdadera dimensión y valor del daño.',
+    'Participar en la cobranza de las primas, procurando que sean pagadas en los términos establecidos en las pólizas y en las leyes.',
+    'Atender en todo tiempo a las necesidades de los asegurados, recabando de las entidades aseguradoras las condiciones, coberturas, documentos y servicios que sean necesarios.',
+    'Realizar las diligencias que sean precisas para que en todo tiempo se cumplan las instrucciones recibidas, tanto del asegurador como del asegurado, y las diligencias contractuales y legales correspondientes.',
+    'Actuar en todo caso con rectitud, profesionalidad y ética.'
+  ] },
+  { tipo: 'nota', texto: 'Por requerimiento de SUDEASEG y la compañía aseguradora al momento de suscribir la póliza deberá suministrar: DATOS PERSONALES Y DE CONTACTO, DECLARACIÓN DE SALUD ACTUAL Y CONDICIÓN DE SALUD EXISTENTE.' }
+];
+
+/**
+ * Calcula la altura que ocupará un bloque de Términos y Condiciones al dibujarlo,
+ * sin dibujarlo (para decidir si hace falta saltar de página antes).
+ */
+function alturaBloqueTermino(doc, bloque, width) {
+  switch (bloque.tipo) {
+    case 'h1':
+      doc.font('Helvetica-Bold').fontSize(9.5);
+      return doc.heightOfString(bloque.texto, { width }) + 12;
+    case 'h2':
+      doc.font('Helvetica-Bold').fontSize(8);
+      return doc.heightOfString(bloque.texto, { width }) + 8;
+    case 'p':
+      doc.font('Helvetica').fontSize(7.5);
+      return doc.heightOfString(bloque.texto, { width }) + 8;
+    case 'bullets': {
+      doc.font('Helvetica').fontSize(7.5);
+      let h = 4;
+      bloque.items.forEach((item) => { h += doc.heightOfString(item, { width: width - 14 }) + 5; });
+      return h;
+    }
+    case 'numbered': {
+      doc.font('Helvetica').fontSize(7.5);
+      let h = 4;
+      bloque.items.forEach((item) => { h += doc.heightOfString(item, { width: width - 18 }) + 5; });
+      return h;
+    }
+    case 'nota':
+      doc.font('Helvetica').fontSize(7);
+      return doc.heightOfString(bloque.texto, { width: width - 16 }) + 24;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Dibuja un bloque de Términos y Condiciones en (x, y) y devuelve la altura
+ * realmente ocupada.
+ */
+function dibujarBloqueTermino(doc, bloque, x, y, width) {
+  switch (bloque.tipo) {
+    case 'h1':
+      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5).text(bloque.texto, x, y, { width });
+      return doc.y - y + 4;
+    case 'h2':
+      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(8).text(bloque.texto, x, y, { width });
+      return doc.y - y + 4;
+    case 'p':
+      doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text(bloque.texto, x, y, { width });
+      return doc.y - y + 4;
+    case 'bullets': {
+      let cy = y;
+      bloque.items.forEach((item) => {
+        doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text('•', x, cy, { width: 12, lineBreak: false });
+        doc.text(item, x + 14, cy, { width: width - 14 });
+        cy = doc.y + 3;
+      });
+      return cy - y;
+    }
+    case 'numbered': {
+      let cy = y;
+      bloque.items.forEach((item, i) => {
+        doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(7.5).text(`${i + 1}.`, x, cy, { width: 16, lineBreak: false });
+        doc.font('Helvetica').text(item, x + 18, cy, { width: width - 18 });
+        cy = doc.y + 3;
+      });
+      return cy - y;
+    }
+    case 'nota': {
+      const h = alturaBloqueTermino(doc, bloque, width);
+      doc.rect(x, y, width, h).fill('#fff3cd');
+      doc.rect(x, y, width, h).stroke('#ffeeba');
+      doc.fillColor('#856404').font('Helvetica').fontSize(7).text(bloque.texto, x + 8, y + 8, { width: width - 16 });
+      return h;
+    }
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Dibuja la sección de Términos y Condiciones a partir de startY, saltando de
+ * página (con encabezado y bloque de contacto) tantas veces como haga falta.
+ */
+function dibujarTerminosCondiciones(doc, logoPath, asesor, startY) {
+  const bottomLimit = FOOTER_Y - 15;
+  let y = startY;
+
+  const saltarPagina = () => {
+    doc.addPage();
+    dibujarHeader(doc, logoPath, 'TÉRMINOS Y CONDICIONES');
+    const contactoH = dibujarContactoAsesor(doc, asesor, MARGIN, 78, CONTENT_W);
+    y = 78 + contactoH + 16;
+  };
+
+  if (y + 20 > bottomLimit) saltarPagina();
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11).text('Términos y Condiciones', MARGIN, y, { lineBreak: false });
+  y += 20;
+
+  TERMINOS_CONTENIDO.forEach((bloque, i) => {
+    // +10% de margen de seguridad: heightOfString() (usado para estimar sin dibujar)
+    // no siempre coincide exactamente con la altura real que consume el texto ya
+    // ajustado (wrapped) al dibujarlo, así que sobreestimamos un poco a propósito
+    // para no quedarnos cortos y desbordar el pie de página.
+    let h = alturaBloqueTermino(doc, bloque, CONTENT_W) * 1.1;
+    // Un encabezado (h1/h2) nunca debe quedar solo al final de una página: si el
+    // encabezado cabe pero el bloque que le sigue no, forzamos el salto de página
+    // para ambos, evitando un título "huérfano".
+    if ((bloque.tipo === 'h1' || bloque.tipo === 'h2') && TERMINOS_CONTENIDO[i + 1]) {
+      h += alturaBloqueTermino(doc, TERMINOS_CONTENIDO[i + 1], CONTENT_W) * 1.1;
+    }
+    if (y + h > bottomLimit) saltarPagina();
+    const usedH = dibujarBloqueTermino(doc, bloque, MARGIN, y, CONTENT_W);
+    y += usedH + 6;
+  });
+}
+
+/**
  * Dibuja el PDF estructurado en varias páginas
  */
 function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
@@ -290,6 +498,14 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
     dibujarTarjetaAseguradora(doc, MARGIN, cardY, CONTENT_W, cardH, comp, !!comp.recomendada);
     cardY += cardH + cardGap;
   });
+
+  // Contacta a tu asesor (se repite en todas las páginas)
+  if (cardY + 50 > FOOTER_Y - 15) {
+    doc.addPage();
+    dibujarHeader(doc, logoPath, 'DIAGNÓSTICO (CONTINUACIÓN)');
+    cardY = 80;
+  }
+  dibujarContactoAsesor(doc, asesor, MARGIN, cardY, CONTENT_W);
 
   // ==========================================
   // PÁGINA: SECCIÓN DE MARKETING / DISTRIBUCIÓN DE PROTECCIÓN
@@ -339,6 +555,15 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
     doc.fillColor(COLORS.dark).font('Helvetica').fontSize(6.8).text(p.desc, bx + 12, boxesY + 26, { width: boxW - 20, height: 50 });
   });
 
+  // Contacta a tu asesor (se repite en todas las páginas)
+  let contactoY2 = boxesY + 82 + 20;
+  if (contactoY2 + 50 > FOOTER_Y - 15) {
+    doc.addPage();
+    dibujarHeader(doc, logoPath, 'PROTEGE TODO TU PATRIMONIO (CONTINUACIÓN)');
+    contactoY2 = 80;
+  }
+  dibujarContactoAsesor(doc, asesor, MARGIN, contactoY2, CONTENT_W);
+
   // ==========================================
   // PÁGINA: CONDICIONES Y CONTACTO
   // ==========================================
@@ -374,39 +599,19 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   condY += 52;
 
-  // Contacta a tu asesor
-  doc.roundedRect(MARGIN, condY, CONTENT_W, 60, 6).fill('#eff6ff');
-  doc.roundedRect(MARGIN, condY, CONTENT_W, 60, 6).stroke('#bfdbfe');
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9).text('CONTACTA A TU ASESOR JKA', MARGIN + 12, condY + 8, { lineBreak: false });
-
-  if (asesor && asesor.nombre) {
-    doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8).text(asesor.nombre, MARGIN + 12, condY + 24, { lineBreak: false });
-    doc.font('Helvetica').fontSize(7.5)
-       .text(`Tel/WhatsApp: ${asesor.telefono || 'N/A'}   |   Correo: ${asesor.correo || 'N/A'}`, MARGIN + 12, condY + 36, { lineBreak: false });
-    doc.fillColor(COLORS.muted).fontSize(7).text('Escríbele hoy mismo para resolver tus dudas y contratar la mejor opción para ti.', MARGIN + 12, condY + 48, { lineBreak: false });
-  } else {
-    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5)
-       .text('Comunícate con JKA Consultores al +58 412-1234567 o escríbenos a contacto@jkaseguros.com para ser atendido por uno de nuestros asesores certificados.', MARGIN + 12, condY + 26, { width: CONTENT_W - 24 });
+  // Contacta a tu asesor (se repite en todas las páginas)
+  if (condY + 50 > FOOTER_Y - 15) {
+    doc.addPage();
+    dibujarHeader(doc, logoPath, 'CONDICIONES Y CONTACTO (CONTINUACIÓN)');
+    condY = 80;
   }
+  const contactoH3 = dibujarContactoAsesor(doc, asesor, MARGIN, condY, CONTENT_W);
+  condY += contactoH3 + 16;
 
-  condY += 74;
-
-  // Bloque de Firma y Emisión JKA
-  doc.rect(MARGIN, condY, CONTENT_W, 55).fill(COLORS.lightBg);
-  doc.rect(MARGIN, condY, CONTENT_W, 55).stroke(COLORS.border);
-
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(8)
-     .text('Documento Emitido Por:', MARGIN + 12, condY + 8, { lineBreak: false });
-
-  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8.5)
-     .text('JKA Consultores C.A.', MARGIN + 12, condY + 20, { lineBreak: false });
-  doc.font('Helvetica').fontSize(7)
-     .text('Departamento de Asesoría y Cotizaciones', MARGIN + 12, condY + 30, { lineBreak: false })
-     .text('Caracas, Venezuela | www.jkaseguros.com', MARGIN + 12, condY + 40, { lineBreak: false });
-
-  doc.lineWidth(1).strokeColor(COLORS.primary).moveTo(370, condY + 35).lineTo(510, condY + 35).stroke();
-  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(7.5)
-     .text('Firma y Sello Autorizado', 370, condY + 40, { align: 'center', width: 140, lineBreak: false });
+  // ==========================================
+  // TÉRMINOS Y CONDICIONES (continúa en tantas páginas como haga falta)
+  // ==========================================
+  dibujarTerminosCondiciones(doc, logoPath, asesor, condY);
 
   // ==========================================
   // PIE DE PÁGINA GLOBAL DE TODAS LAS PÁGINAS
