@@ -248,15 +248,16 @@ export async function procesarRecordatoriosPolizas() {
 
         // A. Notificar al cliente
         if (p.cliente_correo) {
-          const cleanAsesorPhone = p.asesor_telefono ? p.asesor_telefono.replace(/[^0-9]/g, '') : '584121234567';
+          let rawAsesorPhone = p.asesor_telefono ? p.asesor_telefono.replace(/[^0-9]/g, '') : '584121234567';
+          if (rawAsesorPhone.startsWith('0')) rawAsesorPhone = '58' + rawAsesorPhone.substring(1);
           const waClientMsg = `Hola ${p.asesor_nombre}, le escribo para continuar con mi cotización de seguros de salud con código ${p.codigo_poliza}.`;
-          const waClientLink = `https://wa.me/${cleanAsesorPhone}?text=${encodeURIComponent(waClientMsg)}`;
+          const waClientLink = `https://api.whatsapp.com/send?phone=${rawAsesorPhone}&text=${encodeURIComponent(waClientMsg)}`;
 
           const clienteHtml = `
             <div style="background-color: #f8fafc; border: 1.5px solid #2563eb; border-radius: 8px; padding: 20px; font-family: sans-serif; text-align: left;">
               <h3 style="color: #1e3a8a; margin-top: 0;">¿Tienes alguna duda sobre tu Cotización?</h3>
               <p style="font-size: 14px; color: #334155; line-height: 1.5;">
-                Hola <strong>${p.cliente_nombre}</strong>, te saludamos de JKA Seguros. Queremos recordarte que tu asesor <strong>${p.asesor_nombre}</strong> te preparó una cotización de seguro médico (${p.compania_nombre}) con código <strong>${p.codigo_poliza}</strong> hace 24 horas.
+                Hola <strong>${p.cliente_nombre}</strong>, te saludamos de <strong>Protección y Seguros 360</strong>. Queremos recordarte que tu asesor <strong>${p.asesor_nombre}</strong> te preparó una cotización de seguro médico (${p.compania_nombre}) con código <strong>${p.codigo_poliza}</strong> hace 24 horas.
               </p>
               <p style="font-size: 14px; color: #334155; line-height: 1.5;">
                 Estamos a tu total disposición para ayudarte con cualquier duda o ajuste que requieras.
@@ -268,17 +269,18 @@ export async function procesarRecordatoriosPolizas() {
               </div>
             </div>
           `;
-          await enviarCorreoEmailJS(p.cliente_correo, p.cliente_nombre, `Recordatorio: Tu Cotización JKA Seguros (${p.codigo_poliza})`, clienteHtml);
+          await enviarCorreoEmailJS(p.cliente_correo, p.cliente_nombre, `Recordatorio: Tu Cotización en Protección y Seguros 360 (${p.codigo_poliza})`, clienteHtml);
         }
 
         // B. Notificar al asesor
         if (p.asesor_correo) {
-          const cleanClientPhone = p.cliente_telefono ? p.cliente_telefono.replace(/[^0-9]/g, '') : '';
-          const waFollowMsg = `Hola *${p.cliente_nombre}*, te saluda ${p.asesor_nombre} de JKA Seguros. Te escribo para saber si pudiste revisar la cotización de salud de ${p.compania_nombre} que te envié ayer y si tienes alguna duda. ¡Feliz día!`;
-          const waFollowLink = cleanClientPhone ? `https://wa.me/${cleanClientPhone}?text=${encodeURIComponent(waFollowMsg)}` : '#';
+          let rawClientPhone = p.cliente_telefono ? p.cliente_telefono.replace(/[^0-9]/g, '') : '';
+          if (rawClientPhone.startsWith('0')) rawClientPhone = '58' + rawClientPhone.substring(1);
+          const waFollowMsg = `Hola *${p.cliente_nombre}*, te saluda ${p.asesor_nombre} de *Protección y Seguros 360*. Te escribo para saber si pudiste revisar la cotización de salud de ${p.compania_nombre} que te envié ayer y si tienes alguna duda. ¡Feliz día!`;
+          const waFollowLink = rawClientPhone ? `https://api.whatsapp.com/send?phone=${rawClientPhone}&text=${encodeURIComponent(waFollowMsg)}` : '#';
 
-          const mailtoFollowSubject = `Seguimiento de Cotización JKA Seguros - Póliza ${p.codigo_poliza}`;
-          const mailtoFollowBody = `Hola ${p.cliente_nombre},\n\nEspero que te encuentres muy bien. Te escribo para saber si lograste revisar el cuadro comparativo del seguro de salud de ${p.compania_nombre} que te envié y si tienes alguna inquietud.\n\nQuedo a tu disposición.\n\nSaludos cordiales,\n${p.asesor_nombre}\nJKA Consultores`;
+          const mailtoFollowSubject = `Seguimiento de Cotización Protección y Seguros 360 - Póliza ${p.codigo_poliza}`;
+          const mailtoFollowBody = `Hola ${p.cliente_nombre},\n\nEspero que te encuentres muy bien. Te escribo para saber si lograste revisar el cuadro comparativo del seguro de salud de ${p.compania_nombre} que te envié y si tienes alguna inquietud.\n\nQuedo a tu disposición.\n\nSaludos cordiales,\n${p.asesor_nombre}\nProtección y Seguros 360`;
           const mailtoFollowLink = p.cliente_correo ? `mailto:${p.cliente_correo}?subject=${encodeURIComponent(mailtoFollowSubject)}&body=${encodeURIComponent(mailtoFollowBody)}` : '#';
 
           const advisorHtml = `

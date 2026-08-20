@@ -173,7 +173,7 @@ export async function procesarComisionPago(pagoId) {
       parseFloat(margenBrokerVES.toFixed(2))
     ]);
 
-    console.log(`[Comisiones] ✅ Comisión procesada para Pago ID ${pagoId}. Póliza ${poliza.codigo_poliza} (${poliza.plan || 'General'} - ${poliza.area || 'Salud'}). Asesor: ${asesorNombre} (Nivel: ${tipoAsesor}) -> Base Aprobada: Bs. ${montoPagoVES.toLocaleString('es-VE')} -> Ganancia Asesor: Bs. ${pagoAsesorVES.toLocaleString('es-VE', { minimumFractionDigits: 2 })} (${asesorPct}%), Margen Broker JKA: Bs. ${margenBrokerVES.toLocaleString('es-VE', { minimumFractionDigits: 2 })} (${(totalComisionPct - asesorPct).toFixed(1)}%).`);
+    console.log(`[Comisiones] ✅ Comisión procesada para Pago ID ${pagoId}. Póliza ${poliza.codigo_poliza} (${poliza.plan || 'General'} - ${poliza.area || 'Salud'}). Asesor: ${asesorNombre} (Nivel: ${tipoAsesor}) -> Base Aprobada: Bs. ${montoPagoVES.toLocaleString('es-VE')} -> Ganancia Asesor: Bs. ${pagoAsesorVES.toLocaleString('es-VE', { minimumFractionDigits: 2 })} (${asesorPct}%), Margen Broker: Bs. ${margenBrokerVES.toLocaleString('es-VE', { minimumFractionDigits: 2 })} (${(totalComisionPct - asesorPct).toFixed(1)}%).`);
     return insRes.rows[0];
 
   } catch (err) {
@@ -184,7 +184,7 @@ export async function procesarComisionPago(pagoId) {
 /**
  * Ejecuta una corrida de comisiones procesando todos los pagos pendientes de liquidar.
  * @param {string} tipoEjecucion - 'manual' o 'automatica'.
- * @param {string} cuentaDebitarParam - Cuenta de débito del Broker JKA (20 dígitos).
+ * @param {string} cuentaDebitarParam - Cuenta de débito del Broker / Empresa (20 dígitos).
  */
 export async function ejecutarCorridaComisiones(tipoEjecucion = 'manual', cuentaDebitarParam = '01910100201000123456') {
   try {

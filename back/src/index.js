@@ -36,7 +36,7 @@ app.use('/api/elearning', elearningRouter);
 
 // Ruta de diagnóstico inicial
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Servidor API de JKA Seguros en funcionamiento.' });
+  res.json({ status: 'ok', message: 'Servidor API de Protección y Seguros 360 en funcionamiento.' });
 });
 
 // Levantar Servidor: se espera explícitamente a que initDb() termine (conexión +

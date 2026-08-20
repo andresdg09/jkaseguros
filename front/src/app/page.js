@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { useToast } from './components/ToastProvider';
 import { useRouter } from 'next/navigation';
+import { createWhatsAppLink } from './utils/whatsapp';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -388,9 +389,8 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Error al guardar la cotización');
 
       const shareUrl = `${window.location.origin}/cotizacion/${data.token}`;
-      const cleanPhone = activeCli.telefono.replace(/[^0-9]/g, '');
-      const text = `Hola ${activeCli.primer_nombre}, aquí tienes la cotización de seguro que preparamos para ti. Puedes ver las opciones y seleccionar tu favorita directamente aquí: ${shareUrl}`;
-      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+      const text = `Hola ${activeCli.primer_nombre}, aquí tienes la cotización de seguro personalizada que preparamos para ti en Protección y Seguros 360. Puedes ver las opciones y seleccionar tu favorita directamente aquí: ${shareUrl}`;
+      const waUrl = createWhatsAppLink(activeCli.telefono, text);
       
       window.open(waUrl, '_blank');
       showToast('Enlace de cotización generado y WhatsApp abierto.');
@@ -450,8 +450,7 @@ export default function Home() {
   const handleWhatsAppContact = (compania) => {
     const selectedAdvisor = advisorsList.find(a => String(a.id) === String(quoteForm.asesor_id));
     const phone = selectedAdvisor ? selectedAdvisor.telefono : (advisorsList[0]?.telefono || '584121234567');
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const advisorName = selectedAdvisor ? selectedAdvisor.nombre : 'Asesor JKA';
+    const advisorName = selectedAdvisor ? selectedAdvisor.nombre : 'Asesor de Protección y Seguros 360';
     
     const docText = `${quoteForm.tipo_documento} ${quoteForm.nro_documento}`;
     const userAge = quotingResults ? quotingResults.edad : 'No calculada';
@@ -459,7 +458,7 @@ export default function Home() {
 
     const mensaje = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${compania.nombre}*${planText} con una prima anual de *$${compania.prima}* para la suma asegurada de *$${compania.suma_asegurada}*. Datos de asegurado: *${quoteForm.primer_nombre} ${quoteForm.primer_apellido}* (${docText}, edad: ${userAge} años). ¡Espero su respuesta!`;
     
-    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(mensaje)}`;
+    const waUrl = createWhatsAppLink(phone, mensaje);
     window.open(waUrl, '_blank');
   };
 
@@ -470,11 +469,17 @@ export default function Home() {
     return (
       <div style={{ padding: '2rem 1rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', background: '#eff6ff', padding: '0.4rem 1.25rem', borderRadius: '30px', border: '1px solid #bfdbfe' }}>
+            <span style={{ fontSize: '1.25rem' }}>🛡️</span>
+            <span style={{ fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+              Protección & Seguros 360
+            </span>
+          </div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '1rem' }}>
-            JKA Consultores de Seguros
+            Protección y Seguros 360
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
-            Broker de seguros con asesoría integral personalizada para proteger lo que más quieres.
+            Asesoría integral y soluciones de seguros a tu medida para proteger lo que más quieres.
           </p>
         </div>
 
@@ -494,12 +499,11 @@ export default function Home() {
           </div>
 
           <h3 style={{ color: 'var(--primary)', fontWeight: 'bold', marginBottom: '1.25rem', textAlign: 'left', borderBottom: '1.5px solid var(--border)', paddingBottom: '0.5rem' }}>
-            Directorio de Asesores JKA
+            Directorio de Asesores
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem', textAlign: 'left', marginBottom: '2rem' }}>
             {advisorsList.map(adv => {
-              const cleanPhone = adv.telefono ? adv.telefono.replace(/[^0-9]/g, '') : '584121234567';
-              const waLink = `https://wa.me/${cleanPhone}?text=Hola%20deseo%20cotizar%20un%20seguro%20de%20salud%20con%20usted.%20Mi%20nombre%20es...`;
+              const waLink = createWhatsAppLink(adv.telefono, 'Hola deseo cotizar un seguro de salud con usted. Mi nombre es...');
               return (
                 <div key={adv.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '1rem', backgroundColor: '#fff' }}>
                   <strong style={{ color: 'var(--primary)', display: 'block', fontSize: '0.95rem' }}>{adv.nombre}</strong>
@@ -507,6 +511,7 @@ export default function Home() {
                   <a 
                     href={waLink} 
                     target="_blank" 
+                    rel="noopener noreferrer"
                     className="btn btn-accent" 
                     style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }}
                   >
@@ -808,7 +813,7 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Asesor JKA */}
+              {/* Asesor Comercial */}
               <div className="form-group">
                 <label className="form-label">Asesor Comercial *</label>
                 <select
@@ -931,11 +936,13 @@ export default function Home() {
                   className={`result-card ${isBest ? 'result-card-best' : ''}`}
                   style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                 >
+                  {/* Insignia comentada por requerimiento institucional
                   {isBest && (
                     <div className="result-badge">
                       MEJOR RELACIÓN COSTO / CALIDAD
                     </div>
                   )}
+                  */}
 
                   <div className="result-header">
                     <h4 className="result-title">{comp.nombre}</h4>

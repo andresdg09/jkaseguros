@@ -23,8 +23,30 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link href="/" className="nav-brand" onClick={handleLinkClick}>
-        JKA <span>Seguros</span>
+      <Link href="/" className="nav-brand" onClick={handleLinkClick} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
+        <div style={{ 
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', 
+          color: '#ffffff', 
+          width: '36px', 
+          height: '36px', 
+          borderRadius: '10px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          fontSize: '1.2rem',
+          boxShadow: '0 4px 10px rgba(37,99,235,0.25)',
+          flexShrink: 0
+        }}>
+          🛡️
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.3px' }}>
+            Protección & Seguros
+          </span>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563eb', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            360
+          </span>
+        </div>
       </Link>
       
       {/* Botón de Hamburguesa para Móvil */}

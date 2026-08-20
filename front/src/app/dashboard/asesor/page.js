@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
+import { createWhatsAppLink } from '../../utils/whatsapp';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -352,7 +353,7 @@ export default function AsesorDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al registrar cliente');
 
-      showToast('Cliente registrado exitosamente en el sistema JKA.');
+      showToast('Cliente registrado exitosamente en el sistema Protección y Seguros 360.');
       setCreatedClient(data);
       // Limpiar formulario
       setNewClientForm({
@@ -452,13 +453,13 @@ export default function AsesorDashboard() {
 
   // Enviar recordatorio por WhatsApp
   const sendWhatsAppReminder = (payment) => {
-    const cleanPhone = payment.cliente_nombre ? clients.find(c => payment.cliente_nombre.includes(c.primer_nombre))?.telefono.replace(/[^0-9]/g, '') : '';
-    const phoneNum = cleanPhone || '584121234567';
+    const clientObj = clients.find(c => payment.cliente_nombre && payment.cliente_nombre.includes(c.primer_nombre));
+    const phone = clientObj ? clientObj.telefono : '';
     
-    const advisorName = asesor ? asesor.nombre : (user?.correo || 'Asesor JKA');
-    const mensaje = `Estimado *${payment.cliente_nombre}*, te saluda tu asesor de seguros *${advisorName}* de JKA Consultores. Te escribo para recordarte que tienes un pago pendiente por el monto de *$${payment.monto}* para tu póliza *${payment.poliza_codigo}* de *${payment.compania_nombre}*. Por favor reporta tu referencia en el sistema. ¡Feliz día!`;
+    const advisorName = asesor ? asesor.nombre : (user?.correo || 'Asesor Comercial');
+    const mensaje = `Estimado *${payment.cliente_nombre}*, te saluda tu asesor de seguros *${advisorName}* de *Protección y Seguros 360*. Te escribo para recordarte que tienes un pago pendiente por el monto de *$${payment.monto}* para tu póliza *${payment.poliza_codigo}* de *${payment.compania_nombre}*. Por favor reporta tu referencia en el sistema. ¡Feliz día!`;
 
-    const waUrl = `https://wa.me/${phoneNum}?text=${encodeURIComponent(mensaje)}`;
+    const waUrl = createWhatsAppLink(phone, mensaje);
     window.open(waUrl, '_blank');
   };
 
@@ -473,7 +474,7 @@ export default function AsesorDashboard() {
         throw new Error('No se encontró un correo válido para el cliente.');
       }
 
-      const advisorName = asesor ? asesor.nombre : 'Asesor JKA Seguros';
+      const advisorName = asesor ? asesor.nombre : 'Asesor Protección y Seguros 360';
 
       const emailjsPayload = {
         service_id: 'service_271yuq8',
@@ -490,14 +491,14 @@ export default function AsesorDashboard() {
             <div style="background-color: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 8px; padding: 25px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
               <h3 style="color: #b45309; margin-top: 0; border-bottom: 1px solid #fef3c7; padding-bottom: 8px;">Recordatorio de Pago Pendiente</h3>
               <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 15px 0 15px 0;">
-                Hola <strong>${payment.cliente_nombre}</strong>, te saludamos de JKA Seguros. Queremos recordarte que tienes un cobro pendiente de <strong>$${payment.monto}</strong> para tu póliza <strong>${payment.poliza_codigo}</strong> de la compañía <strong>${payment.compania_nombre}</strong>.
+                Hola <strong>${payment.cliente_nombre}</strong>, te saludamos de <strong>Protección y Seguros 360</strong>. Queremos recordarte que tienes un cobro pendiente de <strong>$${payment.monto}</strong> para tu póliza <strong>${payment.poliza_codigo}</strong> de la compañía <strong>${payment.compania_nombre}</strong>.
               </p>
               <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 20px 0;">
-                Por favor, ingresa a tu panel en JKA Seguros y reporta el pago con su número de referencia.
+                Por favor, ingresa a tu portal en Protección y Seguros 360 y reporta el pago con su número de referencia.
               </p>
               <div style="text-align: center; margin-top: 15px;">
-                <a href="https://jkaseguros.com" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 11px 24px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 6px rgba(37,99,235,0.15);">
-                  🔑 Ingresar a mi Cuenta JKA
+                <a href="${typeof window !== 'undefined' ? window.location.origin : 'https://proteccionyseguros360.com'}/login" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 11px 24px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 6px rgba(37,99,235,0.15);">
+                  🔑 Ingresar a mi Cuenta
                 </a>
               </div>
             </div>
@@ -771,8 +772,9 @@ export default function AsesorDashboard() {
                             <td>
                               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <a 
-                                  href={`https://wa.me/${c.telefono.replace(/[^0-9]/g, '')}`} 
+                                  href={createWhatsAppLink(c.telefono)} 
                                   target="_blank" 
+                                  rel="noopener noreferrer"
                                   className="btn"
                                   style={{ background: '#25d366', color: '#fff', border: 'none', fontSize: '0.8rem', padding: '0.2rem 0.5rem', textDecoration: 'none', display: 'inline-block' }}
                                 >
@@ -1428,7 +1430,7 @@ export default function AsesorDashboard() {
               }}>
                 <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>🎓 Aula Virtual de Asesores</h2>
                 <p style={{ fontSize: '1.05rem', opacity: 0.9 }}>
-                  Potencia tus habilidades de ventas, conoce en detalle nuestros ramos de seguros y domina el uso de la plataforma JKA Seguros.
+                  Potencia tus habilidades de ventas, conoce en detalle nuestros ramos de seguros y domina el uso de la plataforma Protección y Seguros 360.
                 </p>
               </div>
 

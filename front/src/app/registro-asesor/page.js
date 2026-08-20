@@ -688,7 +688,7 @@ export default function RegistroAsesorPage() {
                   marginTop: '0.75rem',
                   lineHeight: '1.3'
                 }}>
-                  <strong>⚠️ Declaración de Responsabilidad:</strong> JKA Consultores no se hace responsable por comisiones transferidas incorrectamente debido a errores cometidos en el ingreso del número de cuenta. Asegúrese de que coincida exactamente con sus 20 dígitos.
+                  <strong>⚠️ Declaración de Responsabilidad:</strong> Protección y Seguros 360 no se hace responsable por comisiones transferidas incorrectamente debido a errores cometidos en el ingreso del número de cuenta. Asegúrese de que coincida exactamente con sus 20 dígitos.
                 </div>
               </div>
 

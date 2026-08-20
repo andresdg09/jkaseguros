@@ -1569,7 +1569,7 @@ router.get('/commissions/export-txt', authenticateToken, async (req, res) => {
 
     const now = new Date().toLocaleString('es-VE', { timeZone: 'America/Caracas' });
     let text = `========================================================================\n`;
-    text += `                   JKA CONSULTORES DE SEGUROS\n`;
+    text += `             PROTECCIÓN Y SEGUROS 360 - BROKER DE SEGUROS\n`;
     text += `                REPORTE DETALLADO DE COMISIONES HISTÓRICAS\n`;
     text += `========================================================================\n`;
     text += `Fecha de Generación: ${now}\n`;

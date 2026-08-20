@@ -60,10 +60,10 @@ function dibujarHeader(doc, logoPath, tituloPagina = '') {
     try {
       doc.image(logoPath, 40, 12, { fit: [160, 42] });
     } catch (e) {
-      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(18).text('JKA CONSULTORES', 40, 22);
+      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(16).text('PROTECCIÓN & SEGUROS 360', 40, 22);
     }
   } else {
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(18).text('JKA CONSULTORES', 40, 22);
+    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(16).text('PROTECCIÓN & SEGUROS 360', 40, 22);
   }
 
   doc.fillColor(COLORS.primary).fontSize(8.5).font('Helvetica-Bold');
@@ -135,11 +135,13 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   const padX = x + 14;
   let topY = y + 12;
 
+  /* Insignia comentada por requerimiento institucional
   if (isBest) {
     doc.roundedRect(x + 12, y - 8, 165, 16, 8).fill(COLORS.success);
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(6.5).text('RECOMENDACIÓN JKA', x + 12, y - 4, { width: 165, align: 'center', lineBreak: false });
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(6.5).text('RECOMENDACIÓN', x + 12, y - 4, { width: 165, align: 'center', lineBreak: false });
     topY += 6;
   }
+  */
 
   // Nombre y plan
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11).text(comp.nombre, padX, topY, { width: leftW, lineBreak: false });
@@ -518,7 +520,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
      .text('¿Sabías que un seguro de salud es solo una parte de tu protección?', MARGIN, mktY, { width: CONTENT_W });
   mktY += 34;
   doc.fillColor(COLORS.dark).font('Helvetica').fontSize(8.5)
-     .text('Una protección financiera completa cubre tu salud y tu vida, pero también tu patrimonio (vivienda, vehículo, negocio) y tu responsabilidad ante terceros. Mira cómo se distribuye una cobertura integral recomendada por JKA Consultores:', MARGIN, mktY, { width: CONTENT_W });
+     .text('Una protección financiera completa cubre tu salud y tu vida, pero también tu patrimonio (vivienda, vehículo, negocio) y tu responsabilidad ante terceros. Mira cómo se distribuye una cobertura integral recomendada por Protección y Seguros 360:', MARGIN, mktY, { width: CONTENT_W });
   mktY += 46;
 
   const chartCx = MARGIN + 90;
@@ -532,7 +534,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   doc.fillColor('#9a3412').font('Helvetica-Bold').fontSize(8.5)
      .text('¡ATENCIÓN! HOY SOLO ESTÁS CUBRIENDO EL 20% DE TU PROTECCIÓN FINANCIERA IDEAL', MARGIN + 12, calloutY + 8, { width: CONTENT_W - 24, lineBreak: false });
   doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5)
-     .text('Con un seguro de Salud contratado, aún te falta cubrir Vida, Patrimonio y Responsabilidad Civil. Conversa con tu asesor JKA para armar un plan a tu medida.', MARGIN + 12, calloutY + 20, { width: CONTENT_W - 24 });
+     .text('Con un seguro de Salud contratado, aún te falta cubrir Vida, Patrimonio y Responsabilidad Civil. Conversa con tu asesor de Protección y Seguros 360 para armar un plan a tu medida.', MARGIN + 12, calloutY + 20, { width: CONTENT_W - 24 });
 
   let boxesY = calloutY + 56;
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
@@ -623,7 +625,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
     doc.fillColor(COLORS.muted).fontSize(6.5).font('Helvetica')
        .text(brokerFooterLine, MARGIN, FOOTER_Y - 9, { align: 'center', width: CONTENT_W, lineBreak: false });
     doc.fontSize(7)
-       .text(`Página ${i + 1} de ${totalPages} | Documento emitido por JKA Consultores C.A.`, MARGIN, FOOTER_Y, { align: 'center', width: CONTENT_W, lineBreak: false });
+       .text(`Página ${i + 1} de ${totalPages} | Documento emitido por Protección y Seguros 360`, MARGIN, FOOTER_Y, { align: 'center', width: CONTENT_W, lineBreak: false });
   }
 }
 
@@ -634,7 +636,7 @@ export function generarPdfCotizacion(res, cliente, edad, sumaAsegurada, comparat
   const doc = new PDFDocument({ margin: 0, size: 'A4', bufferPages: true });
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename=cotizacion_jka_${cliente.nro_documento}.pdf`);
+  res.setHeader('Content-Disposition', `attachment; filename=cotizacion_360_${cliente.nro_documento}.pdf`);
   doc.pipe(res);
 
   dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor);

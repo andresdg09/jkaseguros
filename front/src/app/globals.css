@@ -1,4 +1,4 @@
-/* JKA Seguros - Vanilla CSS Design System */
+/* Protección y Seguros 360 - Design System */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
@@ -913,6 +913,14 @@ body {
   display: none !important;
 }
 
+/* Tablas Responsivas */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 768px) {
   .hamburger-btn {
     display: flex !important;
@@ -950,6 +958,41 @@ body {
     font-size: 0.9rem !important;
     padding: 0.6rem !important;
   }
+
+  .main-content {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .card {
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
 }
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.15rem !important;
+  }
+
+  .btn-center {
+    width: 100% !important;
+    padding: 0.75rem 1.5rem !important;
+  }
+
+  .floating-save-bar {
+    width: 92% !important;
+    padding: 0.75rem 1.25rem !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    bottom: 1rem !important;
+    border-radius: 20px !important;
+  }
+}
+
 
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
+import { createWhatsAppLink } from '../../utils/whatsapp';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -252,7 +253,7 @@ export default function ClienteDashboard() {
                       <th>Área</th>
                       <th>Suma Asegurada</th>
                       <th>Prima Anual</th>
-                      <th>Asesor JKA</th>
+                      <th>Asesor Asignado</th>
                       <th>Estado</th>
                     </tr>
                   </thead>
@@ -401,8 +402,9 @@ export default function ClienteDashboard() {
                         <strong>Teléfono:</strong> {adv.telefono}
                       </div>
                       <a 
-                        href={`https://wa.me/${adv.telefono.replace(/[^0-9]/g, '')}?text=Hola%20${encodeURIComponent(adv.nombre)}%20necesito%20soporte%20con%20mis%20polizas%20JKA`}
+                        href={createWhatsAppLink(adv.telefono, `Hola ${adv.nombre}, necesito soporte con mis pólizas en Protección y Seguros 360.`)}
                         target="_blank" 
+                        rel="noopener noreferrer"
                         className="btn"
                         style={{ background: '#25d366', color: '#fff', border: 'none', textAlign: 'center', fontWeight: 'bold', textDecoration: 'none', display: 'block', width: '100%', marginTop: 'auto' }}
                       >

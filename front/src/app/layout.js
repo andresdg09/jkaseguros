@@ -4,8 +4,8 @@ import { ToastProvider } from "./components/ToastProvider";
 import Navbar from "./components/Navbar";
 
 export const metadata = {
-  title: "JKA Consultores - Cotizaciones de Seguros en Venezuela",
-  description: "Compara y cotiza pólizas de seguros de salud, colectivos e individuales, con Seguros Pirámides, Hispanas, Mercantil, Universitas, Caracas y La Occidental.",
+  title: "Protección y Seguros 360 - Cotizaciones de Seguros en Venezuela",
+  description: "Compara y cotiza pólizas de seguros de salud, colectivos e individuales con las mejores aseguradoras del país en Protección y Seguros 360.",
 };
 
 export default function RootLayout({ children }) {

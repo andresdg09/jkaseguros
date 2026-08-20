@@ -43,7 +43,7 @@ export default function RegistroPage() {
     }
     try {
       await register({ ...form, contrasena, rango: 'cliente' });
-      showToast('Registro exitoso. ¡Bienvenido a JKA Consultores!');
+      showToast('Registro exitoso. ¡Bienvenido a Protección y Seguros 360!');
       router.push('/dashboard/cliente');
     } catch (err) {
       showToast(err.message, 'error');
@@ -59,7 +59,7 @@ export default function RegistroPage() {
         <Link href="/" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>Volver</Link>
       </h3>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-        Complete sus datos personales para registrarse en JKA Consultores. Si usted es Asesor Comercial, por favor <Link href="/registro-asesor" style={{ color: 'var(--accent)', fontWeight: 600 }}>regístrese aquí</Link>.
+        Complete sus datos personales para registrarse en Protección y Seguros 360. Si usted es Asesor Comercial, por favor <Link href="/registro-asesor" style={{ color: 'var(--accent)', fontWeight: 600 }}>regístrese aquí</Link>.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="form-grid">

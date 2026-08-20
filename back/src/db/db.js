@@ -299,7 +299,7 @@ function seedFallbackElearning() {
       {
         id: 3,
         titulo: 'Curso de cómo se usa el sistema',
-        descripcion: 'Guía rápida para cotizar y gestionar solicitudes en la plataforma JKA Seguros.',
+        descripcion: 'Guía rápida para cotizar y gestionar solicitudes en la plataforma Protección y Seguros 360.',
         created_at: new Date().toISOString()
       }
     ];
@@ -344,7 +344,7 @@ function seedFallbackElearning() {
         id: 4,
         curso_id: 2,
         titulo: 'Ramos de Seguros en Venezuela',
-        contenido: 'Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn JKA nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).',
+        contenido: 'Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn Protección y Seguros 360 nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).',
         orden: 2,
         quiz_preguntas: [
           { pregunta: '¿Qué cubre primordialmente una póliza HCM?', opciones: ['Gastos médicos por Hospitalización, Cirugía y Maternidad', 'Daños materiales del vehículo del asegurado'], correcta: 0 }
@@ -960,7 +960,7 @@ try {
     ])]);
     await client.query(`
       INSERT INTO elearning_modulos (curso_id, titulo, contenido, orden, quiz_preguntas) 
-      VALUES ($1, 'Ramos de Seguros en Venezuela', 'Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn JKA nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).', 2, $2)
+      VALUES ($1, 'Ramos de Seguros en Venezuela', 'Manejamos principalmente:\n\n1. **Salud / HCM**: Hospitalización, Cirugía y Maternidad.\n2. **Vida**: Cobertura por fallecimiento e invalidez.\n3. **Vehículos**: Daños propios y responsabilidad civil.\n\nEn Protección y Seguros 360 nos especializamos fuertemente en Salud Individual y Colectiva con las mejores aseguradoras del país (Mercantil, Seguros Caracas, Seguros Venezuela, Mapfre).', 2, $2)
     `, [c2Id, JSON.stringify([
       { pregunta: '¿Qué cubre primordialmente una póliza HCM?', opciones: ['Gastos médicos por Hospitalización, Cirugía y Maternidad', 'Daños materiales del vehículo del asegurado'], correcta: 0 }
     ])]);
@@ -968,7 +968,7 @@ try {
     // Curso 3: Cómo se usa el sistema
     const c3 = await client.query(`
       INSERT INTO elearning_cursos (titulo, descripcion) 
-      VALUES ('Curso de cómo se usa el sistema', 'Guía rápida para cotizar y gestionar solicitudes en la plataforma JKA Seguros.') 
+      VALUES ('Curso de cómo se usa el sistema', 'Guía rápida para cotizar y gestionar solicitudes en la plataforma Protección y Seguros 360.') 
       RETURNING id
     `);
     const c3Id = c3.rows[0].id;

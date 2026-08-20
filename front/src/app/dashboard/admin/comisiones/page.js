@@ -337,7 +337,7 @@ export default function ComisionesPage() {
   };
 
   const handleResetMatrixDefaults = async () => {
-    if (!confirm('¿Desea restablecer y sincronizar la Matriz de Comisiones con los planes del Tarifario Oficial de JKA?')) return;
+    if (!confirm('¿Desea restablecer y sincronizar la Matriz de Comisiones con los planes del Tarifario Oficial de Protección y Seguros 360?')) return;
 
     setSubmitting(true);
     try {
@@ -648,7 +648,7 @@ export default function ComisionesPage() {
                 <div>
                   <h3 style={{ color: 'var(--primary)', margin: 0, fontWeight: 700 }}>Matriz Jerárquica de Porcentajes de Comisiones</h3>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
-                    Reglas vinculadas estrictamente con las Aseguradoras y Planes reales del Tarifario oficial de JKA.
+                    Reglas vinculadas estrictamente con las Aseguradoras y Planes reales del Tarifario oficial.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -677,7 +677,7 @@ export default function ComisionesPage() {
                     <th style={{ padding: '0.65rem' }}>Aseguradora</th>
                     <th style={{ padding: '0.65rem' }}>Ramo Técnico</th>
                     <th style={{ padding: '0.65rem' }}>Plan / Modalidad (Tarifario)</th>
-                    <th style={{ padding: '0.65rem', textAlign: 'center', backgroundColor: '#eef2ff' }}>Total Comisión JKA</th>
+                    <th style={{ padding: '0.65rem', textAlign: 'center', backgroundColor: '#eef2ff' }}>Total Comisión Broker</th>
                     <th style={{ padding: '0.65rem', textAlign: 'center' }}>🥇 Asesor 1 (Senior)</th>
                     <th style={{ padding: '0.65rem', textAlign: 'center' }}>🥈 Asesor 2 (Interm)</th>
                     <th style={{ padding: '0.65rem', textAlign: 'center', backgroundColor: '#fef3c7' }}>🥉 Asesor 3 (Junior)</th>
@@ -848,10 +848,10 @@ export default function ComisionesPage() {
               <div className="card" style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
                 <h3 style={{ color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>Configuración de Pago a Proveedores BNC</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-                  Ingrese la cuenta a debitar de JKA Consultores para generar la estructura del TXT de abono a proveedores.
+                  Ingrese la cuenta a debitar de la empresa para generar la estructura del TXT de abono a proveedores.
                 </p>
                 <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Cuenta a Debitar JKA (20 dígitos numéricos) *</label>
+                  <label className="form-label">Cuenta a Debitar de la Empresa (20 dígitos numéricos) *</label>
                   <input 
                     type="text" 
                     className="form-input" 
@@ -1076,7 +1076,7 @@ export default function ComisionesPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem' }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700, color: '#1e3a8a' }}>Total Broker JKA *</label>
+                    <label className="form-label" style={{ fontWeight: 700, color: '#1e3a8a' }}>Total Comisión Broker *</label>
                     <input
                       type="number"
                       step="0.1"
@@ -1123,9 +1123,9 @@ export default function ComisionesPage() {
                   </div>
                 </div>
 
-                {/* Desglose en Vivo de Margen JKA */}
+                {/* Desglose en Vivo de Margen Empresa */}
                 <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#ecfdf5', borderRadius: '6px', border: '1px solid #a7f3d0', fontSize: '0.85rem' }}>
-                  <strong style={{ color: '#065f46' }}>🏢 Margen Neto para JKA Seguros (Empresa):</strong>
+                  <strong style={{ color: '#065f46' }}>🏢 Margen Neto para Protección y Seguros 360 (Empresa):</strong>
                   <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.35rem', color: '#047857', flexWrap: 'wrap' }}>
                     <span>Con Asesor 3 (Junior): <strong>{Math.max(0, parseFloat(matrixForm.total_comision || 0) - parseFloat(matrixForm.asesor_3 || 0)).toFixed(1)}%</strong></span>
                     <span>Con Asesor 2 (Interm): <strong>{Math.max(0, parseFloat(matrixForm.total_comision || 0) - parseFloat(matrixForm.asesor_2 || 0)).toFixed(1)}%</strong></span>

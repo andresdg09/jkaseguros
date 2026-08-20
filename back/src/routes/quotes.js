@@ -276,22 +276,26 @@ router.post('/email', async (req, res) => {
     const pdfBase64 = pdfBuffer.toString('base64');
 
     // Generar bloque HTML de las tarjetas de planes para el cuerpo del correo
-    let planCardsHtml = '';
-    const cleanPhone = (asesor && asesor.telefono) ? asesor.telefono.replace(/[^0-9]/g, '') : '584121234567';
-    const advisorName = (asesor && asesor.nombre) ? asesor.nombre : 'Asesor JKA Seguros';
+    let rawPhone = (asesor && asesor.telefono) ? asesor.telefono.replace(/[^0-9]/g, '') : '584121234567';
+    if (rawPhone.startsWith('0')) rawPhone = '58' + rawPhone.substring(1);
+    const cleanPhone = rawPhone;
+    const advisorName = (asesor && asesor.nombre) ? asesor.nombre : 'Asesor Protección y Seguros 360';
 
     comparativas.forEach(comp => {
       const waMsg = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${comp.nombre}* (Plan ${comp.plan || 'N/A'}) con una prima anual de *$${comp.prima}* para la suma asegurada de *$${comp.suma_asegurada || suma_asegurada}*. Por favor contácteme.`;
-      const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}`;
+      const waLink = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(waMsg)}`;
       
       const isBest = !!comp.recomendada;
       const cardBg = isBest ? '#eff6ff' : '#ffffff';
       const cardBorder = isBest ? '#2563eb' : '#cbd5e1';
+      /* Insignia de recomendación comentada por requerimiento institucional
       const badgeHtml = isBest ? `
         <div style="background-color: #10b981; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px;">
           RECOMENDACIÓN JKA
         </div>
       ` : '';
+      */
+      const badgeHtml = '';
 
       planCardsHtml += `
         <div style="background-color: ${cardBg}; border: 1.5px solid ${cardBorder}; border-radius: 8px; margin-bottom: 20px; padding: 20px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
@@ -509,7 +513,7 @@ router.post('/share/:token/accept', async (req, res) => {
         userId = userExistRes.rows[0].id;
       } else {
         // Registrar nuevo usuario
-        const tempPassword = `JKA-${nro_documento}`;
+        const tempPassword = `PS360-${nro_documento}`;
         const salt = await bcrypt.genSalt(10);
         const hashContrasena = await bcrypt.hash(tempPassword, salt);
 

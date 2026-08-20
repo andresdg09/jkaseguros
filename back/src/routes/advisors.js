@@ -174,7 +174,7 @@ router.post('/advisor/create-client', authenticateToken, async (req, res) => {
     }
 
     // Generar contraseña temporal
-    const tempPassword = `JKA-${nro_documento}`;
+    const tempPassword = `PS360-${nro_documento}`;
     const salt = await bcrypt.genSalt(10);
     const hashContrasena = await bcrypt.hash(tempPassword, salt);
 
@@ -210,7 +210,7 @@ router.post('/advisor/create-client', authenticateToken, async (req, res) => {
     await registrarAccion(req.user.id, req.user.correo, 'CREACION_CLIENTE', `Asesor registró cliente ${primer_nombre} ${primer_apellido} (${correo.toLowerCase()}).`);
 
     res.status(201).json({
-      message: 'Cliente registrado exitosamente. La contraseña temporal es JKA-[Nro. Documento]',
+      message: 'Cliente registrado exitosamente. La contraseña temporal es PS360-[Nro. Documento]',
       cliente: {
         ...personalRes.rows[0],
         correo: correo.toLowerCase()
@@ -262,24 +262,24 @@ router.post('/advisor/send-document', authenticateToken, async (req, res) => {
 
     switch (tipo_seguro.toLowerCase()) {
       case 'salud':
-        subject = `Documentación de Seguro de Salud - JKA Consultores`;
+        subject = `Documentación de Seguro de Salud - Protección y Seguros 360`;
         downloadUrl = `${baseUrl}/docs/seguro_salud_jka.pdf`;
         displayTipo = 'Salud';
         break;
       case 'vida':
-        subject = `Documentación de Seguro de Vida - JKA Consultores`;
+        subject = `Documentación de Seguro de Vida - Protección y Seguros 360`;
         downloadUrl = `${baseUrl}/docs/seguro_vida_jka.pdf`;
         displayTipo = 'Vida';
         break;
       case 'vehiculo':
       case 'vehículo':
-        subject = `Documentación de Seguro de Vehículo - JKA Consultores`;
+        subject = `Documentación de Seguro de Vehículo - Protección y Seguros 360`;
         downloadUrl = `${baseUrl}/docs/seguro_vehiculo_jka.pdf`;
         displayTipo = 'Vehículo';
         break;
       case 'hogar':
       case 'patrimonial':
-        subject = `Documentación de Seguro Hogar y Patrimonial - JKA Consultores`;
+        subject = `Documentación de Seguro Hogar y Patrimonial - Protección y Seguros 360`;
         downloadUrl = `${baseUrl}/docs/seguro_hogar_jka.pdf`;
         displayTipo = 'Hogar y Patrimonial';
         break;
@@ -292,7 +292,7 @@ router.post('/advisor/send-document', authenticateToken, async (req, res) => {
       <div style="background-color: #f8fafc; border: 1.5px solid #2563eb; border-radius: 8px; padding: 25px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
         <h3 style="color: #1e3a8a; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Documentación de Seguro de ${displayTipo}</h3>
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 15px 0 15px 0;">
-          Estimado cliente, de acuerdo a lo conversado con tu asesor de JKA Seguros, te hacemos llegar la información detallada y la documentación oficial para tu solicitud de <strong>Seguro de ${displayTipo}</strong>.
+          Estimado cliente, de acuerdo a lo conversado con tu asesor de Protección y Seguros 360, te hacemos llegar la información detallada y la documentación oficial para tu solicitud de <strong>Seguro de ${displayTipo}</strong>.
         </p>
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 20px 0;">
           Por favor haz clic en el botón de abajo para descargar y revisar los términos del seguro, coberturas y requisitos necesarios para su emisión:
