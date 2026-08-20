@@ -22,6 +22,15 @@ const COLORS = {
   amber: '#f59e0b'
 };
 
+// Datos del corredor de seguros, mostrados en el encabezado (bajo el título de
+// cada página) y en el pie de página de todas las páginas del PDF.
+const BROKER_INFO_LINES = [
+  'Johann Joubert',
+  'Corredor de la Actividad Aseguradora',
+  'CAA-005236 –SUDEASEG',
+  'Rif V-11414838-1'
+];
+
 /**
  * Busca la ruta del logo en la carpeta public
  */
@@ -60,9 +69,10 @@ function dibujarHeader(doc, logoPath, tituloPagina = '') {
   doc.fillColor(COLORS.primary).fontSize(8.5).font('Helvetica-Bold');
   doc.text((tituloPagina || 'COTIZACIÓN DE SEGUROS DE SALUD').toUpperCase(), 250, 16, { align: 'right', width: 305, lineBreak: false });
 
-  doc.fillColor('#475569').font('Helvetica').fontSize(7.5)
-     .text('JKA Consultores C.A. | Asesoría de Seguros en Venezuela', 250, 29, { align: 'right', width: 305, lineBreak: false })
-     .text('Caracas, Venezuela | Tel: +58 412-1234567 | Web: jkaseguros.com', 250, 41, { align: 'right', width: 305, lineBreak: false });
+  doc.fillColor('#475569').font('Helvetica').fontSize(6.5);
+  BROKER_INFO_LINES.forEach((line, i) => {
+    doc.text(line, 250, 28 + i * 7.3, { align: 'right', width: 305, lineBreak: false });
+  });
 
   doc.lineWidth(1.5).strokeColor(COLORS.primary).moveTo(40, 60).lineTo(555, 60).stroke();
 }
@@ -73,7 +83,7 @@ function dibujarHeader(doc, logoPath, tituloPagina = '') {
 function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
   const hasDeps = cliente.dependientes && cliente.dependientes.length > 0;
   const depLines = hasDeps ? Math.ceil(cliente.dependientes.length / 2) : 0;
-  const boxH = 58 + depLines * 14;
+  const boxH = 70 + depLines * 14;
 
   doc.rect(MARGIN, 92, CONTENT_W, boxH).fill(COLORS.lightBg);
   doc.rect(MARGIN, 92, CONTENT_W, boxH).stroke(COLORS.border);
@@ -84,17 +94,18 @@ function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
   const fechaNac = new Date(cliente.fecha_nacimiento).toLocaleDateString('es-VE');
 
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8);
-  doc.text('Asegurado:', col1, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.primer_nombre} ${cliente.primer_apellido}`, col1 + 60, 100, { lineBreak: false });
+  doc.text('Prospecto:', col1, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.primer_nombre} ${cliente.primer_apellido}`, col1 + 60, 100, { lineBreak: false });
   doc.font('Helvetica-Bold').text('Documento:', col2, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.tipo_documento}-${cliente.nro_documento}`, col2 + 65, 100, { lineBreak: false });
 
   doc.font('Helvetica-Bold').text('F. Nacimiento:', col1, 114, { lineBreak: false }).font('Helvetica').text(fechaNac, col1 + 75, 114, { lineBreak: false });
   doc.font('Helvetica-Bold').text('Edad / Género:', col2, 114, { lineBreak: false }).font('Helvetica').text(`${edad} años / ${cliente.genero || 'N/A'}`, col2 + 75, 114, { lineBreak: false });
 
-  doc.font('Helvetica-Bold').text('Teléfono:', col1, 128, { lineBreak: false }).font('Helvetica').text(`${cliente.codigo_area}-${cliente.numero_celular}`, col1 + 60, 128, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Teléfono:', col1, 128, { lineBreak: false }).font('Helvetica').text(cliente.telefono || 'N/A', col1 + 60, 128, { lineBreak: false });
   doc.font('Helvetica-Bold').text('Suma Asegurada:', col2, 128, { lineBreak: false }).font('Helvetica-Bold').fillColor(COLORS.secondary).text(sumaFormateada, col2 + 85, 128, { lineBreak: false });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.5).text('Válido por 10 días', col2 + 85, 140, { lineBreak: false });
 
   if (hasDeps) {
-    let dy = 142;
+    let dy = 154;
     doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8).text('Dependientes:', col1, dy, { lineBreak: false });
     
     cliente.dependientes.forEach((dep, idx) => {
@@ -255,7 +266,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   const hasDeps = cliente.dependientes && cliente.dependientes.length > 0;
   const depLines = hasDeps ? Math.ceil(cliente.dependientes.length / 2) : 0;
-  const boxH = 58 + depLines * 14;
+  const boxH = 70 + depLines * 14;
 
   const titleY = 92 + boxH + 12;
   const subtitleY = titleY + 12;
@@ -401,9 +412,12 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   // PIE DE PÁGINA GLOBAL DE TODAS LAS PÁGINAS
   // ==========================================
   const totalPages = doc.bufferedPageRange().count;
+  const brokerFooterLine = BROKER_INFO_LINES.join(' | ');
   for (let i = 0; i < totalPages; i++) {
     doc.switchToPage(i);
-    doc.fillColor(COLORS.muted).fontSize(7).font('Helvetica')
+    doc.fillColor(COLORS.muted).fontSize(6.5).font('Helvetica')
+       .text(brokerFooterLine, MARGIN, FOOTER_Y - 9, { align: 'center', width: CONTENT_W, lineBreak: false });
+    doc.fontSize(7)
        .text(`Página ${i + 1} de ${totalPages} | Documento emitido por JKA Consultores C.A.`, MARGIN, FOOTER_Y, { align: 'center', width: CONTENT_W, lineBreak: false });
   }
 }
