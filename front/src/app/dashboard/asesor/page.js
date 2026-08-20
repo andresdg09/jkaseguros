@@ -24,7 +24,7 @@ export default function AsesorDashboard() {
   const [payments, setPayments] = useState([]);
   const [tempRefs, setTempRefs] = useState({});
   const [companies, setCompanies] = useState([]);
-  const [policyForm, setPolicyForm] = useState({ cliente_id: '', compania_id: '', plan: '', suma_asegurada: 5000, prima_anual: 300 });
+  const [policyForm, setPolicyForm] = useState({ cliente_id: '', compania_id: '', plan: '', suma_asegurada: 5000, prima_anual: 300, frecuencia_pago: 'contado' });
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DE E-LEARNING ---
@@ -61,6 +61,81 @@ export default function AsesorDashboard() {
     numero_celular: ''
   });
   const [createdClient, setCreatedClient] = useState(null);
+
+  // --- ESTADO REPORTE DE PAGO (SOLO EN BOLÍVARES VES) ---
+  const [reportPayModal, setReportPayModal] = useState(null); // null or payment object
+  const [reportPayForm, setReportPayForm] = useState({
+    poliza_id: '',
+    pago_id: '',
+    monto_cuota_usd: '',
+    monto_reportado_ves: '',
+    referencia: '',
+    fecha_pago: new Date().toISOString().split('T')[0],
+    observaciones: ''
+  });
+
+  const handleOpenReportPayModal = (pa) => {
+    setReportPayModal(pa);
+    setReportPayForm({
+      poliza_id: pa.poliza_id,
+      pago_id: pa.id,
+      monto_cuota_usd: parseFloat(pa.monto || 0),
+      monto_reportado_ves: '',
+      referencia: pa.referencia || '',
+      fecha_pago: new Date().toISOString().split('T')[0],
+      observaciones: ''
+    });
+  };
+
+  const handleSendPaymentReport = async (e) => {
+    e.preventDefault();
+    if (!reportPayForm.referencia || !reportPayForm.monto_reportado_ves) {
+      return showToast('Por favor ingrese el monto en Bolívares y la referencia bancaria.', 'error');
+    }
+
+    // Normalizar formato numérico venezolano (ej. 1.500,50 o 1500,50 o 1500.50)
+    let rawMonto = String(reportPayForm.monto_reportado_ves).trim();
+    if (rawMonto.includes(',') && rawMonto.includes('.')) {
+      rawMonto = rawMonto.replace(/\./g, '').replace(',', '.');
+    } else if (rawMonto.includes(',')) {
+      rawMonto = rawMonto.replace(',', '.');
+    }
+    const cleanMontoVES = parseFloat(rawMonto);
+
+    if (isNaN(cleanMontoVES) || cleanMontoVES <= 0) {
+      return showToast('Por favor ingrese un monto válido en Bolívares.', 'error');
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/payments/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          poliza_id: reportPayForm.poliza_id,
+          pago_id: reportPayForm.pago_id,
+          monto_reportado_ves: cleanMontoVES,
+          monto_usd: parseFloat(reportPayForm.monto_cuota_usd || 0),
+          referencia: reportPayForm.referencia,
+          fecha_pago: reportPayForm.fecha_pago,
+          observaciones: reportPayForm.observaciones
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al reportar pago');
+
+      showToast('¡Pago en Bolívares reportado con éxito! Se encuentra En Revisión por el Administrador.');
+      setReportPayModal(null);
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- CONTROL DE PÓLIZAS MODIFICADAS ---
   const [modifiedPolicies, setModifiedPolicies] = useState({});
@@ -321,7 +396,8 @@ export default function AsesorDashboard() {
           plan: policyForm.plan,
           suma_asegurada: parseFloat(policyForm.suma_asegurada),
           prima_anual: parseFloat(policyForm.prima_anual),
-          cliente_id: parseInt(policyForm.cliente_id)
+          cliente_id: parseInt(policyForm.cliente_id),
+          frecuencia_pago: policyForm.frecuencia_pago || 'contado'
         })
       });
       const data = await res.json();
@@ -333,7 +409,8 @@ export default function AsesorDashboard() {
         compania_id: companies[0]?.id || '',
         plan: '',
         suma_asegurada: 5000,
-        prima_anual: 300
+        prima_anual: 300,
+        frecuencia_pago: 'contado'
       });
       loadData();
       setActiveTab('clientes');
@@ -482,6 +559,9 @@ export default function AsesorDashboard() {
     }
   };
 
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('todos');
+  const [expandedPolicies, setExpandedPolicies] = useState({});
+
   // --- FILTRADO DE DATOS ---
   const filteredClients = clients.filter(c =>
     !searchQuery ||
@@ -491,13 +571,71 @@ export default function AsesorDashboard() {
     c.correo?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPayments = payments.filter(pa =>
-    !searchQuery ||
-    pa.poliza_codigo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.cliente_nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.compania_nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.referencia?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Agrupación de pagos por póliza con filtrado inteligente
+  const groupedPaymentsByPolicy = (() => {
+    const map = new Map();
+    payments.forEach(pa => {
+      const pKey = pa.poliza_id ? String(pa.poliza_id) : (pa.poliza_codigo || `temp-${pa.id}`);
+      if (!map.has(pKey)) {
+        map.set(pKey, {
+          poliza_id: pa.poliza_id,
+          poliza_codigo: pa.poliza_codigo || 'POL-GENERAL',
+          cliente_nombre: pa.cliente_nombre || 'Cliente',
+          compania_nombre: pa.compania_nombre || 'Seguros',
+          frecuencia: pa.poliza_frecuencia || 'contado',
+          plan: pa.poliza_plan || '',
+          total_prima: parseFloat(pa.poliza_prima || 0),
+          cuotas: []
+        });
+      }
+      map.get(pKey).cuotas.push(pa);
+    });
+
+    const groups = [...map.values()].map(group => {
+      group.cuotas.sort((a, b) => (a.cuota_numero || a.id) - (b.cuota_numero || b.id));
+      const pagadas = group.cuotas.filter(c => c.estado_pago === 'pagado').length;
+      const revision = group.cuotas.filter(c => c.estado_pago === 'en_revision').length;
+      const pendientes = group.cuotas.filter(c => c.estado_pago === 'pendiente').length;
+      const rechazadas = group.cuotas.filter(c => c.estado_pago === 'rechazado').length;
+      const montoTotalCobrado = group.cuotas.filter(c => c.estado_pago === 'pagado').reduce((acc, c) => acc + parseFloat(c.monto || 0), 0);
+      const montoTotalCuotas = group.cuotas.reduce((acc, c) => acc + parseFloat(c.monto || 0), 0);
+
+      // Si hay un filtro de estado activo, filtramos las cuotas visibles dentro del desglose
+      const cuotasVisibles = paymentStatusFilter === 'todos' 
+        ? group.cuotas 
+        : group.cuotas.filter(c => c.estado_pago === paymentStatusFilter);
+
+      return {
+        ...group,
+        totalCuotas: group.cuotas.length,
+        cuotasPagadas: pagadas,
+        cuotasEnRevision: revision,
+        cuotasPendientes: pendientes,
+        cuotasRechazadas: rechazadas,
+        montoTotalCobrado,
+        montoTotalCuotas,
+        cuotas: cuotasVisibles
+      };
+    });
+
+    // Filtrar las tarjetas de póliza según el estado seleccionado y la búsqueda
+    return groups.filter(group => {
+      // Si se filtra por estado y no tiene cuotas con ese estado, no se muestra
+      if (paymentStatusFilter === 'en_revision' && group.cuotasEnRevision === 0) return false;
+      if (paymentStatusFilter === 'pendiente' && group.cuotasPendientes === 0) return false;
+      if (paymentStatusFilter === 'pagado' && group.cuotasPagadas === 0) return false;
+      if (paymentStatusFilter === 'rechazado' && group.cuotasRechazadas === 0) return false;
+
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        group.poliza_codigo?.toLowerCase().includes(q) ||
+        group.cliente_nombre?.toLowerCase().includes(q) ||
+        group.compania_nombre?.toLowerCase().includes(q) ||
+        group.cuotas.some(c => c.referencia?.toLowerCase().includes(q))
+      );
+    });
+  })();
 
   const filteredPolicies = policies.filter(p =>
     !searchQuery ||
@@ -761,107 +899,233 @@ export default function AsesorDashboard() {
           {activeTab === 'pagos' && (
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Monitoreo de Pagos de Mis Pólizas</h3>
-              <div style={{ marginBottom: '1.2rem' }}>
+              {/* Filtros de Cobranzas */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
                 <input
                   type="text"
-                  placeholder="🔍 Buscar cobros por póliza, cliente, compañía o referencia..."
+                  placeholder="🔍 Buscar cobros por póliza, cliente, aseguradora o referencia..."
                   className="form-input"
-                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
+                  style={{ minWidth: '280px', maxWidth: '380px', padding: '0.5rem 1rem', margin: 0 }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    Filtrar por Estado:
+                  </label>
+                  <select
+                    value={paymentStatusFilter}
+                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                    className="form-input"
+                    style={{ padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem', fontWeight: 600, minWidth: '150px' }}
+                  >
+                    <option value="todos">Todos los Estados</option>
+                    <option value="en_revision">🟡 En Revisión por Admin</option>
+                    <option value="pendiente">⚪ Pendiente de Cobro</option>
+                    <option value="pagado">🟢 Verificados y Pagados</option>
+                    <option value="rechazado">🔴 Rechazados</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      const allKeys = {};
+                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_codigo] = true; });
+                      setExpandedPolicies(prev => (Object.keys(prev).length === groupedPaymentsByPolicy.length ? {} : allKeys));
+                    }}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.8rem', borderRadius: '6px' }}
+                  >
+                    {Object.keys(expandedPolicies).length === groupedPaymentsByPolicy.length && groupedPaymentsByPolicy.length > 0 ? 'Contraer Todos 🔼' : 'Expandir Todos 🔽'}
+                  </button>
+                </div>
               </div>
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Código Póliza</th>
-                      <th>Cliente</th>
-                      <th>Compañía</th>
-                      <th>Monto Cuota</th>
-                      <th>Referencia Informada</th>
-                      <th>Fecha Vencimiento</th>
-                      <th>Recordatorios</th>
-                      <th>Marcar Pago</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPayments.length === 0 ? (
-                      <tr><td colSpan="8" className="text-center">No hay cuotas registradas que coincidan con la búsqueda.</td></tr>
-                    ) : (
-                      filteredPayments.map((pa) => (
-                        <tr key={pa.id}>
-                          <td><strong>{pa.poliza_codigo}</strong></td>
-                          <td>{pa.cliente_nombre}</td>
-                          <td>{pa.compania_nombre}</td>
-                          <td>${parseFloat(pa.monto).toLocaleString('en-US')}</td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <input 
-                                type="text" 
-                                placeholder="Nro. Referencia" 
-                                className="form-input" 
-                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '130px', margin: 0 }}
-                                value={tempRefs[pa.id] !== undefined ? tempRefs[pa.id] : (pa.referencia || '')}
-                                onChange={(e) => setTempRefs({ ...tempRefs, [pa.id]: e.target.value })}
-                              />
-                              {(tempRefs[pa.id] !== undefined && tempRefs[pa.id] !== (pa.referencia || '')) && (
-                                <button 
-                                  onClick={() => handleUpdatePaymentStatus(pa.id, pa.estado_pago)} 
-                                  className="btn btn-accent"
-                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                >
-                                  ✓
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                          <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
-                          <td>
-                            {pa.estado_pago === 'pendiente' ? (
-                              <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                <button 
-                                  onClick={() => sendWhatsAppReminder(pa)} 
-                                  className="btn"
-                                  style={{ background: '#25d366', color: '#fff', border: 'none', fontSize: '0.75rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}
-                                >
-                                  WhatsApp
-                                </button>
-                                <button 
-                                  onClick={() => sendEmailReminder(pa)} 
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}
-                                >
-                                  Email
-                                </button>
+
+              {/* LISTADO DE PÓLIZAS AGRUPADAS CON SUS CUOTAS */}
+              {groupedPaymentsByPolicy.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                  No hay cobros registrados con los criterios seleccionados.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {groupedPaymentsByPolicy.map((group) => {
+                    const isExpanded = !!expandedPolicies[group.poliza_codigo];
+                    const progressPercent = group.totalCuotas > 0 ? Math.round((group.cuotasPagadas / group.totalCuotas) * 100) : 0;
+
+                    return (
+                      <div
+                        key={group.poliza_codigo}
+                        style={{
+                          background: '#ffffff',
+                          border: group.cuotasEnRevision > 0 ? '2px solid #f59e0b' : '1px solid var(--border)',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
+                        }}
+                      >
+                        {/* Cabecera de la Póliza */}
+                        <div
+                          style={{
+                            padding: '1rem 1.25rem',
+                            background: group.cuotasEnRevision > 0 ? '#fffbeb' : '#f8fafc',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '1rem',
+                            cursor: 'pointer',
+                            borderBottom: isExpanded ? '1px solid var(--border)' : 'none'
+                          }}
+                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [group.poliza_codigo]: !prev[group.poliza_codigo] }))}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
+                              🛡️ {group.poliza_codigo}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                              {group.cliente_nombre}
+                            </span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                              ({group.compania_nombre} {group.plan ? `- Plan ${group.plan}` : ''})
+                            </span>
+                            <span style={{ fontSize: '0.75rem', background: '#e2e8f0', color: '#475569', padding: '0.2rem 0.5rem', borderRadius: '4px', textTransform: 'capitalize', fontWeight: 600 }}>
+                              Frecuencia: {group.frecuencia}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                            {/* Progreso de Cobro */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                  {group.cuotasPagadas}/{group.totalCuotas} Cuotas Pagadas ({progressPercent}%)
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  Recaudado: <strong>${group.montoTotalCobrado.toFixed(2)}</strong> de ${group.montoTotalCuotas.toFixed(2)}
+                                </div>
                               </div>
-                            ) : (
-                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>✓ Confirmado</span>
+                              <div style={{ width: '80px', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: `${progressPercent}%`, height: '100%', background: progressPercent === 100 ? '#16a34a' : '#2563eb' }} />
+                              </div>
+                            </div>
+
+                            {/* Alerta de Cuotas en Revisión */}
+                            {group.cuotasEnRevision > 0 && (
+                              <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: 800, fontSize: '0.75rem', padding: '0.3rem 0.6rem', borderRadius: '20px' }}>
+                                🟡 {group.cuotasEnRevision} en revisión
+                              </span>
                             )}
-                          </td>
-                          <td>
-                            <select
-                              value={pa.estado_pago}
-                              onChange={(e) => handleUpdatePaymentStatus(pa.id, e.target.value)}
-                              style={{ 
-                                padding: '0.25rem', 
-                                borderRadius: '4px', 
-                                border: '1px solid var(--border)',
-                                fontWeight: 'bold',
-                                color: pa.estado_pago === 'pagado' ? '#10b981' : pa.estado_pago === 'pendiente' ? '#f59e0b' : '#ef4444'
-                              }}
+
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', pointerEvents: 'none' }}
                             >
-                              <option value="pendiente">Pendiente</option>
-                              <option value="pagado">Pagado</option>
-                              <option value="vencido">Vencido</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                              {isExpanded ? 'Ocultar Cuotas 🔼' : 'Ver Cuotas (' + group.totalCuotas + ') 🔽'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Desglose de Cuotas */}
+                        {isExpanded && (
+                          <div style={{ padding: '0.5rem 1rem 1rem 1rem', background: '#ffffff' }}>
+                            <table className="table" style={{ margin: 0, fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9' }}>
+                                  <th style={{ width: '80px' }}>Cuota</th>
+                                  <th>Monto Cuota ($)</th>
+                                  <th>Pago Reportado</th>
+                                  <th>Referencia Bancaria</th>
+                                  <th>Vencimiento</th>
+                                  <th>Estado</th>
+                                  <th style={{ textAlign: 'center', width: '180px' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.cuotas.map((pa, cIdx) => (
+                                  <tr key={pa.id} style={{ background: pa.estado_pago === 'en_revision' ? '#fffbeb' : pa.estado_pago === 'pagado' ? '#f0fdf4' : 'transparent' }}>
+                                    <td>
+                                      <strong>#{pa.cuota_numero || (cIdx + 1)}</strong>
+                                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/{group.totalCuotas}</span>
+                                    </td>
+                                    <td style={{ fontWeight: 700 }}>
+                                      ${parseFloat(pa.monto).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    </td>
+                                    <td>
+                                      {pa.monto_reportado ? (
+                                        <span style={{ fontWeight: 700, color: pa.moneda_pago === 'VES' ? '#2563eb' : '#16a34a' }}>
+                                          {pa.moneda_pago === 'VES' ? 'Bs.' : '$'} {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {pa.referencia ? (
+                                        <code style={{ fontWeight: 700, background: '#f1f5f9', padding: '0.15rem 0.35rem', borderRadius: '3px' }}>
+                                          {pa.referencia}
+                                        </code>
+                                      ) : (
+                                        <span style={{ color: 'var(--text-muted)' }}>Sin Ref</span>
+                                      )}
+                                    </td>
+                                    <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
+                                    <td>
+                                      {pa.estado_pago === 'pagado' && (
+                                        <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          🟢 Verificado y Pagado
+                                        </span>
+                                      )}
+                                      {pa.estado_pago === 'en_revision' && (
+                                        <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          🟡 En Revisión Admin
+                                        </span>
+                                      )}
+                                      {pa.estado_pago === 'pendiente' && (
+                                        <span style={{ background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          ⚪ Pendiente
+                                        </span>
+                                      )}
+                                      {pa.estado_pago === 'rechazado' && (
+                                        <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          🔴 Rechazado
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      {pa.estado_pago !== 'pagado' ? (
+                                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
+                                          <button
+                                            onClick={() => handleOpenReportPayModal(pa)}
+                                            className="btn btn-primary"
+                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                                          >
+                                            💳 Reportar Pago
+                                          </button>
+                                          <button
+                                            onClick={() => sendWhatsAppReminder(pa)}
+                                            className="btn"
+                                            title="Recordar por WhatsApp"
+                                            style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem', background: '#25d366', color: '#fff', border: 'none', cursor: 'pointer' }}
+                                          >
+                                            💬
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 700 }}>✓ Al día</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -889,6 +1153,7 @@ export default function AsesorDashboard() {
                       <th>Plan</th>
                       <th>Suma Asegurada ($)</th>
                       <th>Prima Anual ($)</th>
+                      <th>Frecuencia</th>
                       <th>Estado</th>
                       <th>Motivo Rechazo</th>
                       <th style={{ textAlign: 'center', width: '130px' }}>Estado Edición</th>
@@ -928,6 +1193,18 @@ export default function AsesorDashboard() {
                                 onChange={(e) => handlePolicyCellChange(p.id, 'prima_anual', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '90px', outline: 'none', borderBottom: '1px dashed var(--border)', fontWeight: 'bold', padding: '0.2rem' }}
                               />
+                            </td>
+                            <td>
+                              <select
+                                value={p.frecuencia_pago || 'contado'}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'frecuencia_pago', e.target.value)}
+                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border)', fontWeight: 600 }}
+                              >
+                                <option value="contado">Contado</option>
+                                <option value="semestral">Semestral</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="mensual">Mensual</option>
+                              </select>
                             </td>
                             <td>
                               <select
@@ -1045,15 +1322,49 @@ export default function AsesorDashboard() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Plan / Modalidad *</label>
-                  <input
-                    type="text"
+                  <label className="form-label">Plan del Tarifario *</label>
+                  <select
                     className="form-input"
-                    placeholder="Ej: PLATINO, ACCESS, SALUD EXTERIOR..."
                     value={policyForm.plan}
                     onChange={e => setPolicyForm({...policyForm, plan: e.target.value})}
                     required
-                  />
+                  >
+                    <option value="">-- Seleccione Plan del Tarifario --</option>
+                    {String(policyForm.compania_id) === '1' && (
+                      <>
+                        <option value="ACCESS">ACCESS (Mercantil)</option>
+                        <option value="PLATINO">PLATINO (Mercantil)</option>
+                        <option value="EMERGENCIAS">EMERGENCIAS (Mercantil)</option>
+                      </>
+                    )}
+                    {String(policyForm.compania_id) === '2' && (
+                      <>
+                        <option value="SALUD EXTERIOR">SALUD EXTERIOR (Seguros Caracas)</option>
+                        <option value="SALUD INDIVIDUAL">SALUD INDIVIDUAL (Seguros Caracas)</option>
+                      </>
+                    )}
+                    {String(policyForm.compania_id) === '3' && (
+                      <>
+                        <option value="BRONCE">BRONCE (Seguros Venezuela)</option>
+                        <option value="PLATA">PLATA (Seguros Venezuela)</option>
+                        <option value="ORO">ORO (Seguros Venezuela)</option>
+                      </>
+                    )}
+                    {String(policyForm.compania_id) === '4' && (
+                      <>
+                        <option value="Incendio">Incendio / Patrimoniales (Mapfre)</option>
+                        <option value="Vehículos">Vehículos / Automóvil (Mapfre)</option>
+                        <option value="Salud Global">Salud Global (Mapfre)</option>
+                      </>
+                    )}
+                    {String(policyForm.compania_id) === '5' && (
+                      <>
+                        <option value="Cobertura Internacional">Cobertura Internacional (Internacional de Seguros)</option>
+                        <option value="Asistencia en Viajes">Asistencia en Viajes (Internacional de Seguros)</option>
+                      </>
+                    )}
+                    <option value="Plan Especial">Plan Especial / Personalizado</option>
+                  </select>
                 </div>
 
                 <div className="form-grid" style={{ marginBottom: '1.5rem' }}>
@@ -1079,6 +1390,21 @@ export default function AsesorDashboard() {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Frecuencia de Pago *</label>
+                  <select
+                    className="form-input"
+                    value={policyForm.frecuencia_pago || 'contado'}
+                    onChange={e => setPolicyForm({...policyForm, frecuencia_pago: e.target.value})}
+                    required
+                  >
+                    <option value="contado">Pago Anual / Contado (1 cuota)</option>
+                    <option value="semestral">Pago Semestral (2 cuotas)</option>
+                    <option value="trimestral">Pago Trimestral (4 cuotas)</option>
+                    <option value="mensual">Pago Mensual (12 cuotas)</option>
+                  </select>
                 </div>
 
                 <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
@@ -1500,6 +1826,153 @@ export default function AsesorDashboard() {
                       disabled={loading}
                     >
                       {loading ? 'Enviando...' : 'Enviar por Correo'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL PARA REPORTAR PAGO EN DÓLARES O BOLÍVARES */}
+          {reportPayModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 9999,
+              padding: '1rem'
+            }}>
+              <div className="card" style={{
+                maxWidth: '520px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '2rem',
+                borderRadius: '12px',
+                background: '#ffffff',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0, color: 'var(--primary)', fontWeight: 800, fontSize: '1.2rem' }}>
+                    💳 Reportar Cobro / Pago de Prima
+                  </h3>
+                  <button 
+                    onClick={() => setReportPayModal(null)}
+                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSendPaymentReport}>
+                  <div style={{ marginBottom: '1.25rem', padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                    <p style={{ margin: '0 0 0.35rem 0' }}><strong>Póliza:</strong> {reportPayModal.poliza_codigo}</p>
+                    <p style={{ margin: '0 0 0.35rem 0' }}><strong>Cliente:</strong> {reportPayModal.cliente_nombre}</p>
+                    <p style={{ margin: '0 0 0.35rem 0' }}><strong>Compañía:</strong> {reportPayModal.compania_nombre}</p>
+                    <p style={{ margin: 0, color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
+                      <strong>Cuota Referencial:</strong> ${reportPayModal.monto} USD
+                    </p>
+                  </div>
+
+                  <div style={{ padding: '0.85rem', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#1e40af' }}>
+                    ℹ️ <strong>Información:</strong> Ingrese el monto en <strong>Bolívares (Bs. VES)</strong> pagado a la tasa oficial del BCV del día de la transferencia o pago móvil. El administrador verificará el comprobante bancario.
+                  </div>
+
+                  {/* Campo Destacado de Monto en Bolívares */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="form-label" style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.4rem' }}>
+                      🇻🇪 Monto Pagado en Bolívares (Bs. VES) *
+                    </label>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '1rem', fontWeight: 800, fontSize: '1.3rem', color: '#2563eb' }}>
+                        Bs.
+                      </span>
+                      <input 
+                        type="text" 
+                        inputMode="decimal"
+                        className="form-input" 
+                        style={{ 
+                          paddingLeft: '3.75rem', 
+                          fontSize: '1.35rem', 
+                          fontWeight: 800, 
+                          color: '#1e3a8a', 
+                          height: '52px',
+                          border: '2px solid #3b82f6',
+                          backgroundColor: '#f0f7ff',
+                          borderRadius: '8px',
+                          letterSpacing: '0.02em'
+                        }}
+                        placeholder="0,00"
+                        value={reportPayForm.monto_reportado_ves} 
+                        onChange={e => {
+                          let val = e.target.value.replace(/[^0-9.,]/g, '');
+                          setReportPayForm({ ...reportPayForm, monto_reportado_ves: val });
+                        }}
+                        required 
+                      />
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem', display: 'block' }}>
+                      💡 Escriba el monto pagado (puede usar coma o punto para los céntimos, ej: <strong>1.500,50</strong> o <strong>1500.50</strong>).
+                    </span>
+                  </div>
+
+                  <div className="form-grid" style={{ marginBottom: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Fecha del Pago *</label>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        value={reportPayForm.fecha_pago} 
+                        onChange={e => setReportPayForm({ ...reportPayForm, fecha_pago: e.target.value })}
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Número de Referencia Bancaria *</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="Ej: 9876543210"
+                        value={reportPayForm.referencia} 
+                        onChange={e => setReportPayForm({ ...reportPayForm, referencia: e.target.value })}
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                    <label className="form-label">Banco Emisor / Observaciones (Opcional)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Ej: Pago Móvil Banesco, Transferencia Mercantil..."
+                      value={reportPayForm.observaciones} 
+                      onChange={e => setReportPayForm({ ...reportPayForm, observaciones: e.target.value })}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setReportPayModal(null)}
+                      disabled={loading}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={loading}
+                    >
+                      {loading ? 'Enviando Reporte...' : '✓ Enviar Reporte de Pago'}
                     </button>
                   </div>
                 </form>

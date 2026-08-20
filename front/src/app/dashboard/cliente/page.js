@@ -82,32 +82,74 @@ export default function ClienteDashboard() {
     }
   }, [hydrated, isLoggedIn, user]);
 
+  // --- ESTADO REPORTE DE PAGO EN BOLÍVARES ---
+  const [payModal, setPayModal] = useState(null);
+  const [payForm, setPayForm] = useState({
+    pago_id: '',
+    poliza_id: '',
+    monto_usd: 0,
+    monto_reportado_ves: '',
+    referencia: '',
+    fecha_pago: new Date().toISOString().split('T')[0],
+    observaciones: ''
+  });
+
+  const handleOpenPayModal = (pa) => {
+    setPayModal(pa);
+    setPayForm({
+      pago_id: pa.id,
+      poliza_id: pa.poliza_id,
+      monto_usd: parseFloat(pa.monto || 0),
+      monto_reportado_ves: '',
+      referencia: pa.referencia || '',
+      fecha_pago: new Date().toISOString().split('T')[0],
+      observaciones: ''
+    });
+  };
+
   // Reportar pago
-  const handleReportPayment = async (paymentId) => {
-    const ref = reportedRefs[paymentId];
-    if (!ref || !ref.trim()) {
-      return showToast('Por favor, introduzca una referencia bancaria válida.', 'error');
+  const handleReportPayment = async (e) => {
+    if (e) e.preventDefault();
+    if (!payForm.referencia || !payForm.monto_reportado_ves) {
+      return showToast('Por favor, introduzca una referencia bancaria válida y el monto en Bolívares.', 'error');
+    }
+
+    // Normalizar formato numérico venezolano (ej. 1.500,50 o 1500,50 o 1500.50)
+    let rawMonto = String(payForm.monto_reportado_ves).trim();
+    if (rawMonto.includes(',') && rawMonto.includes('.')) {
+      rawMonto = rawMonto.replace(/\./g, '').replace(',', '.');
+    } else if (rawMonto.includes(',')) {
+      rawMonto = rawMonto.replace(',', '.');
+    }
+    const cleanMontoVES = parseFloat(rawMonto);
+
+    if (isNaN(cleanMontoVES) || cleanMontoVES <= 0) {
+      return showToast('Por favor ingrese un monto válido en Bolívares.', 'error');
     }
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/payments/${paymentId}`, {
-        method: 'PUT',
+      const res = await fetch(`${API_URL}/payments/report`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ referencia: ref, estado_pago: 'pagado' })
+        body: JSON.stringify({
+          pago_id: payForm.pago_id,
+          poliza_id: payForm.poliza_id,
+          monto_reportado_ves: cleanMontoVES,
+          monto_usd: parseFloat(payForm.monto_usd || 0),
+          referencia: payForm.referencia,
+          fecha_pago: payForm.fecha_pago,
+          observaciones: payForm.observaciones
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al reportar pago');
 
-      showToast('Pago reportado con éxito. Se actualizará en breve.');
-      setReportedRefs(prev => {
-        const copy = { ...prev };
-        delete copy[paymentId];
-        return copy;
-      });
+      showToast('¡Pago en Bolívares reportado con éxito! Se encuentra En Revisión por el Administrador.');
+      setPayModal(null);
       loadData();
     } catch (err) {
       showToast(err.message, 'error');
@@ -306,25 +348,17 @@ export default function ClienteDashboard() {
                           </td>
                           <td>
                             {pa.estado_pago === 'pendiente' ? (
-                              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <input 
-                                  type="text" 
-                                  placeholder="Nro. Referencia" 
-                                  className="form-input" 
-                                  style={{ padding: '0.35rem 0.5rem', fontSize: '0.85rem', width: '130px', margin: 0 }}
-                                  value={reportedRefs[pa.id] || ''}
-                                  onChange={(e) => setReportedRefs({ ...reportedRefs, [pa.id]: e.target.value })}
-                                />
-                                <button 
-                                  onClick={() => handleReportPayment(pa.id)} 
-                                  className="btn btn-accent"
-                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer' }}
-                                >
-                                  Reportar
-                                </button>
-                              </div>
+                              <button 
+                                onClick={() => handleOpenPayModal(pa)} 
+                                className="btn btn-primary"
+                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                              >
+                                💳 Reportar en Bs.
+                              </button>
+                            ) : pa.estado_pago === 'en_revision' ? (
+                              <span style={{ color: '#b45309', fontWeight: 'bold', fontSize: '0.85rem' }}>🟡 En Revisión</span>
                             ) : (
-                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>✓ Completado</span>
+                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>✓ Verificado</span>
                             )}
                           </td>
                         </tr>
@@ -377,6 +411,152 @@ export default function ClienteDashboard() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* MODAL DE REPORTE DE PAGO EN BOLÍVARES CON TASA BCV */}
+          {payModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 9999,
+              padding: '1rem'
+            }}>
+              <div className="card" style={{
+                maxWidth: '500px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '2rem',
+                borderRadius: '12px',
+                background: '#ffffff',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0, color: 'var(--primary)', fontWeight: 800, fontSize: '1.2rem' }}>
+                    💳 Reportar Pago en Bolívares
+                  </h3>
+                  <button 
+                    onClick={() => setPayModal(null)}
+                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleReportPayment}>
+                  <div style={{ marginBottom: '1.25rem', padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                    <p style={{ margin: '0 0 0.35rem 0' }}><strong>Póliza:</strong> {payModal.poliza_codigo}</p>
+                    <p style={{ margin: '0 0 0.35rem 0' }}><strong>Aseguradora:</strong> {payModal.compania_nombre}</p>
+                    <p style={{ margin: 0, color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
+                      <strong>Cuota Referencial:</strong> ${payModal.monto} USD
+                    </p>
+                  </div>
+
+                  <div style={{ padding: '0.85rem', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#1e40af' }}>
+                    ℹ️ <strong>Información:</strong> Ingrese el monto pagado en <strong>Bolívares (Bs. VES)</strong> calculado a la tasa oficial del BCV del día de la transferencia o pago móvil. El administrador validará el comprobante bancario.
+                  </div>
+
+                  {/* Campo Destacado de Monto en Bolívares */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="form-label" style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.4rem' }}>
+                      🇻🇪 Monto Pagado en Bolívares (Bs. VES) *
+                    </label>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '1rem', fontWeight: 800, fontSize: '1.3rem', color: '#2563eb' }}>
+                        Bs.
+                      </span>
+                      <input 
+                        type="text" 
+                        inputMode="decimal"
+                        className="form-input" 
+                        style={{ 
+                          paddingLeft: '3.75rem', 
+                          fontSize: '1.35rem', 
+                          fontWeight: 800, 
+                          color: '#1e3a8a', 
+                          height: '52px',
+                          border: '2px solid #3b82f6',
+                          backgroundColor: '#f0f7ff',
+                          borderRadius: '8px',
+                          letterSpacing: '0.02em'
+                        }}
+                        placeholder="0,00"
+                        value={payForm.monto_reportado_ves} 
+                        onChange={e => {
+                          let val = e.target.value.replace(/[^0-9.,]/g, '');
+                          setPayForm({ ...payForm, monto_reportado_ves: val });
+                        }}
+                        required 
+                      />
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem', display: 'block' }}>
+                      💡 Escriba el monto pagado (ej: <strong>1.500,50</strong> o <strong>1500.50</strong>).
+                    </span>
+                  </div>
+
+                  <div className="form-grid" style={{ marginBottom: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Fecha del Pago *</label>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        value={payForm.fecha_pago} 
+                        onChange={e => setPayForm({ ...payForm, fecha_pago: e.target.value })}
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Número de Referencia Bancaria *</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="Ej: 9876543210"
+                        value={payForm.referencia} 
+                        onChange={e => setPayForm({ ...payForm, referencia: e.target.value })}
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                    <label className="form-label">Banco Emisor / Observaciones (Opcional)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Ej: Pago móvil Banesco, Transferencia Mercantil..."
+                      value={payForm.observaciones} 
+                      onChange={e => setPayForm({ ...payForm, observaciones: e.target.value })}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setPayModal(null)}
+                      disabled={loading}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={loading}
+                    >
+                      {loading ? 'Enviando Reporte...' : '✓ Enviar Reporte de Pago'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

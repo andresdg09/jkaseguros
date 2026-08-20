@@ -120,6 +120,10 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       pago: t.pago,
       suma_asegurada: parseFloat(t.suma_asegurada),
       prima,
+      pago_contado: !!t.pago_contado,
+      pago_semestral: !!t.pago_semestral,
+      pago_trimestral: !!t.pago_trimestral,
+      pago_mensual: !!t.pago_mensual,
       maternidad_suma: t.maternidad_suma,
       maternidad_costo: t.maternidad_costo,
       asist_intl_suma: t.asist_intl_suma,
@@ -461,7 +465,10 @@ router.get('/share/:token', async (req, res) => {
 // 7. Aceptar cotización por parte del cliente (Public Link click en "Quiero esta")
 router.post('/share/:token/accept', async (req, res) => {
   const { token } = req.params;
-  const { compania_id, plan, prima_anual, suma_asegurada } = req.body;
+  const { compania_id, plan, prima_anual, suma_asegurada, frecuencia_pago } = req.body;
+
+  const validFrequencies = ['contado', 'semestral', 'trimestral', 'mensual'];
+  const freq = validFrequencies.includes(frecuencia_pago) ? frecuencia_pago : 'contado';
 
   if (!compania_id || !plan || isNaN(prima_anual) || isNaN(suma_asegurada)) {
     return res.status(400).json({ error: 'Faltan parámetros de la oferta de seguro seleccionada.' });
@@ -567,14 +574,14 @@ router.post('/share/:token/accept', async (req, res) => {
         parseFloat(prima_anual),
         'negociacion',
         'pendiente',
-        'contado'
+        freq
       ]
     );
 
     const newPol = newPolRes.rows[0];
 
-    // 4. Generar Pagos Fraccionados (Contado = 1 cuota)
-    await generarPagosFraccionados(newPol.id, parseFloat(prima_anual), 'contado');
+    // 4. Generar Pagos Fraccionados según la frecuencia seleccionada por el cliente
+    await generarPagosFraccionados(newPol.id, parseFloat(prima_anual), freq);
 
     // 5. Actualizar estado de la cotización
     await db.query("UPDATE cotizaciones SET estado = 'aceptada' WHERE token = $1", [token]);

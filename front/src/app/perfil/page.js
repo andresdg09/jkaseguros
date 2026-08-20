@@ -42,6 +42,7 @@ export default function PerfilPage() {
   const [asesorForm, setAsesorForm] = useState({
     nombre: '',
     telefono: '',
+    cedula: '',
     banco: 'BNC',
     numero_cuenta: '',
     fecha_nacimiento: ''
@@ -75,6 +76,7 @@ export default function PerfilPage() {
       setAsesorForm({
         nombre: asesor.nombre || '',
         telefono: asesor.telefono || '',
+        cedula: asesor.cedula || '',
         banco: asesor.banco || 'BNC',
         numero_cuenta: asesor.numero_cuenta || '',
         fecha_nacimiento: asesor.fecha_nacimiento ? asesor.fecha_nacimiento.split('T')[0] : ''
@@ -192,6 +194,17 @@ export default function PerfilPage() {
                 className="form-input" 
                 value={asesorForm.nombre} 
                 onChange={e => setAsesorForm({...asesorForm, nombre: e.target.value})} 
+                required 
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Cédula de Identidad *</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Ej: V12345678"
+                value={asesorForm.cedula} 
+                onChange={e => setAsesorForm({...asesorForm, cedula: e.target.value})} 
                 required 
               />
             </div>

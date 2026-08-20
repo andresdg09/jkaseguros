@@ -41,17 +41,23 @@ router.get('/admin', authenticateToken, async (req, res) => {
     const polRes = await db.query('SELECT * FROM polizas');
     const cliRes = await db.query('SELECT * FROM datos_personales');
     const compRes = await db.query('SELECT * FROM companias_seguros');
+    const aseRes = await db.query('SELECT * FROM asesores');
 
     rows = rows.map(pa => {
       const pol = polRes.rows.find(p => p.id === pa.poliza_id);
       const cli = pol ? cliRes.rows.find(c => c.id === pol.cliente_id) : null;
       const compania = pol ? compRes.rows.find(c => c.id === pol.compania_id) : null;
+      const asesor = pol ? aseRes.rows.find(a => a.id === pol.asesor_id) : null;
       
       return {
         ...pa,
         poliza_codigo: pol ? pol.codigo_poliza : '',
+        poliza_plan: pol ? pol.plan : '',
+        poliza_frecuencia: pol ? pol.frecuencia_pago : 'contado',
+        poliza_prima: pol ? pol.prima_anual : 0,
         compania_nombre: compania ? compania.nombre : 'Seguros',
-        cliente_nombre: cli ? `${cli.primer_nombre} ${cli.primer_apellido}` : 'Asociado'
+        cliente_nombre: cli ? `${cli.primer_nombre} ${cli.primer_apellido}` : 'Asociado',
+        asesor_nombre: asesor ? asesor.nombre : 'Sin Asesor'
       };
     });
 
@@ -62,48 +68,203 @@ router.get('/admin', authenticateToken, async (req, res) => {
   }
 });
 
-// Reportar o actualizar estado de pago (Cliente, Admin, Asesor)
+// ASESOR / CLIENTE: Reportar pago de cuota o prima (Estrictamente en Bolívares VES con Tasa BCV)
+router.post('/report', authenticateToken, async (req, res) => {
+  const { poliza_id, pago_id, monto_reportado_ves, tasa_bcv, monto_usd, referencia, fecha_pago, observaciones } = req.body;
+
+  if ((!poliza_id && !pago_id) || !referencia || !monto_reportado_ves) {
+    return res.status(400).json({ error: 'La referencia bancaria y el monto en Bolívares (VES) son requeridos.' });
+  }
+
+  try {
+    const polId = poliza_id ? parseInt(poliza_id) : null;
+    const payId = pago_id ? parseInt(pago_id) : null;
+
+    let poliza = null;
+    if (polId) {
+      const polRes = await db.query('SELECT * FROM polizas WHERE id = $1', [polId]);
+      if (polRes.rows.length > 0) poliza = polRes.rows[0];
+    }
+
+    const montoVES = parseFloat(monto_reportado_ves);
+    const tasa = parseFloat(tasa_bcv || 0);
+    // Si se pasa tasa BCV, calculamos el equivalente en USD; de lo contrario se usa monto_usd o la cuota
+    let montoCalculadoUSD = 0;
+    if (tasa > 0) {
+      montoCalculadoUSD = parseFloat((montoVES / tasa).toFixed(2));
+    } else if (monto_usd) {
+      montoCalculadoUSD = parseFloat(monto_usd);
+    } else if (poliza) {
+      montoCalculadoUSD = parseFloat(poliza.prima_anual);
+    }
+
+    const fecha = fecha_pago || new Date().toISOString().split('T')[0];
+    const obsDetalle = observaciones || (tasa > 0 ? `Pago reportado en Bs. ${montoVES.toLocaleString('es-VE')} a Tasa BCV: ${tasa}` : 'Pago reportado en Bolívares');
+
+    let payRecord;
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      let existingPay = null;
+      if (payId) {
+        existingPay = fData.pagos.find(p => p.id === payId);
+      } else if (polId) {
+        existingPay = fData.pagos.find(p => p.poliza_id === polId && (p.estado_pago === 'pendiente' || p.estado_pago === 'en_revision'));
+      }
+      
+      if (existingPay) {
+        if (montoCalculadoUSD > 0) existingPay.monto = montoCalculadoUSD;
+        existingPay.monto_reportado = montoVES;
+        existingPay.moneda_pago = 'VES';
+        existingPay.tasa_bcv = tasa > 0 ? tasa : null;
+        existingPay.referencia = referencia;
+        existingPay.fecha_pago = fecha;
+        existingPay.estado_pago = 'en_revision';
+        existingPay.observaciones = obsDetalle;
+        existingPay.reportado_por = req.user.rango;
+        payRecord = existingPay;
+      } else {
+        const newId = fData.pagos.length ? Math.max(...fData.pagos.map(p => p.id)) + 1 : 1;
+        payRecord = {
+          id: newId,
+          poliza_id: polId || 1,
+          monto: montoCalculadoUSD || (montoVES / 60),
+          monto_reportado: montoVES,
+          moneda_pago: 'VES',
+          tasa_bcv: tasa > 0 ? tasa : null,
+          fecha_pago: fecha,
+          estado_pago: 'en_revision',
+          referencia,
+          cuota_numero: 1,
+          cuota_total: 1,
+          observaciones: obsDetalle,
+          reportado_por: req.user.rango,
+          created_at: new Date().toISOString()
+        };
+        fData.pagos.push(payRecord);
+      }
+
+      // Actualizar estado de la póliza
+      const targetPolId = payRecord.poliza_id;
+      const polIdx = fData.polizas.findIndex(p => p.id === targetPolId);
+      if (polIdx !== -1) fData.polizas[polIdx].pago_estado = 'en_revision';
+      db.saveFallback();
+
+    } else {
+      let targetPayId = payId;
+      if (!targetPayId && polId) {
+        const existingRes = await db.query(
+          "SELECT id FROM pagos WHERE poliza_id = $1 AND estado_pago IN ('pendiente', 'en_revision') ORDER BY id DESC LIMIT 1",
+          [polId]
+        );
+        if (existingRes.rows.length > 0) targetPayId = existingRes.rows[0].id;
+      }
+
+      if (targetPayId) {
+        const updRes = await db.query(
+          `UPDATE pagos SET 
+            monto = COALESCE(NULLIF($1, 0), monto),
+            monto_reportado = $2,
+            moneda_pago = 'VES',
+            referencia = $3, 
+            fecha_pago = $4,
+            estado_pago = 'en_revision',
+            observaciones = $5
+           WHERE id = $6 RETURNING *`,
+          [montoCalculadoUSD, montoVES, referencia, fecha, obsDetalle, targetPayId]
+        );
+        payRecord = updRes.rows[0];
+      } else {
+        const insRes = await db.query(
+          `INSERT INTO pagos (poliza_id, monto, monto_reportado, moneda_pago, referencia, fecha_pago, estado_pago, observaciones)
+           VALUES ($1, $2, $3, 'VES', $4, $5, 'en_revision', $6) RETURNING *`,
+          [polId, montoCalculadoUSD, montoVES, referencia, fecha, obsDetalle]
+        );
+        payRecord = insRes.rows[0];
+      }
+
+      if (payRecord && payRecord.poliza_id) {
+        await db.query("UPDATE polizas SET pago_estado = 'en_revision' WHERE id = $1", [payRecord.poliza_id]);
+      }
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'PAGO_REPORTADO_VES', `Pago de Bs. ${montoVES.toLocaleString('es-VE')} reportado con Ref: ${referencia}. En revisión por Admin.`);
+
+    res.json({ message: 'Pago en Bolívares reportado con éxito. Se encuentra En Revisión por el Administrador.', pago: payRecord });
+  } catch (err) {
+    console.error('Error al reportar pago en VES:', err);
+    res.status(500).json({ error: 'Error del servidor al reportar pago.' });
+  }
+});
+
+// ADMINISTRADOR: Verificar y Aprobar / Rechazar Pago Reportado
+router.put('/:id/verify', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') {
+    return res.status(403).json({ error: 'Solo el administrador puede verificar y aprobar pagos.' });
+  }
+
+  const { id } = req.params;
+  const { accion, motivo_rechazo } = req.body; // 'aprobar' o 'rechazar'
+
+  try {
+    const payId = parseInt(id);
+    let payRecord;
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const idx = fData.pagos.findIndex(p => p.id === payId);
+      if (idx === -1) return res.status(404).json({ error: 'Pago no encontrado.' });
+      
+      payRecord = fData.pagos[idx];
+      const polIdx = fData.polizas.findIndex(p => p.id === payRecord.poliza_id);
+
+      if (accion === 'aprobar') {
+        payRecord.estado_pago = 'pagado';
+        if (polIdx !== -1) fData.polizas[polIdx].pago_estado = 'pagado';
+      } else {
+        payRecord.estado_pago = 'rechazado';
+        payRecord.motivo_rechazo = motivo_rechazo || 'Comprobante no válido';
+        if (polIdx !== -1) fData.polizas[polIdx].pago_estado = 'pendiente';
+      }
+      db.saveFallback();
+
+    } else {
+      const payRes = await db.query('SELECT * FROM pagos WHERE id = $1', [payId]);
+      if (payRes.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado.' });
+      payRecord = payRes.rows[0];
+
+      if (accion === 'aprobar') {
+        await db.query("UPDATE pagos SET estado_pago = 'pagado' WHERE id = $1", [payId]);
+        await db.query("UPDATE polizas SET pago_estado = 'pagado' WHERE id = $1", [payRecord.poliza_id]);
+      } else {
+        await db.query("UPDATE pagos SET estado_pago = 'rechazado', motivo_rechazo = $1 WHERE id = $2", [motivo_rechazo || 'Rechazado', payId]);
+        await db.query("UPDATE polizas SET pago_estado = 'pendiente' WHERE id = $1", [payRecord.poliza_id]);
+      }
+    }
+
+    if (accion === 'aprobar') {
+      // Liquidar comisión para la próxima corrida BNC
+      await procesarComisionPago(payId);
+      await registrarAccion(req.user.id, req.user.correo, 'PAGO_VERIFICADO_ADMIN', `Pago ID ${payId} verificado y aprobado. Comisión encolada.`);
+      return res.json({ message: 'Pago verificado y aprobado con éxito. La comisión quedó registrada para la corrida del BNC.', pago: payRecord });
+    } else {
+      await registrarAccion(req.user.id, req.user.correo, 'PAGO_RECHAZADO_ADMIN', `Pago ID ${payId} rechazado. Motivo: ${motivo_rechazo || 'N/A'}`);
+      return res.json({ message: 'El pago ha sido marcado como rechazado.', pago: payRecord });
+    }
+
+  } catch (err) {
+    console.error('Error al verificar pago:', err);
+    res.status(500).json({ error: 'Error del servidor al verificar pago.' });
+  }
+});
+
+// Reportar o actualizar estado de pago simple
 router.put('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { referencia, estado_pago } = req.body;
 
   try {
-    // Si es cliente, solo puede reportar referencia de su propio pago
-    if (req.user.rango === 'cliente') {
-      if (!referencia) {
-        return res.status(400).json({ error: 'La referencia bancaria es requerida.' });
-      }
-
-      const dp = await db.query('SELECT id FROM datos_personales WHERE usuario_id = $1', [req.user.id]);
-      if (dp.rows.length === 0) return res.status(403).json({ error: 'Perfil de cliente no encontrado.' });
-      const clienteId = dp.rows[0].id;
-
-      const checkPay = await db.query('SELECT * FROM pagos WHERE id = $1', [parseInt(id)]);
-      if (checkPay.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado.' });
-      const polizaId = checkPay.rows[0].poliza_id;
-
-      const checkPol = await db.query('SELECT * FROM polizas WHERE id = $1 AND cliente_id = $2', [polizaId, clienteId]);
-      if (checkPol.rows.length === 0) {
-        return res.status(403).json({ error: 'No está autorizado a modificar pagos ajenos.' });
-      }
-
-      const q = 'UPDATE pagos SET referencia = $1, estado_pago = $2 WHERE id = $3 RETURNING *';
-      const updated = await db.query(q, [referencia, 'pagado', parseInt(id)]);
-      
-      await db.query("UPDATE polizas SET pago_estado = 'pagado' WHERE id = $1", [polizaId]);
-
-      // Procesar comisiones asociadas a este pago aprobado
-      await procesarComisionPago(parseInt(id));
-
-      // Trazabilidad
-      await registrarAccion(req.user.id, req.user.correo, 'PAGO_REPORTADO', `Cliente reportó pago ID ${id} de póliza ID ${polizaId}. Ref: ${referencia}`);
-
-      return res.json({ message: 'Pago reportado correctamente.', pago: updated.rows[0] });
-    }
-
-    // Si es admin o asesor, puede actualizar estado de pago libremente
-    if (req.user.rango === 'admin' || req.user.rango === 'asesor') {
-      if (!estado_pago || !['pendiente', 'pagado', 'vencido'].includes(estado_pago)) {
+    if (req.user.rango === 'admin') {
+      if (!estado_pago || !['pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado'].includes(estado_pago)) {
         return res.status(400).json({ error: 'Estado de pago no válido.' });
       }
 
@@ -114,21 +275,18 @@ router.put('/:id', authenticateToken, async (req, res) => {
       if (updated.rowCount === 0) return res.status(404).json({ error: 'Pago no encontrado.' });
 
       const payRecord = updated.rows[0];
-      const polState = estado_pago === 'pagado' ? 'pagado' : 'pendiente';
+      const polState = estado_pago === 'pagado' ? 'pagado' : estado_pago === 'en_revision' ? 'en_revision' : 'pendiente';
       await db.query("UPDATE polizas SET pago_estado = $1 WHERE id = $2", [polState, payRecord.poliza_id]);
 
-      // Si se aprueba/marca como pagado, procesar comisión
       if (estado_pago === 'pagado') {
         await procesarComisionPago(parseInt(id));
       }
 
-      // Trazabilidad
       await registrarAccion(req.user.id, req.user.correo, 'ACTUALIZACION_PAGO', `Estado de pago ID ${id} cambiado a ${estado_pago}`);
-
       return res.json({ message: 'Estado de pago actualizado exitosamente.', pago: payRecord });
     }
 
-    res.status(403).json({ error: 'Rol no autorizado.' });
+    res.status(403).json({ error: 'Solo el administrador puede actualizar directamente el estado.' });
 
   } catch (err) {
     console.error('Error al actualizar pago:', err);

@@ -186,6 +186,8 @@ router.post('/register-asesor', async (req, res) => {
         fecha_nacimiento,
         banco,
         numero_cuenta,
+        tipo_asesor: 'asesor_3',
+        estado: 'pendiente',
         created_at: new Date().toISOString()
       });
       db.saveFallback();
@@ -197,8 +199,8 @@ router.post('/register-asesor', async (req, res) => {
       newUserId = userRes.rows[0].id;
 
       await db.query(
-        `INSERT INTO asesores (usuario_id, nombre, codigo_asesor, correo, telefono, cedula, fecha_nacimiento, banco, numero_cuenta) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        `INSERT INTO asesores (usuario_id, nombre, codigo_asesor, correo, telefono, cedula, fecha_nacimiento, banco, numero_cuenta, tipo_asesor, estado) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'asesor_3', 'pendiente')`,
         [newUserId, nombre, code, correo.toLowerCase(), telefono, cedula, fecha_nacimiento, banco, numero_cuenta]
       );
     }

@@ -63,6 +63,10 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resumen'); // 'resumen', 'polizas', 'pagos', 'roles', 'tarifas', 'trazabilidad'
   const [fileToUpload, setFileToUpload] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterSuma, setFilterSuma] = useState('todas'); // 'todas' o suma asegurada
+  const [groupBySuma, setGroupBySuma] = useState(false);
+  const [expandedPolicies, setExpandedPolicies] = useState({});
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('todos'); // 'todos', 'en_revision', 'pendiente', 'pagado', 'vencido'
   const [tarifarioMeta, setTarifarioMeta] = useState(null);
   const [tariffView, setTariffView] = useState('comparativa'); // 'comparativa' o 'excel'
   const [resizingCol, setResizingCol] = useState(null);
@@ -243,6 +247,26 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error(data.error || 'Error al cambiar estado del asesor.');
 
       showToast(`Asesor actualizado a estado: ${status}.`);
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleUpdateAdvisorLevel = async (id, level) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/advisors/${id}/level`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tipo_asesor: level })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cambiar nivel del asesor.');
+
+      showToast(`Nivel jerárquico actualizado con éxito.`);
       loadData();
     } catch (err) {
       showToast(err.message, 'error');
@@ -556,6 +580,31 @@ export default function AdminDashboard() {
     }
   };
 
+  // Administrador: Verificar y Aprobar o Rechazar pago reportado
+  const handleVerifyPayment = async (paymentId, accion, motivo = '') => {
+    try {
+      const res = await fetch(`${API_URL}/payments/${paymentId}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ accion, motivo_rechazo: motivo })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al verificar el pago');
+
+      if (accion === 'aprobar') {
+        showToast('¡Pago verificado y aprobado con éxito! La comisión fue registrada para la corrida del BNC.');
+      } else {
+        showToast('El pago ha sido marcado como rechazado.', 'info');
+      }
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
   // Cambiar rol de usuario
   const handleUpdateUserRole = async (userId, newRole) => {
     try {
@@ -860,14 +909,70 @@ export default function AdminDashboard() {
     p.estado?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPayments = payments.filter(pa =>
-    !searchQuery ||
-    pa.poliza_codigo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.cliente_nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.compania_nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.referencia?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.estado_pago?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Agrupación de pagos por póliza con filtrado inteligente
+  const groupedPaymentsByPolicy = (() => {
+    const map = new Map();
+    payments.forEach(pa => {
+      const pKey = pa.poliza_id ? String(pa.poliza_id) : (pa.poliza_codigo || `temp-${pa.id}`);
+      if (!map.has(pKey)) {
+        map.set(pKey, {
+          poliza_id: pa.poliza_id,
+          poliza_codigo: pa.poliza_codigo || 'POL-GENERAL',
+          cliente_nombre: pa.cliente_nombre || 'Cliente',
+          compania_nombre: pa.compania_nombre || 'Seguros',
+          asesor_nombre: pa.asesor_nombre || 'Asesor',
+          frecuencia: pa.poliza_frecuencia || 'contado',
+          plan: pa.poliza_plan || '',
+          total_prima: parseFloat(pa.poliza_prima || 0),
+          cuotas: []
+        });
+      }
+      map.get(pKey).cuotas.push(pa);
+    });
+
+    const groups = [...map.values()].map(group => {
+      group.cuotas.sort((a, b) => (a.cuota_numero || a.id) - (b.cuota_numero || b.id));
+      const pagadas = group.cuotas.filter(c => c.estado_pago === 'pagado').length;
+      const revision = group.cuotas.filter(c => c.estado_pago === 'en_revision').length;
+      const pendientes = group.cuotas.filter(c => c.estado_pago === 'pendiente').length;
+      const rechazadas = group.cuotas.filter(c => c.estado_pago === 'rechazado').length;
+      const montoTotalCobrado = group.cuotas.filter(c => c.estado_pago === 'pagado').reduce((acc, c) => acc + parseFloat(c.monto || 0), 0);
+      const montoTotalCuotas = group.cuotas.reduce((acc, c) => acc + parseFloat(c.monto || 0), 0);
+
+      const cuotasVisibles = paymentStatusFilter === 'todos'
+        ? group.cuotas
+        : group.cuotas.filter(c => c.estado_pago === paymentStatusFilter);
+
+      return {
+        ...group,
+        totalCuotas: group.cuotas.length,
+        cuotasPagadas: pagadas,
+        cuotasEnRevision: revision,
+        cuotasPendientes: pendientes,
+        cuotasRechazadas: rechazadas,
+        montoTotalCobrado,
+        montoTotalCuotas,
+        cuotas: cuotasVisibles
+      };
+    });
+
+    return groups.filter(group => {
+      if (paymentStatusFilter === 'en_revision' && group.cuotasEnRevision === 0) return false;
+      if (paymentStatusFilter === 'pendiente' && group.cuotasPendientes === 0) return false;
+      if (paymentStatusFilter === 'pagado' && group.cuotasPagadas === 0) return false;
+      if (paymentStatusFilter === 'rechazado' && group.cuotasRechazadas === 0) return false;
+
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        group.poliza_codigo?.toLowerCase().includes(q) ||
+        group.cliente_nombre?.toLowerCase().includes(q) ||
+        group.compania_nombre?.toLowerCase().includes(q) ||
+        group.asesor_nombre?.toLowerCase().includes(q) ||
+        group.cuotas.some(c => c.referencia?.toLowerCase().includes(q))
+      );
+    });
+  })();
 
   const filteredUsers = users.filter(u =>
     !searchQuery ||
@@ -882,7 +987,18 @@ export default function AdminDashboard() {
     log.descripcion?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Sumas aseguradas disponibles (extraídas dinámicamente o del catálogo base)
+  const SUMA_ASEGURADA_OPTIONS = (() => {
+    const fromTariffs = [...new Set(tariffs.map(t => parseFloat(t.suma_asegurada)).filter(Boolean))];
+    const base = [5000, 10000, 30000, 50000, 100000, 200000];
+    const combined = [...new Set([...base, ...fromTariffs])].sort((a, b) => a - b);
+    return combined;
+  })();
+
   const filteredTariffs = tariffs.filter(t => {
+    if (filterSuma !== 'todas' && parseFloat(t.suma_asegurada) !== parseFloat(filterSuma)) {
+      return false;
+    }
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     const compName = companies.find(c => c.id === parseInt(t.compania_id))?.nombre || t.compania_nombre || '';
@@ -895,9 +1011,6 @@ export default function AdminDashboard() {
       String(t.prima).includes(q)
     );
   });
-
-  // Sumas aseguradas disponibles (según la matriz del excel de tarifas)
-  const SUMA_ASEGURADA_OPTIONS = [5000, 10000, 30000, 50000, 100000, 200000];
 
   // Matriz pivote: una fila por (rango de edad, suma asegurada), con la oferta más económica de cada aseguradora
   const pivotRows = (() => {
@@ -918,6 +1031,9 @@ export default function AdminDashboard() {
   })();
 
   const filteredPivotRows = pivotRows.filter(row => {
+    if (filterSuma !== 'todas' && parseFloat(row.suma_asegurada) !== parseFloat(filterSuma)) {
+      return false;
+    }
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
@@ -1328,8 +1444,6 @@ export default function AdminDashboard() {
                       <th>Frecuencia Pago</th>
                       <th>Negocio</th>
                       <th>Cobertura</th>
-                      <th style={{ textAlign: 'center' }}>Pronto Pago</th>
-                      <th style={{ textAlign: 'center' }}>Online</th>
                       <th>Asesor Asignado</th>
                       <th>Estado</th>
                       <th>Motivo Rechazo</th>
@@ -1338,7 +1452,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="15" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="13" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies.map((p) => {
                         const isModified = !!modifiedPolicies[p.id];
@@ -1375,7 +1489,7 @@ export default function AdminDashboard() {
                               <select
                                 value={p.frecuencia_pago || 'contado'}
                                 onChange={(e) => handlePolicyCellChange(p.id, 'frecuencia_pago', e.target.value)}
-                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border)', fontWeight: 600 }}
                               >
                                 <option value="contado">Contado</option>
                                 <option value="semestral">Semestral</option>
@@ -1402,22 +1516,6 @@ export default function AdminDashboard() {
                                 <option value="individual">Individual</option>
                                 <option value="colectivo">Colectivo</option>
                               </select>
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <input
-                                type="checkbox"
-                                checked={!!p.bono_pronto_pago}
-                                onChange={(e) => handlePolicyCellChange(p.id, 'bono_pronto_pago', e.target.checked)}
-                                style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
-                              />
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <input
-                                type="checkbox"
-                                checked={!!p.emision_online}
-                                onChange={(e) => handlePolicyCellChange(p.id, 'emision_online', e.target.checked)}
-                                style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
-                              />
                             </td>
                             <td>
                               <select
@@ -1510,85 +1608,305 @@ export default function AdminDashboard() {
           {/* --- CONTROL DE PAGOS --- */}
           {activeTab === 'pagos' && (
             <div className="card">
-              <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Registro Global de Cobranzas</h3>
-              <div style={{ marginBottom: '1.2rem' }}>
+              <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Registro Global de Cobranzas y Verificación</h3>
+              
+              {/* Sección de pagos reportados pendientes por verificar */}
+              {payments.some(p => p.estado_pago === 'en_revision') && (
+                <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🔔</span>
+                    <h4 style={{ margin: 0, color: '#b45309', fontWeight: 800, fontSize: '1.1rem' }}>
+                      Pagos Reportados Pendientes de Verificación ({payments.filter(p => p.estado_pago === 'en_revision').length})
+                    </h4>
+                  </div>
+                  <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#92400e' }}>
+                    Los siguientes pagos han sido reportados por los asesores/asegurados en Bolívares o Dólares. Verifique el comprobante bancario antes de aprobar. Al aprobar, la comisión se encolará automáticamente para la corrida del BNC.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+                    {payments.filter(p => p.estado_pago === 'en_revision').map(p => (
+                      <div key={p.id} style={{ backgroundColor: '#ffffff', border: '1px solid #fcd34d', borderRadius: '8px', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                          <strong style={{ color: 'var(--primary)' }}>{p.poliza_codigo}</strong>
+                          <span style={{ fontSize: '0.8rem', background: '#fef3c7', color: '#b45309', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
+                            {p.moneda_pago === 'VES' ? '🇻🇪 Pago en Bolívares' : '💵 Pago en Dólares'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '0.75rem', color: '#334155' }}>
+                          <div><strong>Cliente:</strong> {p.cliente_nombre}</div>
+                          <div><strong>Aseguradora:</strong> {p.compania_nombre}</div>
+                          <div>
+                            <strong>Monto Reportado:</strong>{' '}
+                            <span style={{ fontWeight: 800, fontSize: '1rem', color: p.moneda_pago === 'VES' ? '#2563eb' : '#16a34a' }}>
+                              {p.moneda_pago === 'VES' ? 'Bs.' : '$'} {parseFloat(p.monto_reportado || p.monto).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div><strong>Referencia:</strong> <code style={{ fontWeight: 700, background: '#f1f5f9', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>{p.referencia || 'N/A'}</code></div>
+                          <div><strong>Fecha Reportada:</strong> {p.fecha_pago ? p.fecha_pago.split('T')[0] : 'N/A'}</div>
+                          {p.observaciones && <div><strong>Notas:</strong> <em>{p.observaciones}</em></div>}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => handleVerifyPayment(p.id, 'aprobar')}
+                            className="btn btn-primary"
+                            style={{ flex: 2, padding: '0.4rem', fontSize: '0.8rem', background: '#16a34a', borderColor: '#16a34a' }}
+                          >
+                            ✓ Verificar y Aprobar
+                          </button>
+                          <button
+                            onClick={() => handleVerifyPayment(p.id, 'rechazar')}
+                            className="btn btn-secondary"
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', color: '#dc2626', borderColor: '#fca5a5' }}
+                          >
+                            ✕ Rechazar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Barra de Filtros y Control de Vista de Cobranzas */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
                 <input
                   type="text"
-                  placeholder="🔍 Buscar cobros por póliza, cliente, aseguradora, referencia o estado..."
+                  placeholder="🔍 Buscar por póliza, cliente, aseguradora, asesor o referencia..."
                   className="form-input"
-                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
+                  style={{ minWidth: '280px', maxWidth: '380px', padding: '0.5rem 1rem', margin: 0 }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+
+                {/* Filtro por estado de pago */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    Filtrar por Estado:
+                  </label>
+                  <select
+                    value={paymentStatusFilter}
+                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                    className="form-input"
+                    style={{ padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem', fontWeight: 600, minWidth: '150px' }}
+                  >
+                    <option value="todos">Todos los Estados</option>
+                    <option value="en_revision">🟡 En Revisión por Admin</option>
+                    <option value="pendiente">⚪ Pendiente de Cobro</option>
+                    <option value="pagado">🟢 Pagados / Verificados</option>
+                    <option value="rechazado">🔴 Rechazados</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      const allKeys = {};
+                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_codigo] = true; });
+                      setExpandedPolicies(prev => (Object.keys(prev).length === groupedPaymentsByPolicy.length ? {} : allKeys));
+                    }}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.8rem', borderRadius: '6px' }}
+                  >
+                    {Object.keys(expandedPolicies).length === groupedPaymentsByPolicy.length && groupedPaymentsByPolicy.length > 0 ? 'Contraer Todos 🔼' : 'Expandir Todos 🔽'}
+                  </button>
+                </div>
               </div>
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Código Póliza</th>
-                      <th>Cliente</th>
-                      <th>Aseguradora</th>
-                      <th>Monto</th>
-                      <th>Referencia</th>
-                      <th>Vencimiento</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPayments.length === 0 ? (
-                      <tr><td colSpan="7" className="text-center">No hay cobros que coincidan con la búsqueda.</td></tr>
-                    ) : (
-                      filteredPayments.map((pa) => (
-                        <tr key={pa.id}>
-                          <td><strong>{pa.poliza_codigo}</strong></td>
-                          <td>{pa.cliente_nombre}</td>
-                          <td>{pa.compania_nombre}</td>
-                          <td>${parseFloat(pa.monto).toLocaleString('en-US')}</td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <input 
-                                type="text" 
-                                placeholder="Nro. Referencia" 
-                                className="form-input" 
-                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '130px', margin: 0 }}
-                                value={tempRefs[pa.id] !== undefined ? tempRefs[pa.id] : (pa.referencia || '')}
-                                onChange={(e) => setTempRefs({ ...tempRefs, [pa.id]: e.target.value })}
-                              />
-                              {(tempRefs[pa.id] !== undefined && tempRefs[pa.id] !== (pa.referencia || '')) && (
-                                <button 
-                                  onClick={() => handleUpdatePaymentStatus(pa.id, pa.estado_pago)} 
-                                  className="btn btn-accent"
-                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                >
-                                  ✓
-                                </button>
-                              )}
+
+              {/* LISTADO DE PÓLIZAS CON SUS CUOTAS AGRUPADAS */}
+              {groupedPaymentsByPolicy.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                  No se encontraron cobros registrados con los criterios seleccionados.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {groupedPaymentsByPolicy.map((group) => {
+                    const isExpanded = !!expandedPolicies[group.poliza_codigo];
+                    const progressPercent = group.totalCuotas > 0 ? Math.round((group.cuotasPagadas / group.totalCuotas) * 100) : 0;
+
+                    return (
+                      <div
+                        key={group.poliza_codigo}
+                        style={{
+                          background: '#ffffff',
+                          border: group.cuotasEnRevision > 0 ? '2px solid #f59e0b' : '1px solid var(--border)',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
+                        }}
+                      >
+                        {/* Cabecera de la Póliza Agrupada */}
+                        <div
+                          style={{
+                            padding: '1rem 1.25rem',
+                            background: group.cuotasEnRevision > 0 ? '#fffbeb' : '#f8fafc',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '1rem',
+                            cursor: 'pointer',
+                            borderBottom: isExpanded ? '1px solid var(--border)' : 'none'
+                          }}
+                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [group.poliza_codigo]: !prev[group.poliza_codigo] }))}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
+                              🛡️ {group.poliza_codigo}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                              {group.cliente_nombre}
+                            </span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                              ({group.compania_nombre} {group.plan ? `- Plan ${group.plan}` : ''})
+                            </span>
+                            <span style={{ fontSize: '0.75rem', background: '#e2e8f0', color: '#475569', padding: '0.2rem 0.5rem', borderRadius: '4px', textTransform: 'capitalize', fontWeight: 600 }}>
+                              Frecuencia: {group.frecuencia}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                            {/* Progreso de Cobro */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                  {group.cuotasPagadas}/{group.totalCuotas} Cuotas Pagadas ({progressPercent}%)
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  Recaudado: <strong>${group.montoTotalCobrado.toFixed(2)}</strong> de ${group.montoTotalCuotas.toFixed(2)}
+                                </div>
+                              </div>
+                              <div style={{ width: '80px', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: `${progressPercent}%`, height: '100%', background: progressPercent === 100 ? '#16a34a' : '#2563eb' }} />
+                              </div>
                             </div>
-                          </td>
-                          <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
-                          <td>
-                            <select
-                              value={pa.estado_pago}
-                              onChange={(e) => handleUpdatePaymentStatus(pa.id, e.target.value)}
-                              style={{ 
-                                padding: '0.25rem', 
-                                borderRadius: '4px', 
-                                border: '1px solid var(--border)',
-                                fontWeight: 'bold',
-                                color: pa.estado_pago === 'pagado' ? '#10b981' : pa.estado_pago === 'pendiente' ? '#f59e0b' : '#ef4444'
-                              }}
+
+                            {/* Alertas */}
+                            {group.cuotasEnRevision > 0 && (
+                              <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: 800, fontSize: '0.75rem', padding: '0.3rem 0.6rem', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                🔔 {group.cuotasEnRevision} por verificar
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', pointerEvents: 'none' }}
                             >
-                              <option value="pendiente">Pendiente</option>
-                              <option value="pagado">Pagado</option>
-                              <option value="vencido">Vencido</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                              {isExpanded ? 'Ocultar Cuotas 🔼' : 'Ver Cuotas (' + group.totalCuotas + ') 🔽'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Tabla Desplegable de Cuotas de esta Póliza */}
+                        {isExpanded && (
+                          <div style={{ padding: '0.5rem 1rem 1rem 1rem', background: '#ffffff' }}>
+                            <table className="table" style={{ margin: 0, fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9' }}>
+                                  <th style={{ width: '80px' }}>Cuota</th>
+                                  <th>Monto ($)</th>
+                                  <th>Monto Reportado</th>
+                                  <th>Referencia</th>
+                                  <th>Fecha Vencimiento</th>
+                                  <th>Estado</th>
+                                  <th>Observaciones</th>
+                                  <th style={{ textAlign: 'center', width: '150px' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.cuotas.map((pa, cIdx) => (
+                                  <tr key={pa.id} style={{ background: pa.estado_pago === 'en_revision' ? '#fffbeb' : pa.estado_pago === 'pagado' ? '#f0fdf4' : 'transparent' }}>
+                                    <td>
+                                      <strong>#{pa.cuota_numero || (cIdx + 1)}</strong>
+                                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/{group.totalCuotas}</span>
+                                    </td>
+                                    <td style={{ fontWeight: 700 }}>
+                                      ${parseFloat(pa.monto).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    </td>
+                                    <td>
+                                      {pa.monto_reportado ? (
+                                        <span style={{ fontWeight: 700, color: pa.moneda_pago === 'VES' ? '#2563eb' : '#16a34a' }}>
+                                          {pa.moneda_pago === 'VES' ? 'Bs.' : '$'} {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {pa.referencia ? (
+                                        <code style={{ fontWeight: 700, background: '#f1f5f9', padding: '0.15rem 0.35rem', borderRadius: '3px' }}>
+                                          {pa.referencia}
+                                        </code>
+                                      ) : (
+                                        <span style={{ color: 'var(--text-muted)' }}>Sin Ref</span>
+                                      )}
+                                    </td>
+                                    <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
+                                    <td>
+                                      {pa.estado_pago === 'pagado' && (
+                                        <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          🟢 Pagado
+                                        </span>
+                                      )}
+                                      {pa.estado_pago === 'en_revision' && (
+                                        <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          🟡 En Revisión
+                                        </span>
+                                      )}
+                                      {pa.estado_pago === 'pendiente' && (
+                                        <span style={{ background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          ⚪ Pendiente
+                                        </span>
+                                      )}
+                                      {pa.estado_pago === 'rechazado' && (
+                                        <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                          🔴 Rechazado
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                      {pa.observaciones || '—'}
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      {pa.estado_pago === 'en_revision' ? (
+                                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); handleVerifyPayment(pa.id, 'aprobar'); }}
+                                            className="btn btn-primary"
+                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#16a34a', borderColor: '#16a34a' }}
+                                          >
+                                            ✓ Aprobar
+                                          </button>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); handleVerifyPayment(pa.id, 'rechazar'); }}
+                                            className="btn btn-secondary"
+                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#dc2626', borderColor: '#fca5a5' }}
+                                          >
+                                            ✕ Rechazar
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <select
+                                          value={pa.estado_pago}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleUpdatePaymentStatus(pa.id, e.target.value)}
+                                          style={{ padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '0.75rem', fontWeight: 600 }}
+                                        >
+                                          <option value="pendiente">Pendiente</option>
+                                          <option value="pagado">Pagado</option>
+                                          <option value="vencido">Vencido</option>
+                                          <option value="rechazado">Rechazado</option>
+                                        </select>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -1808,6 +2126,7 @@ export default function AdminDashboard() {
                       <th>Correo</th>
                       <th>Fecha Nac.</th>
                       <th>Datos Bancarios</th>
+                      <th>Nivel Jerárquico</th>
                       <th>Clientes</th>
                       <th>Estado</th>
                       <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -1825,7 +2144,7 @@ export default function AdminDashboard() {
                         a.banco?.toLowerCase().includes(q)
                       );
                     }).length === 0 ? (
-                      <tr><td colSpan="9" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>No se encontraron asesores.</td></tr>
+                      <tr><td colSpan="11" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>No se encontraron asesores.</td></tr>
                     ) : (
                       advisors.filter(a => {
                         if (!searchQuery) return true;
@@ -1848,6 +2167,18 @@ export default function AdminDashboard() {
                           <td>
                             <strong>{a.banco}</strong>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>CTA: {a.numero_cuenta}</span>
+                          </td>
+                          <td>
+                            <select
+                              className="form-input"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', fontWeight: 600, minWidth: '140px', borderColor: '#cbd5e1' }}
+                              value={a.tipo_asesor || 'asesor_3'}
+                              onChange={(e) => handleUpdateAdvisorLevel(a.id_asesor, e.target.value)}
+                            >
+                              <option value="asesor_3">🥉 Asesor 3 (Junior)</option>
+                              <option value="asesor_2">🥈 Asesor 2 (Intermedio)</option>
+                              <option value="asesor_1">🥇 Asesor 1 (Senior)</option>
+                            </select>
                           </td>
                           <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.clientes}>
                             {a.clientes}
@@ -1957,16 +2288,36 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
-              {/* Buscador de planilla y opciones */}
-              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-                <input
-                  type="text"
-                  placeholder="🔍 Buscar por aseguradora, plan, edad, suma o prima..."
-                  className="form-input"
-                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              {/* Buscador de planilla, filtro por Suma Asegurada y opciones */}
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar por aseguradora, plan, edad o prima..."
+                    className="form-input"
+                    style={{ minWidth: '260px', maxWidth: '340px', padding: '0.5rem 1rem', margin: 0 }}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+
+                  {/* Selector / Filtro por Suma Asegurada */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>
+                      🛡️ Suma Asegurada:
+                    </label>
+                    <select
+                      value={filterSuma}
+                      onChange={(e) => setFilterSuma(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '0.45rem 0.8rem', margin: 0, fontSize: '0.85rem', fontWeight: 600, minWidth: '150px' }}
+                    >
+                      <option value="todas">Todas las sumas</option>
+                      {SUMA_ASEGURADA_OPTIONS.map(s => (
+                        <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
                 {/* Botón/menú de carga masiva JSON */}
                 <details style={{ background: 'var(--secondary)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border)' }}>

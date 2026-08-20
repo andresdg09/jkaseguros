@@ -444,7 +444,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
       const fData = JSON.parse(fileContent);
 
       for (const policy of policies) {
-        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = policy;
+        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura } = policy;
         const idx = fData.polizas.findIndex(p => p.id === parseInt(id));
         if (idx === -1) continue;
 
@@ -454,6 +454,8 @@ router.post('/bulk', authenticateToken, async (req, res) => {
         }
 
         const oldStatus = fData.polizas[idx].estado;
+        const oldFreq = fData.polizas[idx].frecuencia_pago;
+        const newFreq = frecuencia_pago || fData.polizas[idx].frecuencia_pago || 'contado';
         
         // El asesor no puede cambiar el asesor asignado ni la compañía
         fData.polizas[idx] = {
@@ -462,7 +464,10 @@ router.post('/bulk', authenticateToken, async (req, res) => {
           suma_asegurada: parseFloat(suma_asegurada),
           prima_anual: parseFloat(prima_anual),
           estado,
-          motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null
+          motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null,
+          frecuencia_pago: newFreq,
+          tipo_negocio: tipo_negocio || fData.polizas[idx].tipo_negocio || 'nuevo',
+          tipo_cobertura: tipo_cobertura || fData.polizas[idx].tipo_cobertura || 'individual'
         };
 
         // Si es administrador, también puede cambiar asesor y compañía
@@ -471,30 +476,15 @@ router.post('/bulk', authenticateToken, async (req, res) => {
           fData.polizas[idx].compania_id = parseInt(policy.compania_id);
         }
 
-        if (estado === 'vigente' && oldStatus !== 'vigente') {
-          const checkPay = fData.pagos.find(pa => pa.poliza_id === parseInt(id));
-          if (!checkPay) {
-            const payId = fData.pagos.length > 0 ? Math.max(...fData.pagos.map(pa => pa.id)) + 1 : 1;
-            const nextMonth = new Date();
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            fData.pagos.push({
-              id: payId,
-              poliza_id: parseInt(id),
-              monto: parseFloat(prima_anual),
-              fecha_pago: new Date().toISOString().split('T')[0],
-              estado_pago: 'pendiente',
-              referencia: null,
-              fecha_vencimiento: nextMonth.toISOString().split('T')[0],
-              created_at: new Date().toISOString()
-            });
-          }
+        if (estado === 'vigente' && (oldStatus !== 'vigente' || oldFreq !== newFreq)) {
+          await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), newFreq);
         }
       }
 
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       for (const policy of policies) {
-        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo } = policy;
+        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura } = policy;
         const oldRes = await db.query('SELECT estado, asesor_id, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);
         if (oldRes.rows.length === 0) continue;
 
@@ -504,34 +494,39 @@ router.post('/bulk', authenticateToken, async (req, res) => {
         }
 
         const oldStatus = oldRes.rows[0].estado;
+        const oldFreq = oldRes.rows[0].frecuencia_pago;
+        const newFreq = frecuencia_pago || oldFreq || 'contado';
         const motivoVal = estado === 'rechazado' ? (motivo_rechazo || '') : null;
+        const bizType = tipo_negocio || 'nuevo';
+        const covType = tipo_cobertura || 'individual';
 
         if (req.user.rango === 'admin') {
           const q = `
             UPDATE polizas
-            SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7
-            WHERE id = $8
+            SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7,
+                frecuencia_pago = $8, tipo_negocio = $9, tipo_cobertura = $10
+            WHERE id = $11
           `;
           await db.query(q, [
-            policy.asesor_id ? parseInt(policy.asesor_id) : null, parseInt(policy.compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal, parseInt(id)
+            policy.asesor_id ? parseInt(policy.asesor_id) : null, parseInt(policy.compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual),
+            estado, motivoVal, newFreq, bizType, covType, parseInt(id)
           ]);
         } else {
           // Asesor: no puede reasignar compañía ni asesor
           const q = `
             UPDATE polizas
-            SET plan = $1, suma_asegurada = $2, prima_anual = $3, estado = $4, motivo_rechazo = $5
-            WHERE id = $6
+            SET plan = $1, suma_asegurada = $2, prima_anual = $3, estado = $4, motivo_rechazo = $5,
+                frecuencia_pago = $6, tipo_negocio = $7, tipo_cobertura = $8
+            WHERE id = $9
           `;
           await db.query(q, [
-            plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal, parseInt(id)
+            plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal,
+            newFreq, bizType, covType, parseInt(id)
           ]);
         }
 
-        if (estado === 'vigente' && oldStatus !== 'vigente') {
-          const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
-          if (checkPay.rows.length === 0) {
-            await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), oldRes.rows[0].frecuencia_pago || 'contado');
-          }
+        if (estado === 'vigente' && (oldStatus !== 'vigente' || oldFreq !== newFreq)) {
+          await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), newFreq);
         }
       }
     }

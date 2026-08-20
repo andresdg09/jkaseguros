@@ -974,6 +974,22 @@ export default function Home() {
                       <span className="result-feature-value">{comp.pago || 'Consultar'}</span>
                     </div>
 
+                    {/* Frecuencias de Pago disponibles según el tarifario */}
+                    <div style={{ marginTop: '0.75rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.35rem' }}>
+                        💳 Formas de Pago Aceptadas:
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                        {comp.pago_contado && <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Contado (1)</span>}
+                        {comp.pago_semestral && <span style={{ fontSize: '0.7rem', background: '#fef3c7', color: '#b45309', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Semestral (2)</span>}
+                        {comp.pago_trimestral && <span style={{ fontSize: '0.7rem', background: '#f3e8ff', color: '#7e22ce', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Trimestral (4)</span>}
+                        {comp.pago_mensual && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Mensual (12)</span>}
+                        {!comp.pago_contado && !comp.pago_semestral && !comp.pago_trimestral && !comp.pago_mensual && (
+                          <span style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>Contado</span>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Mostrar puntuación técnica */}
                     <div className="result-feature" style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
                       <span className="result-feature-label" style={{ fontWeight: '600' }}>Score de Cobertura:</span>

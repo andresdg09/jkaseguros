@@ -95,7 +95,7 @@ function initFallback() {
         banco: a.banco || '',
         numero_cuenta: a.numero_cuenta || '',
         estado: a.estado || 'pendiente',
-        tipo_asesor: a.tipo_asesor || 'consultor_1'
+        tipo_asesor: a.tipo_asesor || 'asesor_3'
       }));
       fallbackData.pagos = fallbackData.pagos.map(pa => ({
         ...pa,
@@ -111,6 +111,158 @@ function initFallback() {
       }));
 
       seedFallbackElearning();
+
+      if (!fallbackData.companias_seguros || fallbackData.companias_seguros.length === 0) {
+        fallbackData.companias_seguros = [
+          { id: 1, nombre: "Mercantil Seguros", comision_compania: 20.0, comision_asesor_estandar: 10.0, comision_estandar: 20.0 },
+          { id: 2, nombre: "Seguros Caracas", comision_compania: 22.5, comision_asesor_estandar: 12.0, comision_estandar: 22.5 },
+          { id: 3, nombre: "Seguros Venezuela", comision_compania: 22.0, comision_asesor_estandar: 11.0, comision_estandar: 22.0 },
+          { id: 4, nombre: "Mapfre Seguros", comision_compania: 40.0, comision_asesor_estandar: 25.0, comision_estandar: 40.0 },
+          { id: 5, nombre: "Internacional de Seguros", comision_compania: 25.0, comision_asesor_estandar: 12.0, comision_estandar: 25.0 }
+        ];
+      }
+
+      if (!fallbackData.tarifas || fallbackData.tarifas.length === 0) {
+        fallbackData.tarifas = tarifasSemilla.map((t, index) => {
+          const comp = fallbackData.companias_seguros.find(c => c.nombre.toLowerCase().trim() === t.compania.toLowerCase().trim()) || fallbackData.companias_seguros[0];
+          const s = (t.pago || '').toUpperCase();
+          return {
+            id: index + 1,
+            compania_id: comp.id,
+            plan: t.plan,
+            pago: t.pago,
+            edad_min: t.edad_min,
+            edad_max: t.edad_max,
+            suma_asegurada: t.suma_asegurada,
+            prima: t.prima,
+            maternidad_suma: t.maternidad_suma || '',
+            maternidad_costo: t.maternidad_costo || '',
+            asist_intl_suma: t.asist_intl_suma || '',
+            asist_intl_costo: t.asist_intl_costo || '',
+            funeral_suma: t.funeral_suma || '',
+            funeral_costo: t.funeral_costo || '',
+            at_situ_medicamentos: t.at_situ_medicamentos || '',
+            consultas_medicas: t.consultas_medicas || '',
+            examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
+            ambulancia: t.ambulancia || '',
+            pago_contado: s.includes('CONT') || s.includes('CONTADO'),
+            pago_semestral: s.includes('SEM') || s.includes('SEMESTRAL'),
+            pago_trimestral: s.includes('TRIM') || s.includes('TRIMESTRAL'),
+            pago_mensual: s.includes('MENS') || s.includes('MEN') || s.includes('MENSUAL'),
+            created_at: new Date().toISOString()
+          };
+        });
+      }
+
+      if (!fallbackData.matriz_comisiones || fallbackData.matriz_comisiones.length === 0 || fallbackData.matriz_comisiones.some(m => m.asesor_1 === 0 && m.total_comision > 0)) {
+        fallbackData.matriz_comisiones = [
+          {
+            id: 1,
+            mercado: 'Nacionales',
+            compania_id: 1, // Mercantil Seguros
+            ramo: 'Salud',
+            producto_modalidad: 'ACCESS (Salud Cobertura Nacional)',
+            total_comision: 20.0,
+            asesor_1: 15.0,
+            asesor_2: 12.0,
+            asesor_3: 10.0,
+            consultor_1: 15.0,
+            consultor_2: 12.0,
+            johans: 15.0,
+            nivel_1_subagente: 10.0,
+            nivel_2_agente: 8.0,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: 2,
+            mercado: 'Nacionales',
+            compania_id: 2, // Seguros Caracas
+            ramo: 'Salud',
+            producto_modalidad: 'SALUD EXTERIOR (Salud Integral)',
+            total_comision: 22.5,
+            asesor_1: 17.0,
+            asesor_2: 15.0,
+            asesor_3: 12.0,
+            consultor_1: 17.0,
+            consultor_2: 15.0,
+            johans: 17.0,
+            nivel_1_subagente: 12.0,
+            nivel_2_agente: 10.0,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: 3,
+            mercado: 'Nacionales',
+            compania_id: 2, // Seguros Caracas
+            ramo: 'Salud',
+            producto_modalidad: 'SALUD INDIVIDUAL (Salud Integral)',
+            total_comision: 22.5,
+            asesor_1: 17.0,
+            asesor_2: 15.0,
+            asesor_3: 12.0,
+            consultor_1: 17.0,
+            consultor_2: 15.0,
+            johans: 17.0,
+            nivel_1_subagente: 12.0,
+            nivel_2_agente: 10.0,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: 4,
+            mercado: 'Nacionales',
+            compania_id: 3, // Seguros Venezuela
+            ramo: 'Salud',
+            producto_modalidad: 'BRONCE / PLATA / ORO (Salud Individual)',
+            total_comision: 22.0,
+            asesor_1: 16.0,
+            asesor_2: 14.0,
+            asesor_3: 11.0,
+            consultor_1: 16.0,
+            consultor_2: 14.0,
+            johans: 16.0,
+            nivel_1_subagente: 11.0,
+            nivel_2_agente: 9.0,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: 5,
+            mercado: 'Nacionales',
+            compania_id: 4, // Mapfre Seguros
+            ramo: 'Patrimoniales',
+            producto_modalidad: 'Incendio y Riesgos Patrimoniales',
+            total_comision: 40.0,
+            asesor_1: 30.0,
+            asesor_2: 28.0,
+            asesor_3: 25.0,
+            consultor_1: 30.0,
+            consultor_2: 28.0,
+            johans: 30.0,
+            nivel_1_subagente: 25.0,
+            nivel_2_agente: 20.0,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: 6,
+            mercado: 'Internacionales',
+            compania_id: 5, // Internacional de Seguros
+            ramo: 'Viajes',
+            producto_modalidad: 'Cobertura Internacional / Asistencia en Viajes',
+            total_comision: 25.0,
+            asesor_1: 18.0,
+            asesor_2: 15.0,
+            asesor_3: 12.0,
+            consultor_1: 18.0,
+            consultor_2: 15.0,
+            johans: 18.0,
+            nivel_1_subagente: 12.0,
+            nivel_2_agente: 10.0,
+            created_at: new Date().toISOString()
+          }
+        ];
+      }
+
+      saveFallback();
+
       if (!fallbackData.tarifario_metadata) {
         fallbackData.tarifario_metadata = {
           version: '1.0.0',
@@ -284,6 +436,12 @@ function seedFallback() {
       codigo_asesor: a.codigo,
       correo: a.correo,
       telefono: a.telefono,
+      cedula: a.cedula || 'V12345678',
+      fecha_nacimiento: a.fecha_nacimiento || '1990-01-01',
+      banco: a.banco || 'Banco Mercantil',
+      numero_cuenta: a.numero_cuenta || '01050100201000123456',
+      tipo_asesor: 'asesor_3',
+      estado: 'aprobado',
       created_at: new Date().toISOString()
     });
   });
@@ -420,48 +578,93 @@ function seedFallback() {
   const scComp = fallbackData.companias_seguros.find(c => c.nombre === 'Seguros Caracas') || { id: 2 };
   const mfComp = fallbackData.companias_seguros.find(c => c.nombre === 'Mapfre Seguros') || { id: 4 };
   const msComp = fallbackData.companias_seguros.find(c => c.nombre === 'Mercantil Seguros') || { id: 1 };
+  const svComp = fallbackData.companias_seguros.find(c => c.nombre === 'Seguros Venezuela') || { id: 3 };
+  const isComp = fallbackData.companias_seguros.find(c => c.nombre === 'Internacional de Seguros') || { id: 5 };
 
   fallbackData.matriz_comisiones = [
     {
       id: 1,
       mercado: 'Nacionales',
-      compania_id: scComp.id,
+      compania_id: msComp.id,
       ramo: 'Salud',
-      producto_modalidad: 'Cobertura Nacionales - Nuevo - Renovacion',
-      total_comision: 22.5,
-      consultor_1: 17.0,
-      consultor_2: 15.0,
-      johans: 17.0,
-      nivel_1_subagente: 0,
-      nivel_2_agente: 0,
+      producto_modalidad: 'ACCESS - PLATINO - EMERGENCIAS (Salud Cobertura Nacional)',
+      total_comision: 20.0,
+      asesor_1: 15.0,
+      asesor_2: 12.0,
+      asesor_3: 10.0,
+      consultor_1: 15.0,
+      consultor_2: 12.0,
+      johans: 15.0,
+      nivel_1_subagente: 10.0,
+      nivel_2_agente: 8.0,
       created_at: new Date().toISOString()
     },
     {
       id: 2,
       mercado: 'Nacionales',
-      compania_id: mfComp.id,
-      ramo: 'Patrimoniales',
-      producto_modalidad: 'Incendio',
-      total_comision: 40.0,
-      consultor_1: 30.0,
-      consultor_2: 28.0,
-      johans: 30.0,
-      nivel_1_subagente: 0,
-      nivel_2_agente: 0,
+      compania_id: scComp.id,
+      ramo: 'Salud',
+      producto_modalidad: 'SALUD EXTERIOR - SALUD INDIVIDUAL (Salud Integral)',
+      total_comision: 22.5,
+      asesor_1: 17.0,
+      asesor_2: 15.0,
+      asesor_3: 12.0,
+      consultor_1: 17.0,
+      consultor_2: 15.0,
+      johans: 17.0,
+      nivel_1_subagente: 12.0,
+      nivel_2_agente: 10.0,
       created_at: new Date().toISOString()
     },
     {
       id: 3,
-      mercado: 'Internacionales',
-      compania_id: msComp.id,
+      mercado: 'Nacionales',
+      compania_id: svComp.id,
       ramo: 'Salud',
-      producto_modalidad: 'Nuevo',
-      total_comision: 15.0,
-      consultor_1: 0,
-      consultor_2: 0,
-      johans: 0,
-      nivel_1_subagente: 10.0,
-      nivel_2_agente: 8.0,
+      producto_modalidad: 'BRONCE - PLATA - ORO (Salud Individual)',
+      total_comision: 22.0,
+      asesor_1: 16.0,
+      asesor_2: 14.0,
+      asesor_3: 11.0,
+      consultor_1: 16.0,
+      consultor_2: 14.0,
+      johans: 16.0,
+      nivel_1_subagente: 11.0,
+      nivel_2_agente: 9.0,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 4,
+      mercado: 'Nacionales',
+      compania_id: mfComp.id,
+      ramo: 'Patrimoniales',
+      producto_modalidad: 'Incendio - Todo Riesgo Comercial / Residencial',
+      total_comision: 40.0,
+      asesor_1: 30.0,
+      asesor_2: 28.0,
+      asesor_3: 25.0,
+      consultor_1: 30.0,
+      consultor_2: 28.0,
+      johans: 30.0,
+      nivel_1_subagente: 25.0,
+      nivel_2_agente: 20.0,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 5,
+      mercado: 'Internacionales',
+      compania_id: isComp.id,
+      ramo: 'Salud',
+      producto_modalidad: 'Cobertura Internacional - Asistencia en Viajes',
+      total_comision: 25.0,
+      asesor_1: 18.0,
+      asesor_2: 15.0,
+      asesor_3: 12.0,
+      consultor_1: 18.0,
+      consultor_2: 15.0,
+      johans: 18.0,
+      nivel_1_subagente: 12.0,
+      nivel_2_agente: 10.0,
       created_at: new Date().toISOString()
     }
   ];
@@ -612,19 +815,23 @@ try {
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check2;');
   await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_cobertura_check2 CHECK (tipo_cobertura IN (\'individual\', \'colectivo\'));');
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS bono_pronto_pago BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS emision_online BOOLEAN DEFAULT FALSE;');
-
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_numero INT;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_total INT;');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS monto_reportado NUMERIC;');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS moneda_pago VARCHAR(10) DEFAULT \'VES\';');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS observaciones TEXT;');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
+  await client.query('ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_pago_check;');
+  await client.query("ALTER TABLE pagos ADD CONSTRAINT pagos_estado_pago_check CHECK (estado_pago IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado'));");
 
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS cedula VARCHAR(50);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS banco VARCHAR(100);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT \'pendiente\';');
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS tipo_asesor VARCHAR(50) DEFAULT \'consultor_1\';');
+  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS tipo_asesor VARCHAR(50) DEFAULT \'asesor_3\';');
   await client.query('ALTER TABLE asesores DROP CONSTRAINT IF EXISTS asesores_tipo_asesor_check;');
-  await client.query('ALTER TABLE asesores ADD CONSTRAINT asesores_tipo_asesor_check CHECK (tipo_asesor IN (\'consultor_1\', \'consultor_2\', \'johans\', \'nivel_1_subagente\', \'nivel_2_agente\'));');
+  await client.query('ALTER TABLE asesores ADD CONSTRAINT asesores_tipo_asesor_check CHECK (tipo_asesor IN (\'asesor_1\', \'asesor_2\', \'asesor_3\', \'consultor_1\', \'consultor_2\', \'johans\', \'nivel_1_subagente\', \'nivel_2_agente\'));');
 
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
@@ -650,6 +857,9 @@ try {
       ramo VARCHAR(100) NOT NULL,
       producto_modalidad VARCHAR(255) NOT NULL,
       total_comision NUMERIC NOT NULL DEFAULT 0,
+      asesor_1 NUMERIC DEFAULT 0,
+      asesor_2 NUMERIC DEFAULT 0,
+      asesor_3 NUMERIC DEFAULT 0,
       consultor_1 NUMERIC DEFAULT 0,
       consultor_2 NUMERIC DEFAULT 0,
       johans NUMERIC DEFAULT 0,
@@ -658,6 +868,9 @@ try {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  await client.query('ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_1 NUMERIC DEFAULT 0;');
+  await client.query('ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_2 NUMERIC DEFAULT 0;');
+  await client.query('ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_3 NUMERIC DEFAULT 0;');
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS corridas_comisiones (
@@ -910,6 +1123,12 @@ function fallbackQuery(text, params = []) {
     return { rows: advisor ? [advisor] : [] };
   }
 
+  if (cleanSql.includes('FROM asesores WHERE id =')) {
+    const aId = parseInt(params[0]);
+    const advisor = fallbackData.asesores.find(a => a.id === aId);
+    return { rows: advisor ? [advisor] : [] };
+  }
+
   if (cleanSql.includes('FROM asesores ORDER BY id ASC LIMIT 1') || cleanSql.startsWith('SELECT id FROM asesores')) {
     const sorted = [...fallbackData.asesores].sort((a, b) => a.id - b.id);
     return { rows: sorted.length > 0 ? [{ id: sorted[0].id }] : [] };
@@ -989,7 +1208,10 @@ function fallbackQuery(text, params = []) {
       };
     });
 
-    if (cleanSql.includes('cliente_id = $1')) {
+    if (cleanSql.includes('WHERE id = $1')) {
+      const polId = parseInt(params[0]);
+      result = result.filter(p => p.id === polId);
+    } else if (cleanSql.includes('cliente_id = $1')) {
       const cliId = parseInt(params[0]);
       result = result.filter(p => p.cliente_id === cliId);
     } else if (cleanSql.includes('asesor_id = $1')) {
@@ -1045,12 +1267,72 @@ function fallbackQuery(text, params = []) {
     return { rows: [newPol] };
   }
 
-  // 14. UPDATE polizas SET estado = $1
-  if (cleanSql.startsWith('UPDATE polizas SET estado =')) {
-    const [estado, id] = params;
-    const idx = fallbackData.polizas.findIndex(p => p.id === parseInt(id));
+  // 14. UPDATE polizas SET ...
+  if (cleanSql.startsWith('UPDATE polizas SET')) {
+    if (cleanSql.startsWith('UPDATE polizas SET estado =')) {
+      const [estado, id] = params;
+      const idx = fallbackData.polizas.findIndex(p => p.id === parseInt(id));
+      if (idx !== -1) {
+        fallbackData.polizas[idx].estado = estado;
+        saveFallback();
+        return { rows: [fallbackData.polizas[idx]], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    }
+
+    if (cleanSql.startsWith('UPDATE polizas SET asesor_id = $1 WHERE id = $2')) {
+      const [asesorId, id] = params;
+      const idx = fallbackData.polizas.findIndex(p => p.id === parseInt(id));
+      if (idx !== -1) {
+        fallbackData.polizas[idx].asesor_id = asesorId ? parseInt(asesorId) : null;
+        saveFallback();
+        return { rows: [fallbackData.polizas[idx]], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    }
+
+    if (cleanSql.startsWith('UPDATE polizas SET pago_estado =')) {
+      const [pago_estado, id] = params;
+      const idx = fallbackData.polizas.findIndex(p => p.id === parseInt(id));
+      if (idx !== -1) {
+        fallbackData.polizas[idx].pago_estado = pago_estado;
+        saveFallback();
+        return { rows: [fallbackData.polizas[idx]], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    }
+
+    // Generic UPDATE polizas SET ... WHERE id = $X
+    const lastParam = params[params.length - 1];
+    const polId = parseInt(lastParam);
+    const idx = fallbackData.polizas.findIndex(p => p.id === polId);
     if (idx !== -1) {
-      fallbackData.polizas[idx].estado = estado;
+      if (cleanSql.includes('frecuencia_pago = $8') || cleanSql.includes('frecuencia_pago = $6')) {
+        // Parse according to admin/advisor query
+        if (cleanSql.includes('asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7, frecuencia_pago = $8')) {
+          const [asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura] = params;
+          fallbackData.polizas[idx].asesor_id = asesor_id ? parseInt(asesor_id) : null;
+          fallbackData.polizas[idx].compania_id = parseInt(compania_id);
+          fallbackData.polizas[idx].plan = plan;
+          fallbackData.polizas[idx].suma_asegurada = parseFloat(suma_asegurada);
+          fallbackData.polizas[idx].prima_anual = parseFloat(prima_anual);
+          fallbackData.polizas[idx].estado = estado;
+          fallbackData.polizas[idx].motivo_rechazo = motivo_rechazo;
+          fallbackData.polizas[idx].frecuencia_pago = frecuencia_pago || 'contado';
+          fallbackData.polizas[idx].tipo_negocio = tipo_negocio || 'nuevo';
+          fallbackData.polizas[idx].tipo_cobertura = tipo_cobertura || 'individual';
+        } else {
+          const [plan, suma_asegurada, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura] = params;
+          fallbackData.polizas[idx].plan = plan;
+          fallbackData.polizas[idx].suma_asegurada = parseFloat(suma_asegurada);
+          fallbackData.polizas[idx].prima_anual = parseFloat(prima_anual);
+          fallbackData.polizas[idx].estado = estado;
+          fallbackData.polizas[idx].motivo_rechazo = motivo_rechazo;
+          fallbackData.polizas[idx].frecuencia_pago = frecuencia_pago || 'contado';
+          fallbackData.polizas[idx].tipo_negocio = tipo_negocio || 'nuevo';
+          fallbackData.polizas[idx].tipo_cobertura = tipo_cobertura || 'individual';
+        }
+      }
       saveFallback();
       return { rows: [fallbackData.polizas[idx]], rowCount: 1 };
     }
@@ -1086,7 +1368,10 @@ function fallbackQuery(text, params = []) {
   if (cleanSql.startsWith('SELECT * FROM pagos') || cleanSql.includes('FROM pagos')) {
     let result = [...fallbackData.pagos];
     
-    if (cleanSql.includes('poliza_id = $1')) {
+    if (cleanSql.includes('WHERE id = $1') || cleanSql.includes('WHERE id = $1')) {
+      const pId = parseInt(params[0]);
+      result = result.filter(pa => pa.id === pId);
+    } else if (cleanSql.includes('poliza_id = $1')) {
       const polId = parseInt(params[0]);
       result = result.filter(pa => pa.poliza_id === polId);
     } else if (cleanSql.includes('poliza_id IN (')) {
@@ -1200,14 +1485,151 @@ function fallbackQuery(text, params = []) {
     return { rows: sorted };
   }
 
-  // 23. SELECT FROM matriz_comisiones
-  if (cleanSql.includes('FROM matriz_comisiones')) {
-    return { rows: fallbackData.matriz_comisiones };
+  // 22b. UPDATE asesores SET tipo_asesor = $1 WHERE id = $2
+  if (cleanSql.startsWith('UPDATE asesores SET tipo_asesor =')) {
+    const [tipo_asesor, id] = params;
+    const idx = fallbackData.asesores.findIndex(a => a.id === parseInt(id));
+    if (idx !== -1) {
+      fallbackData.asesores[idx].tipo_asesor = tipo_asesor;
+      saveFallback();
+      return { rows: [fallbackData.asesores[idx]], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
   }
 
-  // 24. SELECT FROM corridas_comisiones
+  // 22c. UPDATE asesores SET nombre = $1, telefono = $2, cedula = $3, banco = $4, numero_cuenta = $5, fecha_nacimiento = $6 WHERE usuario_id = $7
+  if (cleanSql.startsWith('UPDATE asesores SET nombre =')) {
+    const [nombre, telefono, cedula, banco, numero_cuenta, fecha_nacimiento, usuario_id] = params;
+    const idx = fallbackData.asesores.findIndex(a => a.usuario_id === parseInt(usuario_id));
+    if (idx !== -1) {
+      fallbackData.asesores[idx].nombre = nombre;
+      fallbackData.asesores[idx].telefono = telefono;
+      fallbackData.asesores[idx].cedula = cedula || 'V00000000';
+      fallbackData.asesores[idx].banco = banco;
+      fallbackData.asesores[idx].numero_cuenta = numero_cuenta;
+      fallbackData.asesores[idx].fecha_nacimiento = fecha_nacimiento;
+      saveFallback();
+      return { rows: [fallbackData.asesores[idx]], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // 23. SELECT FROM matriz_comisiones
+  if (cleanSql.includes('FROM matriz_comisiones')) {
+    const enriched = (fallbackData.matriz_comisiones || []).map(m => {
+      const comp = (fallbackData.companias_seguros || []).find(c => c.id === m.compania_id);
+      return {
+        ...m,
+        compania_nombre: comp ? comp.nombre : 'Todas'
+      };
+    });
+    return { rows: enriched };
+  }
+
+  // 23b. INSERT INTO matriz_comisiones
+  if (cleanSql.startsWith('INSERT INTO matriz_comisiones')) {
+    const [mercado, compania_id, ramo, producto_modalidad, total_comision, asesor_1, asesor_2, asesor_3, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente] = params;
+    const newId = fallbackData.matriz_comisiones.length ? Math.max(...fallbackData.matriz_comisiones.map(m => m.id)) + 1 : 1;
+    const newRule = {
+      id: newId,
+      mercado: mercado || 'Nacionales',
+      compania_id: compania_id ? parseInt(compania_id) : null,
+      ramo: ramo || 'Salud',
+      producto_modalidad: producto_modalidad || 'General',
+      total_comision: parseFloat(total_comision || 0),
+      asesor_1: parseFloat(asesor_1 || consultor_1 || 0),
+      asesor_2: parseFloat(asesor_2 || consultor_2 || 0),
+      asesor_3: parseFloat(asesor_3 || 0),
+      consultor_1: parseFloat(consultor_1 || asesor_1 || 0),
+      consultor_2: parseFloat(consultor_2 || asesor_2 || 0),
+      johans: parseFloat(johans || 0),
+      nivel_1_subagente: parseFloat(nivel_1_subagente || 0),
+      nivel_2_agente: parseFloat(nivel_2_agente || 0),
+      created_at: new Date().toISOString()
+    };
+    fallbackData.matriz_comisiones.push(newRule);
+    saveFallback();
+    return { rows: [newRule] };
+  }
+
+  // 23c. UPDATE matriz_comisiones
+  if (cleanSql.startsWith('UPDATE matriz_comisiones')) {
+    const [mercado, compania_id, ramo, producto_modalidad, total_comision, asesor_1, asesor_2, asesor_3, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente, id] = params;
+    const idx = fallbackData.matriz_comisiones.findIndex(m => m.id === parseInt(id));
+    if (idx !== -1) {
+      fallbackData.matriz_comisiones[idx] = {
+        ...fallbackData.matriz_comisiones[idx],
+        mercado: mercado || fallbackData.matriz_comisiones[idx].mercado,
+        compania_id: compania_id ? parseInt(compania_id) : fallbackData.matriz_comisiones[idx].compania_id,
+        ramo: ramo || fallbackData.matriz_comisiones[idx].ramo,
+        producto_modalidad: producto_modalidad || fallbackData.matriz_comisiones[idx].producto_modalidad,
+        total_comision: parseFloat(total_comision !== undefined ? total_comision : fallbackData.matriz_comisiones[idx].total_comision),
+        asesor_1: parseFloat(asesor_1 !== undefined ? asesor_1 : fallbackData.matriz_comisiones[idx].asesor_1),
+        asesor_2: parseFloat(asesor_2 !== undefined ? asesor_2 : fallbackData.matriz_comisiones[idx].asesor_2),
+        asesor_3: parseFloat(asesor_3 !== undefined ? asesor_3 : fallbackData.matriz_comisiones[idx].asesor_3),
+        consultor_1: parseFloat(consultor_1 !== undefined ? consultor_1 : fallbackData.matriz_comisiones[idx].consultor_1),
+        consultor_2: parseFloat(consultor_2 !== undefined ? consultor_2 : fallbackData.matriz_comisiones[idx].consultor_2),
+        johans: parseFloat(johans !== undefined ? johans : fallbackData.matriz_comisiones[idx].johans),
+        nivel_1_subagente: parseFloat(nivel_1_subagente !== undefined ? nivel_1_subagente : fallbackData.matriz_comisiones[idx].nivel_1_subagente),
+        nivel_2_agente: parseFloat(nivel_2_agente !== undefined ? nivel_2_agente : fallbackData.matriz_comisiones[idx].nivel_2_agente)
+      };
+      saveFallback();
+      return { rows: [fallbackData.matriz_comisiones[idx]], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // 23d. DELETE FROM matriz_comisiones
+  if (cleanSql.startsWith('DELETE FROM matriz_comisiones')) {
+    const id = parseInt(params[0]);
+    const prevLen = fallbackData.matriz_comisiones.length;
+    fallbackData.matriz_comisiones = fallbackData.matriz_comisiones.filter(m => m.id !== id);
+    saveFallback();
+    return { rowCount: prevLen - fallbackData.matriz_comisiones.length };
+  }
+
+  // 24. SELECT / INSERT corridas_comisiones
+  if (cleanSql.startsWith('INSERT INTO corridas_comisiones')) {
+    const [tipo_ejecucion, total_pagado, cantidad_asesores, archivo_txt] = params;
+    const newId = fallbackData.corridas_comisiones.length ? Math.max(...fallbackData.corridas_comisiones.map(c => c.id)) + 1 : 1;
+    const newRun = {
+      id: newId,
+      fecha_ejecucion: new Date().toISOString(),
+      tipo_ejecucion,
+      total_pagado: parseFloat(total_pagado),
+      cantidad_asesores: parseInt(cantidad_asesores),
+      archivo_txt,
+      created_at: new Date().toISOString()
+    };
+    fallbackData.corridas_comisiones.push(newRun);
+    saveFallback();
+    return { rows: [newRun] };
+  }
+
   if (cleanSql.includes('FROM corridas_comisiones')) {
     return { rows: fallbackData.corridas_comisiones };
+  }
+
+  // 24b. Comisiones Asesores por asesor y compania
+  if (cleanSql.includes('FROM comisiones_asesores WHERE asesor_id =')) {
+    const [aseId, compId] = params;
+    const rule = (fallbackData.comisiones_asesores || []).find(ca => ca.asesor_id === parseInt(aseId) && ca.compania_id === parseInt(compId));
+    return { rows: rule ? [rule] : [] };
+  }
+
+  // 24c. UPDATE historico_comisiones corrida_id
+  if (cleanSql.startsWith("UPDATE historico_comisiones SET estado_corrida = 'procesado'")) {
+    const corridaId = parseInt(params[0]);
+    let count = 0;
+    (fallbackData.historico_comisiones || []).forEach(h => {
+      if (h.estado_corrida === 'pendiente') {
+        h.estado_corrida = 'procesado';
+        h.corrida_id = corridaId;
+        count++;
+      }
+    });
+    saveFallback();
+    return { rowCount: count };
   }
 
   // 25. SELECT FROM historico_comisiones
@@ -1216,7 +1638,27 @@ function fallbackQuery(text, params = []) {
     if (cleanSql.includes('estado_corrida = $1')) {
       const state = params[0];
       result = result.filter(h => h.estado_corrida === state);
+    } else if (cleanSql.includes("estado_corrida = 'pendiente'")) {
+      result = result.filter(h => h.estado_corrida === 'pendiente');
     }
+    if (cleanSql.includes('pago_id = $1')) {
+      const pId = parseInt(params[0]);
+      result = result.filter(h => h.pago_id === pId);
+    }
+
+    // Unir con asesores para obtener datos bancarios y personales
+    result = result.map(h => {
+      const adv = (fallbackData.asesores || []).find(a => parseInt(a.id) === parseInt(h.asesor_id)) || {};
+      return {
+        ...h,
+        nombre: adv.nombre || 'Asesor Sin Nombre',
+        correo: adv.correo || 'info@jkaconsultores.com',
+        cedula: adv.cedula || 'V00000000',
+        banco: adv.banco || 'BNC',
+        numero_cuenta: adv.numero_cuenta || '00000000000000000000'
+      };
+    });
+
     return { rows: result };
   }
 

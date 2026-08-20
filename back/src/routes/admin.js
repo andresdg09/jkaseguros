@@ -150,6 +150,7 @@ router.get('/advisors', authenticateToken, async (req, res) => {
         banco: a.banco || 'N/A',
         numero_cuenta: a.numero_cuenta || 'N/A',
         estado: a.estado || 'pendiente',
+        tipo_asesor: a.tipo_asesor || 'asesor_3',
         clientes: clientNames || 'Ninguno'
       };
     });
@@ -318,6 +319,43 @@ router.put('/advisors/:id/status', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al actualizar estado del asesor:', err);
     res.status(500).json({ error: 'Error del servidor al actualizar estado del asesor.' });
+  }
+});
+
+// Actualizar el nivel de comisiones de un asesor (Jerarquía)
+router.put('/advisors/:id/level', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { id } = req.params;
+  const { tipo_asesor } = req.body;
+
+  const validLevels = ['asesor_1', 'asesor_2', 'asesor_3', 'consultor_1', 'consultor_2', 'johans', 'nivel_1_subagente', 'nivel_2_agente'];
+  if (!tipo_asesor || !validLevels.includes(tipo_asesor)) {
+    return res.status(400).json({ error: 'Nivel de asesor no válido.' });
+  }
+
+  try {
+    const aId = parseInt(id);
+    let name = '';
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const idx = fData.asesores.findIndex(a => a.id === aId);
+      if (idx === -1) return res.status(404).json({ error: 'Asesor no encontrado.' });
+      fData.asesores[idx].tipo_asesor = tipo_asesor;
+      name = fData.asesores[idx].nombre;
+      db.saveFallback();
+    } else {
+      const checkRes = await db.query('SELECT nombre FROM asesores WHERE id = $1', [aId]);
+      if (checkRes.rows.length === 0) return res.status(404).json({ error: 'Asesor no encontrado.' });
+      name = checkRes.rows[0].nombre;
+      await db.query('UPDATE asesores SET tipo_asesor = $1 WHERE id = $2', [tipo_asesor, aId]);
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'CAMBIO_NIVEL_ASESOR', `Nivel de asesor ${name} (ID: ${aId}) cambiado a ${tipo_asesor}.`);
+    res.json({ message: `Nivel del asesor ${name} actualizado a ${tipo_asesor}.`, tipo_asesor });
+  } catch (err) {
+    console.error('Error al actualizar nivel del asesor:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar nivel del asesor.' });
   }
 });
 
@@ -882,6 +920,8 @@ router.get('/commissions', authenticateToken, async (req, res) => {
     let matriz = [];
     let historico = [];
     let corridas = [];
+    let polizas = [];
+    let comisionesAsesores = [];
 
     if (db.isFallback()) {
       const fData = db.getFallbackData();
@@ -889,11 +929,29 @@ router.get('/commissions', authenticateToken, async (req, res) => {
       asesores = fData.asesores || [];
       matriz = fData.matriz_comisiones || [];
       corridas = fData.corridas_comisiones || [];
+      comisionesAsesores = fData.comisiones_asesores || [];
+
+      // Enriquecer pólizas con nombres de cliente, aseguradora y asesor
+      const rawPolizas = fData.polizas || [];
+      const datosPersonales = fData.datos_personales || [];
+      polizas = rawPolizas.map(p => {
+        const cli = datosPersonales.find(d => d.id === p.cliente_id);
+        const comp = companias.find(c => c.id === p.compania_id);
+        const adv = asesores.find(a => a.id === p.asesor_id);
+        return {
+          ...p,
+          primer_nombre: cli ? cli.primer_nombre : '',
+          primer_apellido: cli ? cli.primer_apellido : '',
+          compania_nombre: comp ? comp.nombre : 'N/A',
+          asesor_nombre: adv ? adv.nombre : 'N/A',
+          codigo_asesor: adv ? adv.codigo_asesor : 'N/A'
+        };
+      });
       
       const rawHist = fData.historico_comisiones || [];
       historico = rawHist.map(h => {
-        const p = (fData.polizas || []).find(pol => pol.id === h.poliza_id);
-        const a = (fData.asesores || []).find(adv => adv.id === h.asesor_id);
+        const p = rawPolizas.find(pol => pol.id === h.poliza_id);
+        const a = asesores.find(adv => adv.id === h.asesor_id);
         const comp = companias.find(c => c.id === (p ? p.compania_id : null));
         return {
           ...h,
@@ -908,7 +966,7 @@ router.get('/commissions', authenticateToken, async (req, res) => {
       const resComps = await db.query('SELECT id, nombre, comision_compania, comision_asesor_estandar FROM companias_seguros ORDER BY nombre ASC');
       companias = resComps.rows;
 
-      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo, tipo_asesor FROM asesores ORDER BY id ASC');
+      const resAsesores = await db.query('SELECT id, nombre, codigo_asesor, correo, tipo_asesor, cedula, banco, numero_cuenta FROM asesores ORDER BY id ASC');
       asesores = resAsesores.rows;
 
       const resMat = await db.query('SELECT m.*, c.nombre AS compania_nombre FROM matriz_comisiones m LEFT JOIN companias_seguros c ON m.compania_id = c.id');
@@ -926,6 +984,24 @@ router.get('/commissions', authenticateToken, async (req, res) => {
         ORDER BY h.id DESC
       `);
       historico = resHist.rows;
+
+      // Consultar pólizas con JOINs para nombres
+      const resPolizas = await db.query(`
+        SELECT p.*,
+          dp.primer_nombre, dp.primer_apellido,
+          comp.nombre AS compania_nombre,
+          a.nombre AS asesor_nombre, a.codigo_asesor
+        FROM polizas p
+        LEFT JOIN datos_personales dp ON p.cliente_id = dp.id
+        LEFT JOIN companias_seguros comp ON p.compania_id = comp.id
+        LEFT JOIN asesores a ON p.asesor_id = a.id
+        ORDER BY p.id DESC
+      `);
+      polizas = resPolizas.rows;
+
+      // Consultar comisiones personalizadas por asesor
+      const resComAsesores = await db.query('SELECT * FROM comisiones_asesores ORDER BY id ASC');
+      comisionesAsesores = resComAsesores.rows;
     }
 
     // Calcular vista previa de BNC a partir de comisiones pendientes
@@ -990,6 +1066,8 @@ router.get('/commissions', authenticateToken, async (req, res) => {
     res.json({
       companias,
       asesores,
+      polizas,
+      comisiones_asesores: comisionesAsesores,
       matriz_comisiones: matriz,
       historico_comisiones: historico,
       corridas_comisiones: corridas,
@@ -1004,8 +1082,9 @@ router.get('/commissions', authenticateToken, async (req, res) => {
 // Generar corrida de comisiones de forma manual
 router.post('/commissions/run', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { cuenta_debitar } = req.body;
   try {
-    const result = await ejecutarCorridaComisiones('manual');
+    const result = await ejecutarCorridaComisiones('manual', cuenta_debitar || '01910100201000123456');
     res.json(result);
   } catch (err) {
     console.error('Error al ejecutar corrida manual:', err);
@@ -1016,9 +1095,10 @@ router.post('/commissions/run', authenticateToken, async (req, res) => {
 // Generar archivo TXT para Pago de Proveedores del BNC (Delimitado por Tabulaciones)
 router.get('/commissions/export-bnc-txt', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const cuentaDebitar = req.query.cuenta_debitar || '01910100201000123456';
   
   try {
-    const result = await ejecutarCorridaComisiones('manual');
+    const result = await ejecutarCorridaComisiones('manual', cuentaDebitar);
     
     if (result.count === 0) {
       res.setHeader('Content-disposition', 'attachment; filename=bnc_vacio.txt');
@@ -1032,6 +1112,288 @@ router.get('/commissions/export-bnc-txt', authenticateToken, async (req, res) =>
   } catch (err) {
     console.error('Error al exportar TXT:', err);
     res.status(500).json({ error: 'Error del servidor al generar archivo TXT.' });
+  }
+});
+
+// Crear nueva regla jerárquica en la Matriz de Comisiones
+router.post('/commissions/matrix', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { 
+    mercado, compania_id, ramo, producto_modalidad, total_comision,
+    asesor_1, asesor_2, asesor_3, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente 
+  } = req.body;
+
+  if (!mercado || !ramo || !producto_modalidad || total_comision === undefined) {
+    return res.status(400).json({ error: 'Mercado, Ramo, Producto/Modalidad y Total Comisión son obligatorios.' });
+  }
+
+  try {
+    const a1 = parseFloat(asesor_1 || consultor_1 || 0);
+    const a2 = parseFloat(asesor_2 || consultor_2 || 0);
+    const a3 = parseFloat(asesor_3 || 0);
+    const c1 = parseFloat(consultor_1 || asesor_1 || 0);
+    const c2 = parseFloat(consultor_2 || asesor_2 || 0);
+    const j = parseFloat(johans || 0);
+    const n1 = parseFloat(nivel_1_subagente || 0);
+    const n2 = parseFloat(nivel_2_agente || 0);
+    const total = parseFloat(total_comision || 0);
+    const compId = compania_id ? parseInt(compania_id) : null;
+
+    let newRule;
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const newId = fData.matriz_comisiones.length ? Math.max(...fData.matriz_comisiones.map(m => m.id)) + 1 : 1;
+      newRule = {
+        id: newId,
+        mercado,
+        compania_id: compId,
+        ramo,
+        producto_modalidad,
+        total_comision: total,
+        asesor_1: a1,
+        asesor_2: a2,
+        asesor_3: a3,
+        consultor_1: c1,
+        consultor_2: c2,
+        johans: j,
+        nivel_1_subagente: n1,
+        nivel_2_agente: n2,
+        created_at: new Date().toISOString()
+      };
+      fData.matriz_comisiones.push(newRule);
+      db.saveFallback();
+    } else {
+      const insRes = await db.query(
+        `INSERT INTO matriz_comisiones (
+          mercado, compania_id, ramo, producto_modalidad, total_comision,
+          asesor_1, asesor_2, asesor_3, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+        [mercado, compId, ramo, producto_modalidad, total, a1, a2, a3, c1, c2, j, n1, n2]
+      );
+      newRule = insRes.rows[0];
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'CREAR_REGLA_MATRIZ', `Nueva regla de comisión creada: ${mercado} - ${ramo} - ${producto_modalidad} (${total}%)`);
+    res.status(201).json({ message: 'Regla jerárquica creada con éxito.', regla: newRule });
+  } catch (err) {
+    console.error('Error al crear regla en matriz:', err);
+    res.status(500).json({ error: 'Error del servidor al crear regla de comisión.' });
+  }
+});
+
+// Actualizar regla jerárquica existente en la Matriz de Comisiones
+router.put('/commissions/matrix/:id', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { id } = req.params;
+  const { 
+    mercado, compania_id, ramo, producto_modalidad, total_comision,
+    asesor_1, asesor_2, asesor_3, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente 
+  } = req.body;
+
+  try {
+    const mId = parseInt(id);
+    const a1 = parseFloat(asesor_1 !== undefined ? asesor_1 : (consultor_1 || 0));
+    const a2 = parseFloat(asesor_2 !== undefined ? asesor_2 : (consultor_2 || 0));
+    const a3 = parseFloat(asesor_3 !== undefined ? asesor_3 : 0);
+    const c1 = parseFloat(consultor_1 !== undefined ? consultor_1 : a1);
+    const c2 = parseFloat(consultor_2 !== undefined ? consultor_2 : a2);
+    const j = parseFloat(johans !== undefined ? johans : 0);
+    const n1 = parseFloat(nivel_1_subagente !== undefined ? nivel_1_subagente : 0);
+    const n2 = parseFloat(nivel_2_agente !== undefined ? nivel_2_agente : 0);
+    const total = parseFloat(total_comision !== undefined ? total_comision : 0);
+    const compId = compania_id ? parseInt(compania_id) : null;
+
+    let updatedRule;
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const idx = fData.matriz_comisiones.findIndex(m => m.id === mId);
+      if (idx === -1) return res.status(404).json({ error: 'Regla no encontrada.' });
+      fData.matriz_comisiones[idx] = {
+        ...fData.matriz_comisiones[idx],
+        mercado: mercado || fData.matriz_comisiones[idx].mercado,
+        compania_id: compId,
+        ramo: ramo || fData.matriz_comisiones[idx].ramo,
+        producto_modalidad: producto_modalidad || fData.matriz_comisiones[idx].producto_modalidad,
+        total_comision: total,
+        asesor_1: a1,
+        asesor_2: a2,
+        asesor_3: a3,
+        consultor_1: c1,
+        consultor_2: c2,
+        johans: j,
+        nivel_1_subagente: n1,
+        nivel_2_agente: n2
+      };
+      updatedRule = fData.matriz_comisiones[idx];
+      db.saveFallback();
+    } else {
+      const updRes = await db.query(
+        `UPDATE matriz_comisiones SET
+          mercado = $1, compania_id = $2, ramo = $3, producto_modalidad = $4, total_comision = $5,
+          asesor_1 = $6, asesor_2 = $7, asesor_3 = $8, consultor_1 = $9, consultor_2 = $10,
+          johans = $11, nivel_1_subagente = $12, nivel_2_agente = $13
+         WHERE id = $14 RETURNING *`,
+        [mercado, compId, ramo, producto_modalidad, total, a1, a2, a3, c1, c2, j, n1, n2, mId]
+      );
+      if (updRes.rows.length === 0) return res.status(404).json({ error: 'Regla no encontrada.' });
+      updatedRule = updRes.rows[0];
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'EDITAR_REGLA_MATRIZ', `Regla de comisión ID ${mId} actualizada.`);
+    res.json({ message: 'Regla jerárquica actualizada con éxito.', regla: updatedRule });
+  } catch (err) {
+    console.error('Error al actualizar regla de matriz:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar regla de comisión.' });
+  }
+});
+
+// Eliminar regla jerárquica de la Matriz de Comisiones
+router.delete('/commissions/matrix/:id', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  const { id } = req.params;
+
+  try {
+    const mId = parseInt(id);
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      fData.matriz_comisiones = fData.matriz_comisiones.filter(m => m.id !== mId);
+      db.saveFallback();
+    } else {
+      await db.query('DELETE FROM matriz_comisiones WHERE id = $1', [mId]);
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'ELIMINAR_REGLA_MATRIZ', `Regla de comisión ID ${mId} eliminada.`);
+    res.json({ message: 'Regla jerárquica eliminada correctamente.' });
+  } catch (err) {
+    console.error('Error al eliminar regla de matriz:', err);
+    res.status(500).json({ error: 'Error del servidor al eliminar regla de comisión.' });
+  }
+});
+
+// Restablecer / Sincronizar Matriz de Comisiones con el Tarifario Oficial
+router.post('/commissions/matrix/reset-defaults', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+
+  try {
+    const defaultRules = [
+      {
+        mercado: 'Nacionales',
+        compania_id: 1, // Mercantil Seguros
+        ramo: 'Salud',
+        producto_modalidad: 'ACCESS (Salud Cobertura Nacional)',
+        total_comision: 20.0,
+        asesor_1: 15.0,
+        asesor_2: 12.0,
+        asesor_3: 10.0,
+        consultor_1: 15.0,
+        consultor_2: 12.0,
+        johans: 15.0,
+        nivel_1_subagente: 10.0,
+        nivel_2_agente: 8.0
+      },
+      {
+        mercado: 'Nacionales',
+        compania_id: 2, // Seguros Caracas
+        ramo: 'Salud',
+        producto_modalidad: 'SALUD EXTERIOR (Salud Integral)',
+        total_comision: 22.5,
+        asesor_1: 17.0,
+        asesor_2: 15.0,
+        asesor_3: 12.0,
+        consultor_1: 17.0,
+        consultor_2: 15.0,
+        johans: 17.0,
+        nivel_1_subagente: 12.0,
+        nivel_2_agente: 10.0
+      },
+      {
+        mercado: 'Nacionales',
+        compania_id: 2, // Seguros Caracas
+        ramo: 'Salud',
+        producto_modalidad: 'SALUD INDIVIDUAL (Salud Integral)',
+        total_comision: 22.5,
+        asesor_1: 17.0,
+        asesor_2: 15.0,
+        asesor_3: 12.0,
+        consultor_1: 17.0,
+        consultor_2: 15.0,
+        johans: 17.0,
+        nivel_1_subagente: 12.0,
+        nivel_2_agente: 10.0
+      },
+      {
+        mercado: 'Nacionales',
+        compania_id: 3, // Seguros Venezuela
+        ramo: 'Salud',
+        producto_modalidad: 'BRONCE / PLATA / ORO (Salud Individual)',
+        total_comision: 22.0,
+        asesor_1: 16.0,
+        asesor_2: 14.0,
+        asesor_3: 11.0,
+        consultor_1: 16.0,
+        consultor_2: 14.0,
+        johans: 16.0,
+        nivel_1_subagente: 11.0,
+        nivel_2_agente: 9.0
+      },
+      {
+        mercado: 'Nacionales',
+        compania_id: 4, // Mapfre Seguros
+        ramo: 'Patrimoniales',
+        producto_modalidad: 'Incendio y Riesgos Patrimoniales',
+        total_comision: 40.0,
+        asesor_1: 30.0,
+        asesor_2: 28.0,
+        asesor_3: 25.0,
+        consultor_1: 30.0,
+        consultor_2: 28.0,
+        johans: 30.0,
+        nivel_1_subagente: 25.0,
+        nivel_2_agente: 20.0
+      },
+      {
+        mercado: 'Internacionales',
+        compania_id: 5, // Internacional de Seguros
+        ramo: 'Viajes',
+        producto_modalidad: 'Cobertura Internacional / Asistencia en Viajes',
+        total_comision: 25.0,
+        asesor_1: 18.0,
+        asesor_2: 15.0,
+        asesor_3: 12.0,
+        consultor_1: 18.0,
+        consultor_2: 15.0,
+        johans: 18.0,
+        nivel_1_subagente: 12.0,
+        nivel_2_agente: 10.0
+      }
+    ];
+
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      fData.matriz_comisiones = defaultRules.map((r, idx) => ({
+        id: idx + 1,
+        ...r,
+        created_at: new Date().toISOString()
+      }));
+      db.saveFallback();
+    } else {
+      await db.query('DELETE FROM matriz_comisiones');
+      for (const r of defaultRules) {
+        await db.query(
+          `INSERT INTO matriz_comisiones (
+            mercado, compania_id, ramo, producto_modalidad, total_comision,
+            asesor_1, asesor_2, asesor_3, consultor_1, consultor_2, johans, nivel_1_subagente, nivel_2_agente
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          [r.mercado, r.compania_id, r.ramo, r.producto_modalidad, r.total_comision, r.asesor_1, r.asesor_2, r.asesor_3, r.consultor_1, r.consultor_2, r.johans, r.nivel_1_subagente, r.nivel_2_agente]
+        );
+      }
+    }
+
+    await registrarAccion(req.user.id, req.user.correo, 'RESET_MATRIZ_COMISIONES', 'Matriz de comisiones restablecida y sincronizada con el tarifario.');
+    res.json({ message: 'Matriz de comisiones sincronizada exitosamente con el tarifario.' });
+  } catch (err) {
+    console.error('Error al restablecer matriz de comisiones:', err);
+    res.status(500).json({ error: 'Error del servidor al sincronizar matriz.' });
   }
 });
 

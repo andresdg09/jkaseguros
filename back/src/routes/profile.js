@@ -32,7 +32,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.put('/', authenticateToken, async (req, res) => {
   try {
     if (req.user.rango === 'asesor') {
-      const { nombre, telefono, banco, numero_cuenta, fecha_nacimiento } = req.body;
+      const { nombre, telefono, cedula, banco, numero_cuenta, fecha_nacimiento } = req.body;
       if (!nombre || !telefono || !banco || !numero_cuenta || !fecha_nacimiento) {
         return res.status(400).json({ error: 'Los campos nombre, teléfono, banco, número de cuenta y fecha de nacimiento son requeridos.' });
       }
@@ -42,18 +42,21 @@ router.put('/', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'El número de cuenta bancaria debe tener exactamente 20 dígitos.' });
       }
 
+      const cleanCedula = cedula ? cedula.trim().toUpperCase() : 'V00000000';
+
       const q = `
         UPDATE asesores SET
           nombre = $1,
           telefono = $2,
-          banco = $3,
-          numero_cuenta = $4,
-          fecha_nacimiento = $5
-        WHERE usuario_id = $6 RETURNING *
+          cedula = $3,
+          banco = $4,
+          numero_cuenta = $5,
+          fecha_nacimiento = $6
+        WHERE usuario_id = $7 RETURNING *
       `;
-      const result = await db.query(q, [nombre, telefono, banco, cleanCta, fecha_nacimiento, req.user.id]);
+      const result = await db.query(q, [nombre, telefono, cleanCedula, banco, cleanCta, fecha_nacimiento, req.user.id]);
       
-      await registrarAccion(req.user.id, req.user.correo, 'ACTUALIZACION_PERFIL_ASESOR', `Perfil de asesor actualizado: ${nombre}`);
+      await registrarAccion(req.user.id, req.user.correo, 'ACTUALIZACION_PERFIL_ASESOR', `Perfil de asesor actualizado: ${nombre} (${cleanCedula})`);
       
       return res.json({ message: 'Perfil de asesor actualizado exitosamente', asesor: result.rows[0] });
     }

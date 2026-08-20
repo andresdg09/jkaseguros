@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS asesores (
     banco VARCHAR(100),
     numero_cuenta VARCHAR(50),
     estado VARCHAR(50) DEFAULT 'pendiente',
-    tipo_asesor VARCHAR(50) DEFAULT 'consultor_1' CHECK (tipo_asesor IN ('consultor_1', 'consultor_2', 'johans', 'nivel_1_subagente', 'nivel_2_agente')),
+    tipo_asesor VARCHAR(50) DEFAULT 'asesor_3' CHECK (tipo_asesor IN ('asesor_1', 'asesor_2', 'asesor_3', 'consultor_1', 'consultor_2', 'johans', 'nivel_1_subagente', 'nivel_2_agente')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -152,6 +152,9 @@ CREATE TABLE IF NOT EXISTS matriz_comisiones (
     ramo VARCHAR(100) NOT NULL, -- Salud, Automovil, etc.
     producto_modalidad VARCHAR(255) NOT NULL, -- Plan o condición
     total_comision NUMERIC NOT NULL DEFAULT 0, -- Margen total pagado por aseguradora
+    asesor_1 NUMERIC DEFAULT 0,
+    asesor_2 NUMERIC DEFAULT 0,
+    asesor_3 NUMERIC DEFAULT 0,
     consultor_1 NUMERIC DEFAULT 0,
     consultor_2 NUMERIC DEFAULT 0,
     johans NUMERIC DEFAULT 0,

@@ -11,6 +11,13 @@ function normalizeApiUrl(url) {
 }
 const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api');
 
+const FREQ_OPTIONS = [
+  { key: 'contado', label: 'Contado (1 pago)', cuotas: 1 },
+  { key: 'semestral', label: 'Semestral (2 cuotas)', cuotas: 2 },
+  { key: 'trimestral', label: 'Trimestral (4 cuotas)', cuotas: 4 },
+  { key: 'mensual', label: 'Mensual (12 cuotas)', cuotas: 12 },
+];
+
 export default function CotizacionPublicaPage() {
   const params = useParams();
   const { id } = params;
@@ -22,12 +29,28 @@ export default function CotizacionPublicaPage() {
   const [accepting, setAccepting] = useState(false);
   const [acceptedPolicy, setAcceptedPolicy] = useState(null);
 
+  // Estado de frecuencia seleccionada por plan: { [compania_id + '_' + plan]: 'contado' | 'semestral' | ... }
+  const [selectedFreqs, setSelectedFreqs] = useState({});
+
   const fetchQuote = async () => {
     try {
       const res = await fetch(`${API_URL}/quote/share/${id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No se pudo cargar la cotización.');
       setQuoteData(data);
+
+      // Inicializar frecuencia seleccionada por defecto para cada plan
+      const initialFreqs = {};
+      (data.comparativa || []).forEach(comp => {
+        const key = `${comp.id}_${comp.plan}`;
+        // Seleccionar la primera frecuencia disponible
+        if (comp.pago_contado) initialFreqs[key] = 'contado';
+        else if (comp.pago_semestral) initialFreqs[key] = 'semestral';
+        else if (comp.pago_trimestral) initialFreqs[key] = 'trimestral';
+        else if (comp.pago_mensual) initialFreqs[key] = 'mensual';
+        else initialFreqs[key] = 'contado'; // fallback
+      });
+      setSelectedFreqs(initialFreqs);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -42,8 +65,12 @@ export default function CotizacionPublicaPage() {
   }, [id]);
 
   const handleAcceptOption = async (option) => {
+    const compKey = `${option.id}_${option.plan}`;
+    const freq = selectedFreqs[compKey] || 'contado';
+    const freqLabel = FREQ_OPTIONS.find(f => f.key === freq)?.label || freq;
+
     const confirmAccept = confirm(
-      `¿Está seguro de que desea seleccionar esta propuesta con ${option.nombre} (Plan: ${option.plan || 'N/A'})? Se registrará su solicitud y su cuenta en el sistema.`
+      `¿Está seguro de que desea seleccionar esta propuesta con ${option.nombre} (Plan: ${option.plan || 'N/A'}) con frecuencia de pago: ${freqLabel}? Se registrará su solicitud y su cuenta en el sistema.`
     );
     if (!confirmAccept) return;
 
@@ -56,7 +83,8 @@ export default function CotizacionPublicaPage() {
           compania_id: option.id,
           plan: option.plan,
           prima_anual: option.prima,
-          suma_asegurada: option.suma_asegurada
+          suma_asegurada: option.suma_asegurada,
+          frecuencia_pago: freq
         })
       });
       const data = await res.json();
@@ -72,6 +100,18 @@ export default function CotizacionPublicaPage() {
     } finally {
       setAccepting(false);
     }
+  };
+
+  // Helper: obtener opciones de frecuencia disponibles para un plan
+  const getAvailableFreqs = (comp) => {
+    const available = [];
+    if (comp.pago_contado) available.push(FREQ_OPTIONS[0]);
+    if (comp.pago_semestral) available.push(FREQ_OPTIONS[1]);
+    if (comp.pago_trimestral) available.push(FREQ_OPTIONS[2]);
+    if (comp.pago_mensual) available.push(FREQ_OPTIONS[3]);
+    // Si ninguna está marcada, mostrar contado como mínimo
+    if (available.length === 0) available.push(FREQ_OPTIONS[0]);
+    return available;
   };
 
   if (loading) {
@@ -116,6 +156,7 @@ export default function CotizacionPublicaPage() {
             <li><strong>Código de Póliza:</strong> {acceptedPolicy.codigo_poliza}</li>
             <li><strong>Aseguradora:</strong> {comparativa.find(c => c.id === acceptedPolicy.compania_id)?.nombre || 'Seleccionada'}</li>
             <li><strong>Plan:</strong> {acceptedPolicy.plan}</li>
+            <li><strong>Frecuencia de Pago:</strong> <span style={{ color: '#2563eb', fontWeight: 'bold', textTransform: 'capitalize' }}>{acceptedPolicy.frecuencia_pago || 'contado'}</span></li>
             <li><strong>Estado:</strong> <span style={{ color: '#d97706', fontWeight: 'bold' }}>{acceptedPolicy.estado.toUpperCase()}</span></li>
             <li><strong>Asesor Asignado:</strong> {advisorName}</li>
           </ul>
@@ -151,7 +192,7 @@ export default function CotizacionPublicaPage() {
       <div className="card" style={{ padding: '2rem', borderBottom: '4px solid var(--primary)', marginBottom: '2.5rem' }}>
         <h2 style={{ color: 'var(--primary)', fontWeight: 800, margin: 0 }}>Propuesta de Seguro de Salud</h2>
         <p style={{ fontSize: '1.05rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.6' }}>
-          Hola <strong>{clientName}</strong>, tu asesor comercial <strong>{advisorName}</strong> de JKA Consultores ha diseñado esta cotización a tu medida. Revisa los planes a continuación y solicita el de tu preferencia de forma instantánea presionando <strong>"Quiero este plan"</strong>.
+          Hola <strong>{clientName}</strong>, tu asesor comercial <strong>{advisorName}</strong> de JKA Consultores ha diseñado esta cotización a tu medida. Revisa los planes a continuación y solicita el de tu preferencia de forma instantánea presionando <strong>&quot;Quiero este plan&quot;</strong>.
         </p>
         {asesor && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1rem', fontSize: '0.9rem' }}>
@@ -168,9 +209,15 @@ export default function CotizacionPublicaPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
         {comparativa.map((comp) => {
           const isBest = !!comp.recomendada;
+          const compKey = `${comp.id}_${comp.plan}`;
+          const availableFreqs = getAvailableFreqs(comp);
+          const currentFreq = selectedFreqs[compKey] || 'contado';
+          const currentFreqInfo = FREQ_OPTIONS.find(f => f.key === currentFreq);
+          const cuotaMonto = currentFreqInfo ? (parseFloat(comp.prima) / currentFreqInfo.cuotas) : parseFloat(comp.prima);
+
           return (
             <div 
-              key={comp.id} 
+              key={compKey} 
               className="card" 
               style={{ 
                 padding: '2rem', 
@@ -220,8 +267,55 @@ export default function CotizacionPublicaPage() {
                 </div>
               </div>
 
+              {/* Selector de Frecuencia de Pago */}
+              {quoteData.estado !== 'aceptada' && (
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '0.75rem', margin: '0 0 0.75rem 0' }}>
+                    💰 Selecciona tu frecuencia de pago:
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {availableFreqs.map(fOpt => {
+                      const isActive = currentFreq === fOpt.key;
+                      const cuota = (parseFloat(comp.prima) / fOpt.cuotas);
+                      return (
+                        <button
+                          key={fOpt.key}
+                          onClick={() => setSelectedFreqs(prev => ({ ...prev, [compKey]: fOpt.key }))}
+                          style={{
+                            padding: '0.6rem 1rem',
+                            borderRadius: '8px',
+                            border: isActive ? '2px solid #2563eb' : '1px solid var(--border)',
+                            backgroundColor: isActive ? '#eef2ff' : '#fff',
+                            color: isActive ? '#1e40af' : 'var(--text-primary)',
+                            fontWeight: isActive ? 700 : 500,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            textAlign: 'center',
+                            minWidth: '140px',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span style={{ display: 'block' }}>{fOpt.label}</span>
+                          <span style={{ display: 'block', fontSize: '1rem', fontWeight: 800, color: isActive ? '#2563eb' : 'var(--primary)', marginTop: '0.25rem' }}>
+                            ${cuota.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          {fOpt.cuotas > 1 && (
+                            <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>por cuota</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {currentFreqInfo && currentFreqInfo.cuotas > 1 && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
+                      📋 {currentFreqInfo.cuotas} cuotas de <strong>${cuotaMonto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> c/u = Prima total: <strong>${parseFloat(comp.prima).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Acciones */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', borderTop: '1px dashed var(--border)', paddingTop: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', borderTop: '1px dashed var(--border)', paddingTop: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                   Calidad de Cobertura: <strong>{comp.calidadScore || 0}/50 pts</strong>
                 </span>
