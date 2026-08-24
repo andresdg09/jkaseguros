@@ -2529,27 +2529,27 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'maternidad_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'maternidad_costo')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          Asist. Intl Suma
+                          Asist. viajes Suma
                           <div className={`resize-handle ${resizingCol === 'asist_intl_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'asist_intl_suma')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          Asist. Intl Costo
+                          Asist. viajes Costo
                           <div className={`resize-handle ${resizingCol === 'asist_intl_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'asist_intl_costo')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          Funeral Suma
+                          gastos funerarios
                           <div className={`resize-handle ${resizingCol === 'funeral_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'funeral_suma')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          Funeral Costo
+                          Funerario Costo
                           <div className={`resize-handle ${resizingCol === 'funeral_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'funeral_costo')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          At. Situ + Med
-                          <div className={`resize-handle ${resizingCol === 'at_situ_medicamentos' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'at_situ_medicamentos')} />
+                          atencion medica primaria
+                          <div className={`resize-handle ${resizingCol === 'atencion_medica_primaria' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'atencion_medica_primaria')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          Consultas Méd
+                          Cons Médicas
                           <div className={`resize-handle ${resizingCol === 'consultas_medicas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas_medicas')} />
                         </th>
                         <th style={{ position: 'relative' }}>

@@ -281,6 +281,7 @@ router.post('/email', async (req, res) => {
     const cleanPhone = rawPhone;
     const advisorName = (asesor && asesor.nombre) ? asesor.nombre : 'Asesor Protección y Seguros 360';
 
+    let planCardsHtml = '';
     comparativas.forEach(comp => {
       const waMsg = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${comp.nombre}* (Plan ${comp.plan || 'N/A'}) con una prima anual de *$${comp.prima}* para la suma asegurada de *$${comp.suma_asegurada || suma_asegurada}*. Por favor contácteme.`;
       const waLink = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(waMsg)}`;
