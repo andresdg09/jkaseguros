@@ -425,6 +425,11 @@ export default function ClienteDashboard() {
                       const allKeys = {};
                       groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_id || g.poliza_codigo] = true; });
                       setExpandedPolicies(prev => (Object.keys(prev).length === groupedPaymentsByPolicy.length ? {} : allKeys));
+                    }}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.85rem', padding: '0.5rem 0.85rem', whiteSpace: 'nowrap' }}
+                  >
+                    {Object.keys(expandedPolicies).length === groupedPaymentsByPolicy.length ? 'Contraer Todas' : 'Expandir Todas'}
                   </button>
                 </div>
               </div>
