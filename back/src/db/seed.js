@@ -76,14 +76,14 @@ async function seed() {
       const metodos = parsePagoMetodos(t.pago);
       const q = `
         INSERT INTO tarifas (
-          compania_id, edad_min, edad_max, suma_asegurada, prima,
+          compania_id, edad_min, edad_max, suma_asegurada, deducible, prima,
           plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
           maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
           funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
       `;
       await client.query(q, [
-        compania_id, t.edad_min, t.edad_max, t.suma_asegurada, t.prima,
+        compania_id, t.edad_min, t.edad_max, t.suma_asegurada, parseFloat(t.deducible || 0), t.prima,
         t.plan, t.pago, metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
         t.maternidad_suma, t.maternidad_costo, t.asist_intl_suma, t.asist_intl_costo,
         t.funeral_suma, t.funeral_costo, t.at_situ_medicamentos, t.consultas_medicas, t.examenes_lab_imagenologia, t.ambulancia,

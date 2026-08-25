@@ -20,10 +20,13 @@ export default function Home() {
   const router = useRouter();
 
   // --- ESTADOS DE LA INTERFAZ ---
+  const DEFAULT_SUMS = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000];
   const [loading, setLoading] = useState(false);
   const [quotingResults, setQuotingResults] = useState(null);
   const [advisorsList, setAdvisorsList] = useState([]);
-  const [sumsList, setSumsList] = useState([]);
+  const [sumsList, setSumsList] = useState(DEFAULT_SUMS);
+  const [isManualSum1, setIsManualSum1] = useState(false);
+  const [isManualSum2, setIsManualSum2] = useState(false);
   const [step, setStep] = useState(1); // 1: Datos de contacto, 2: Datos personales
 
   // --- NUEVOS ESTADOS PARA ASESOR ---
@@ -78,7 +81,8 @@ export default function Home() {
         const res = await fetch(`${API_URL}/quote/sums`);
         if (res.ok) {
           const data = await res.json();
-          setSumsList(data);
+          const merged = [...new Set([...DEFAULT_SUMS, ...data])].sort((a, b) => a - b);
+          setSumsList(merged);
         }
       } catch (err) {
         console.error('Error al cargar sumas aseguradas:', err);
@@ -430,6 +434,7 @@ export default function Home() {
           compania_id: compania.id,
           plan: compania.plan,
           suma_asegurada: compania.suma_asegurada,
+          deducible: compania.deducible !== undefined ? compania.deducible : 0,
           prima_anual: compania.prima,
           asesor_id: quoteForm.asesor_id || user?.id,
           cliente_id: targetClienteId
@@ -455,8 +460,11 @@ export default function Home() {
     const docText = `${quoteForm.tipo_documento} ${quoteForm.nro_documento}`;
     const userAge = quotingResults ? quotingResults.edad : 'No calculada';
     const planText = compania.plan ? ` (Plan ${compania.plan})` : '';
+    const dedText = (compania.deducible && parseFloat(compania.deducible) > 0)
+      ? `, deducible de *$${Number(compania.deducible).toLocaleString('en-US')}*`
+      : ' (Sin deducible)';
 
-    const mensaje = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${compania.nombre}*${planText} con una prima anual de *$${compania.prima}* para la suma asegurada de *$${compania.suma_asegurada}*. Datos de asegurado: *${quoteForm.primer_nombre} ${quoteForm.primer_apellido}* (${docText}, edad: ${userAge} años). ¡Espero su respuesta!`;
+    const mensaje = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${compania.nombre}*${planText}${dedText} con una prima anual de *$${compania.prima}* para la suma asegurada de *$${compania.suma_asegurada}*. Datos de asegurado: *${quoteForm.primer_nombre} ${quoteForm.primer_apellido}* (${docText}, edad: ${userAge} años). ¡Espero su respuesta!`;
     
     const waUrl = createWhatsAppLink(phone, mensaje);
     window.open(waUrl, '_blank');
@@ -784,33 +792,90 @@ export default function Home() {
 
               {/* Suma Asegurada Principal */}
               <div className="form-group">
-                <label className="form-label">Suma Asegurada 1 *</label>
-                <select
-                  className="form-input"
-                  value={quoteForm.suma_asegurada}
-                  onChange={e => setQuoteForm({...quoteForm, suma_asegurada: e.target.value})}
-                  required
-                >
-                  <option value="">Selecciona una suma...</option>
-                  {sumsList.map(s => (
-                    <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
-                  ))}
-                </select>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Suma Asegurada 1 *</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsManualSum1(!isManualSum1)}
+                    style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    {isManualSum1 ? '📋 Seleccionar de la lista' : '✏️ Ingresar monto manual'}
+                  </button>
+                </div>
+                {isManualSum1 ? (
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Ej: 65000"
+                    value={quoteForm.suma_asegurada}
+                    onChange={e => setQuoteForm({...quoteForm, suma_asegurada: e.target.value})}
+                    min="1000"
+                    step="1000"
+                    required
+                  />
+                ) : (
+                  <select
+                    className="form-input"
+                    value={quoteForm.suma_asegurada}
+                    onChange={e => {
+                      if (e.target.value === '__manual__') {
+                        setIsManualSum1(true);
+                      } else {
+                        setQuoteForm({...quoteForm, suma_asegurada: e.target.value});
+                      }
+                    }}
+                    required
+                  >
+                    <option value="">Selecciona una suma...</option>
+                    {sumsList.map(s => (
+                      <option key={s} value={s}>${Number(s).toLocaleString('en-US')}</option>
+                    ))}
+                    <option value="__manual__">✏️ Otro monto (Ingresar manualmente)...</option>
+                  </select>
+                )}
               </div>
 
               {/* Suma Asegurada Secundaria (Opcional) */}
               <div className="form-group">
-                <label className="form-label">Suma Asegurada 2 (Opcional)</label>
-                <select
-                  className="form-input"
-                  value={quoteForm.suma_asegurada_2}
-                  onChange={e => setQuoteForm({...quoteForm, suma_asegurada_2: e.target.value})}
-                >
-                  <option value="">-- Ninguna --</option>
-                  {sumsList.filter(s => String(s) !== String(quoteForm.suma_asegurada)).map(s => (
-                    <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
-                  ))}
-                </select>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Suma Asegurada 2 (Opcional)</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsManualSum2(!isManualSum2)}
+                    style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    {isManualSum2 ? '📋 Seleccionar de la lista' : '✏️ Ingresar monto manual'}
+                  </button>
+                </div>
+                {isManualSum2 ? (
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Ej: 175000"
+                    value={quoteForm.suma_asegurada_2}
+                    onChange={e => setQuoteForm({...quoteForm, suma_asegurada_2: e.target.value})}
+                    min="1000"
+                    step="1000"
+                  />
+                ) : (
+                  <select
+                    className="form-input"
+                    value={quoteForm.suma_asegurada_2}
+                    onChange={e => {
+                      if (e.target.value === '__manual__') {
+                        setIsManualSum2(true);
+                      } else {
+                        setQuoteForm({...quoteForm, suma_asegurada_2: e.target.value});
+                      }
+                    }}
+                  >
+                    <option value="">-- Ninguna --</option>
+                    {sumsList.filter(s => String(s) !== String(quoteForm.suma_asegurada)).map(s => (
+                      <option key={s} value={s}>${Number(s).toLocaleString('en-US')}</option>
+                    ))}
+                    <option value="__manual__">✏️ Otro monto (Ingresar manualmente)...</option>
+                  </select>
+                )}
               </div>
 
               {/* Asesor Comercial */}
@@ -958,6 +1023,12 @@ export default function Home() {
                   </div>
 
                   <div className="result-features">
+                    <div className="result-feature" style={{ backgroundColor: '#f8fafc', padding: '0.4rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                      <span className="result-feature-label" style={{ fontWeight: 700 }}>Deducible:</span>
+                      <span className="result-feature-value" style={{ fontWeight: 800, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>
+                        {(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}
+                      </span>
+                    </div>
                     <div className="result-feature">
                       <span className="result-feature-label">Maternidad:</span>
                       <span className="result-feature-value">

@@ -335,6 +335,7 @@ export default function ClienteDashboard() {
                       <th>Modalidad</th>
                       <th>Área</th>
                       <th>Suma Asegurada</th>
+                      <th>Deducible</th>
                       <th>Prima Anual</th>
                       <th>Asesor Asignado</th>
                       <th>Estado</th>
@@ -342,7 +343,7 @@ export default function ClienteDashboard() {
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="7" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="8" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies
                         .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
@@ -352,6 +353,11 @@ export default function ClienteDashboard() {
                           <td>{p.plan || 'N/A'}</td>
                           <td>{p.area}</td>
                           <td>${parseFloat(p.suma_asegurada).toLocaleString('en-US')}</td>
+                          <td>
+                            <span style={{ fontWeight: 600, color: (p.deducible && parseFloat(p.deducible) > 0) ? '#b45309' : '#15803d' }}>
+                              {(p.deducible && parseFloat(p.deducible) > 0) ? `$${Number(p.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}
+                            </span>
+                          </td>
                           <td>${parseFloat(p.prima_anual).toLocaleString('en-US')}</td>
                           <td>{p.asesor_nombre || 'Asesor Asignado'}</td>
                           <td>

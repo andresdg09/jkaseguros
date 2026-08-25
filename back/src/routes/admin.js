@@ -491,6 +491,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           edad_min: parseInt(t.edad_min),
           edad_max: parseInt(t.edad_max),
           suma_asegurada: parseFloat(t.suma_asegurada),
+          deducible: parseFloat(t.deducible || 0),
           prima: parseFloat(t.prima),
           created_at: new Date().toISOString()
         };
@@ -528,13 +529,13 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
         const metodos = parsePagoMetodos(t.pago);
         await db.query(
           `INSERT INTO tarifas (
-            compania_id, edad_min, edad_max, suma_asegurada, prima,
+            compania_id, edad_min, edad_max, suma_asegurada, deducible, prima,
             plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
             maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
             funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
           [
-            cId, parseInt(t.edad_min), parseInt(t.edad_max), parseFloat(t.suma_asegurada), parseFloat(t.prima),
+            cId, parseInt(t.edad_min), parseInt(t.edad_max), parseFloat(t.suma_asegurada), parseFloat(t.deducible || 0), parseFloat(t.prima),
             t.plan || '', t.pago || '',
             metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
             t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
@@ -585,7 +586,7 @@ const TARIFF_BENEFIT_FIELDS = [
 // 8. Crear una tarifa individual
 router.post('/tariffs', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
-  const { compania_id, edad_min, edad_max, suma_asegurada, prima } = req.body;
+  const { compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = req.body;
 
   if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
     return res.status(400).json({ error: 'Faltan campos numéricos requeridos.' });
@@ -606,6 +607,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         edad_min: parseInt(edad_min),
         edad_max: parseInt(edad_max),
         suma_asegurada: parseFloat(suma_asegurada),
+        deducible: parseFloat(deducible || 0),
         prima: parseFloat(prima),
         pago_contado: metodos.pago_contado,
         pago_semestral: metodos.pago_semestral,
@@ -620,14 +622,14 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
     } else {
       const q = `
         INSERT INTO tarifas (
-          compania_id, edad_min, edad_max, suma_asegurada, prima,
+          compania_id, edad_min, edad_max, suma_asegurada, deducible, prima,
           plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
           maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
           funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
       `;
       await db.query(q, [
-        parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+        parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
         req.body.plan || '', req.body.pago || '',
         metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
         req.body.maternidad_suma || '', req.body.maternidad_costo || '', req.body.asist_intl_suma || '', req.body.asist_intl_costo || '',
@@ -649,7 +651,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
 router.put('/tariffs/:id', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
   const { id } = req.params;
-  const { compania_id, edad_min, edad_max, suma_asegurada, prima } = req.body;
+  const { compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = req.body;
 
   if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
     return res.status(400).json({ error: 'Faltan campos numéricos requeridos.' });
@@ -672,6 +674,7 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         edad_min: parseInt(edad_min),
         edad_max: parseInt(edad_max),
         suma_asegurada: parseFloat(suma_asegurada),
+        deducible: deducible !== undefined ? parseFloat(deducible) : (fData.tarifas[idx].deducible || 0),
         prima: parseFloat(prima),
         pago_contado: metodos.pago_contado,
         pago_semestral: metodos.pago_semestral,
@@ -684,15 +687,15 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
     } else {
       const q = `
         UPDATE tarifas
-        SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, prima = $5,
-            plan = $6, pago = $7, pago_contado = $8, pago_semestral = $9, pago_trimestral = $10, pago_mensual = $11,
-            maternidad_suma = $12, maternidad_costo = $13, asist_intl_suma = $14, asist_intl_costo = $15,
-            funeral_suma = $16, funeral_costo = $17, at_situ_medicamentos = $18, consultas_medicas = $19,
-            examenes_lab_imagenologia = $20, ambulancia = $21
-        WHERE id = $22
+        SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, deducible = $5, prima = $6,
+            plan = $7, pago = $8, pago_contado = $9, pago_semestral = $10, pago_trimestral = $11, pago_mensual = $12,
+            maternidad_suma = $13, maternidad_costo = $14, asist_intl_suma = $15, asist_intl_costo = $16,
+            funeral_suma = $17, funeral_costo = $18, at_situ_medicamentos = $19, consultas_medicas = $20,
+            examenes_lab_imagenologia = $21, ambulancia = $22
+        WHERE id = $23
       `;
       const resUp = await db.query(q, [
-        parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+        parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
         req.body.plan || '', req.body.pago || '',
         metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
         req.body.maternidad_suma || '', req.body.maternidad_costo || '', req.body.asist_intl_suma || '', req.body.asist_intl_costo || '',
@@ -727,7 +730,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
       const fData = JSON.parse(fileContent);
 
       for (const t of tariffs) {
-        const { id, compania_id, edad_min, edad_max, suma_asegurada, prima } = t;
+        const { id, compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = t;
         if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
           continue;
         }
@@ -742,6 +745,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             edad_min: parseInt(edad_min),
             edad_max: parseInt(edad_max),
             suma_asegurada: parseFloat(suma_asegurada),
+            deducible: parseFloat(deducible || 0),
             prima: parseFloat(prima),
             pago_contado: metodos.pago_contado,
             pago_semestral: metodos.pago_semestral,
@@ -761,6 +765,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               edad_min: parseInt(edad_min),
               edad_max: parseInt(edad_max),
               suma_asegurada: parseFloat(suma_asegurada),
+              deducible: deducible !== undefined ? parseFloat(deducible) : (fData.tarifas[idx].deducible || 0),
               prima: parseFloat(prima),
               pago_contado: metodos.pago_contado,
               pago_semestral: metodos.pago_semestral,
@@ -776,7 +781,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       for (const t of tariffs) {
-        const { id, compania_id, edad_min, edad_max, suma_asegurada, prima } = t;
+        const { id, compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = t;
         if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
           continue;
         }
@@ -786,14 +791,14 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
         if (isNew) {
           const q = `
             INSERT INTO tarifas (
-              compania_id, edad_min, edad_max, suma_asegurada, prima,
+              compania_id, edad_min, edad_max, suma_asegurada, deducible, prima,
               plan, pago, pago_contado, pago_semestral, pago_trimestral, pago_mensual,
               maternidad_suma, maternidad_costo, asist_intl_suma, asist_intl_costo,
               funeral_suma, funeral_costo, at_situ_medicamentos, consultas_medicas, examenes_lab_imagenologia, ambulancia, ramo
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
           `;
           await db.query(q, [
-            parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+            parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
             t.plan || '', t.pago || '',
             metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
             t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
@@ -803,15 +808,15 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
         } else {
           const q = `
             UPDATE tarifas
-            SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, prima = $5,
-                plan = $6, pago = $7, pago_contado = $8, pago_semestral = $9, pago_trimestral = $10, pago_mensual = $11,
-                maternidad_suma = $12, maternidad_costo = $13, asist_intl_suma = $14, asist_intl_costo = $15,
-                funeral_suma = $16, funeral_costo = $17, at_situ_medicamentos = $18, consultas_medicas = $19,
-                examenes_lab_imagenologia = $20, ambulancia = $21, ramo = $22
-            WHERE id = $23
+            SET compania_id = $1, edad_min = $2, edad_max = $3, suma_asegurada = $4, deducible = $5, prima = $6,
+                plan = $7, pago = $8, pago_contado = $9, pago_semestral = $10, pago_trimestral = $11, pago_mensual = $12,
+                maternidad_suma = $13, maternidad_costo = $14, asist_intl_suma = $15, asist_intl_costo = $16,
+                funeral_suma = $17, funeral_costo = $18, at_situ_medicamentos = $19, consultas_medicas = $20,
+                examenes_lab_imagenologia = $21, ambulancia = $22, ramo = $23
+            WHERE id = $24
           `;
           await db.query(q, [
-            parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(prima),
+            parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
             t.plan || '', t.pago || '',
             metodos.pago_contado, metodos.pago_semestral, metodos.pago_trimestral, metodos.pago_mensual,
             t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',

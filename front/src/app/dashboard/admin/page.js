@@ -778,6 +778,7 @@ export default function AdminDashboard() {
       edad_min: 30,
       edad_max: 39,
       suma_asegurada: 5000,
+      deducible: 0,
       prima: 200,
       maternidad_suma: '',
       maternidad_costo: '',
@@ -1049,7 +1050,7 @@ export default function AdminDashboard() {
   // Sumas aseguradas disponibles (extraídas dinámicamente o del catálogo base)
   const SUMA_ASEGURADA_OPTIONS = (() => {
     const fromTariffs = [...new Set(tariffs.map(t => parseFloat(t.suma_asegurada)).filter(Boolean))];
-    const base = [5000, 10000, 30000, 50000, 100000, 200000];
+    const base = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000];
     const combined = [...new Set([...base, ...fromTariffs])].sort((a, b) => a - b);
     return combined;
   })();
@@ -1518,6 +1519,7 @@ export default function AdminDashboard() {
                       <th>Aseguradora</th>
                       <th>Plan</th>
                       <th>Suma Asegurada ($)</th>
+                      <th>Deducible ($)</th>
                       <th>Prima Anual ($)</th>
                       <th>Frecuencia Pago</th>
                       <th>Negocio</th>
@@ -1530,7 +1532,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="13" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="14" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies
                         .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
@@ -1555,6 +1557,14 @@ export default function AdminDashboard() {
                                 value={p.suma_asegurada ?? ''}
                                 onChange={(e) => handlePolicyCellChange(p.id, 'suma_asegurada', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '105px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem' }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={p.deducible ?? 0}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'deducible', e.target.value)}
+                                style={{ border: 'none', background: 'transparent', width: '85px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem', color: (parseFloat(p.deducible) > 0) ? '#b45309' : '#15803d', fontWeight: 600 }}
                               />
                             </td>
                             <td>
@@ -2612,6 +2622,10 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'suma_asegurada' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'suma_asegurada')} />
                         </th>
                         <th style={{ position: 'relative' }}>
+                          Deducible ($)
+                          <div className={`resize-handle ${resizingCol === 'deducible' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'deducible')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
                           Prima ($)
                           <div className={`resize-handle ${resizingCol === 'prima' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'prima')} />
                         </th>
@@ -2776,6 +2790,18 @@ export default function AdminDashboard() {
                                     <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
                                   ))}
                                 </select>
+                              </td>
+
+                              {/* Deducible */}
+                              <td>
+                                <input
+                                  type="number"
+                                  value={t.deducible ?? 0}
+                                  onChange={(e) => handleCellChange(t.id, 'deducible', e.target.value)}
+                                  className="excel-input"
+                                  placeholder="0"
+                                  style={{ textAlign: 'right', fontWeight: 600, color: (parseFloat(t.deducible) > 0) ? '#b45309' : '#15803d' }}
+                                />
                               </td>
 
                               {/* Prima */}

@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS tarifas (
     edad_min INT NOT NULL,
     edad_max INT NOT NULL,
     suma_asegurada NUMERIC NOT NULL,
+    deducible NUMERIC DEFAULT 0,
     prima NUMERIC NOT NULL,
     plan VARCHAR(100),
     pago VARCHAR(100),

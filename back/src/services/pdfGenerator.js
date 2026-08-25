@@ -147,21 +147,30 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11).text(comp.nombre, padX, topY, { width: leftW, lineBreak: false });
   doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5).text(`PLAN: ${(comp.plan || 'N/A').toUpperCase()}`, padX, topY + 15, { width: leftW, lineBreak: false });
 
-  // Grid de beneficios (2 columnas x 2 filas)
+  const deducibleVal = comp.deducible !== undefined && comp.deducible !== null && parseFloat(comp.deducible) > 0 
+    ? `$${Number(comp.deducible).toLocaleString('en-US')}` 
+    : '$0 (Sin deducible)';
+
+  // Grid de beneficios (3 columnas x 2 filas)
   const beneficios = [
+    ['DEDUCIBLE', deducibleVal],
+    ['FORMA DE PAGO', comp.pago || 'Consultar con asesor'],
     ['MATERNIDAD', comp.maternidad_suma ? `${comp.maternidad_suma}${comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : ''}` : 'No incluida'],
-    ['ASISTENCIA INTERNACIONAL', comp.asist_intl_suma ? `${comp.asist_intl_suma}${comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : ''}` : 'No incluida'],
+    ['ASIST. INTERNACIONAL', comp.asist_intl_suma ? `${comp.asist_intl_suma}${comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : ''}` : 'No incluida'],
     ['FUNERAL', comp.funeral_suma ? `${comp.funeral_suma}${comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : ''}` : 'No incluido'],
-    ['FORMA DE PAGO', comp.pago || 'Consultar con asesor']
+    ['SUMA ASEGURADA', comp.suma_asegurada ? `$${Number(comp.suma_asegurada).toLocaleString('en-US')}` : 'Según cotización']
   ];
 
-  const colW = leftW / 2;
-  const gridY = topY + 32;
+  const colsCount = 3;
+  const colW = leftW / colsCount;
+  const gridY = topY + 30;
   beneficios.forEach(([label, val], i) => {
-    const colX = padX + (i % 2) * colW;
-    const rowY = gridY + Math.floor(i / 2) * 26;
-    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(6).text(label, colX, rowY, { width: colW - 8, lineBreak: false });
-    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text(val, colX, rowY + 9, { width: colW - 8, height: 14 });
+    const colX = padX + (i % colsCount) * colW;
+    const rowY = gridY + Math.floor(i / colsCount) * 24;
+    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(6).text(label, colX, rowY, { width: colW - 6, lineBreak: false });
+    const isDed = label === 'DEDUCIBLE';
+    const valColor = isDed ? (parseFloat(comp.deducible || 0) > 0 ? '#b45309' : COLORS.success) : COLORS.dark;
+    doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(7).text(val, colX, rowY + 8, { width: colW - 6, height: 13, lineBreak: false });
   });
 
   // Servicios incluidos (fila de indicadores)
@@ -580,6 +589,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   const features = [
     { title: 'Suma Asegurada:', desc: `Esta cotización refleja la suma asegurada de ${sumaFormateada} seleccionada. Cambiar la suma asegurada puede variar la prima y los beneficios disponibles.` },
+    { title: 'Deducible:', desc: 'El deducible es el monto que corre por cuenta del asegurado antes de que la aseguradora empiece a indemnizar los gastos médicos cubiertos. Los planes con "$0 (Sin deducible)" brindan cobertura desde el primer gasto.' },
     { title: 'Maternidad y Asistencia Internacional:', desc: 'Cuando aparecen como "No incluida", la aseguradora no ofrece ese beneficio para el plan y edad cotizados; de estar disponibles, se indica el límite de cobertura y su costo anual adicional.' },
     { title: 'Condiciones de Pago:', desc: 'Varían según la aseguradora (contado, semestral, trimestral o mensual). Consulte con su asesor las condiciones exactas antes de formalizar la contratación.' }
   ];

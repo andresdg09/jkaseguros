@@ -1487,6 +1487,7 @@ export default function AsesorDashboard() {
                       <th>Aseguradora</th>
                       <th>Plan</th>
                       <th>Suma Asegurada ($)</th>
+                      <th>Deducible ($)</th>
                       <th>Prima Anual ($)</th>
                       <th>Frecuencia</th>
                       <th>Estado</th>
@@ -1496,7 +1497,7 @@ export default function AsesorDashboard() {
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="9" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="11" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies
                         .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
@@ -1521,6 +1522,14 @@ export default function AsesorDashboard() {
                                 value={p.suma_asegurada ?? ''}
                                 onChange={(e) => handlePolicyCellChange(p.id, 'suma_asegurada', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '105px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem' }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={p.deducible ?? 0}
+                                onChange={(e) => handlePolicyCellChange(p.id, 'deducible', e.target.value)}
+                                style={{ border: 'none', background: 'transparent', width: '85px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem', color: (parseFloat(p.deducible) > 0) ? '#b45309' : '#15803d', fontWeight: 600 }}
                               />
                             </td>
                             <td>
@@ -1760,6 +1769,7 @@ export default function AsesorDashboard() {
                         </span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        <div>Deducible: <strong style={{ color: (activeTariff.deducible && parseFloat(activeTariff.deducible) > 0) ? '#b45309' : '#15803d' }}>{(activeTariff.deducible && parseFloat(activeTariff.deducible) > 0) ? `$${Number(activeTariff.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}</strong></div>
                         <div>Maternidad: <strong>{activeTariff.maternidad_suma || activeTariff.maternidad_costo || 'No'}</strong></div>
                         <div>Asist. Intl: <strong>{activeTariff.asist_intl_suma || activeTariff.asist_intl_costo || 'No'}</strong></div>
                         <div>Funeral: <strong>{activeTariff.funeral_suma || activeTariff.funeral_costo || 'No'}</strong></div>

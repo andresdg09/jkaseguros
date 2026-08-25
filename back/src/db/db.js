@@ -104,6 +104,7 @@ function initFallback() {
       }));
       fallbackData.tarifas = fallbackData.tarifas.map(t => ({
         ...t,
+        deducible: t.deducible !== undefined ? parseFloat(t.deducible) : 0,
         pago_contado: t.pago_contado !== undefined ? t.pago_contado : false,
         pago_semestral: t.pago_semestral !== undefined ? t.pago_semestral : false,
         pago_trimestral: t.pago_trimestral !== undefined ? t.pago_trimestral : false,
@@ -176,6 +177,7 @@ function initFallback() {
             edad_min: t.edad_min,
             edad_max: t.edad_max,
             suma_asegurada: t.suma_asegurada,
+            deducible: parseFloat(t.deducible || 0),
             prima: t.prima,
             maternidad_suma: t.maternidad_suma || '',
             maternidad_costo: t.maternidad_costo || '',
@@ -739,6 +741,7 @@ try {
   await client.query('ALTER TABLE tarifas DROP CONSTRAINT IF EXISTS tarifas_tipo_cobertura_check;');
   await client.query('ALTER TABLE tarifas DROP COLUMN IF EXISTS tipo_cobertura;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS deducible NUMERIC DEFAULT 0;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago VARCHAR(100);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_suma VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_costo VARCHAR(50);');
@@ -1192,7 +1195,7 @@ function fallbackQuery(text, params = []) {
   }
 
   // 10. SELECT ... FROM companias_seguros (con o sin columnas explícitas / ORDER BY)
-  if (cleanSql.includes('FROM companias_seguros')) {
+  if (cleanSql.includes('FROM companias_seguros') && !cleanSql.includes('FROM tarifas')) {
     const sorted = [...fallbackData.companias_seguros];
     if (cleanSql.includes('ORDER BY nombre')) sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
     return { rows: sorted };

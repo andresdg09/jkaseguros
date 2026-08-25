@@ -164,18 +164,22 @@ router.post('/', authenticateToken, async (req, res) => {
     }
     if (!areaVal) areaVal = 'Salud';
 
+    const deducibleVal = req.body.deducible !== undefined && req.body.deducible !== null && !isNaN(parseFloat(req.body.deducible))
+      ? parseFloat(req.body.deducible)
+      : 0;
+
     const q = `
       INSERT INTO polizas (
         codigo_poliza, cliente_id, asesor_id, compania_id, plan,
         area, suma_asegurada, deducible, prima_anual, estado, pago_estado,
         frecuencia_pago, tipo_negocio, tipo_cobertura, bono_pronto_pago, emision_online
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, 'pendiente', $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pendiente', $11, $12, $13, $14, $15)
       RETURNING *
     `;
     const newPolRes = await db.query(q, [
       codPoliza, finalClienteId, finalAsesorId, parseInt(compania_id), plan || null,
       areaVal,
-      parseFloat(suma_asegurada), parseFloat(prima_anual), initialStatus,
+      parseFloat(suma_asegurada), deducibleVal, parseFloat(prima_anual), initialStatus,
       freq, bizType, covType, pronto, online
     ]);
 
@@ -472,6 +476,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
           ...fData.polizas[idx],
           plan,
           suma_asegurada: parseFloat(suma_asegurada),
+          deducible: policy.deducible !== undefined ? parseFloat(policy.deducible) : (fData.polizas[idx].deducible || 0),
           prima_anual: parseFloat(prima_anual),
           estado,
           motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null,
@@ -495,7 +500,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
       fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
     } else {
       for (const policy of policies) {
-        const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura } = policy;
+        const { id, plan, suma_asegurada, deducible, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura } = policy;
         const oldRes = await db.query('SELECT estado, asesor_id, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);
         if (oldRes.rows.length === 0) continue;
 
@@ -514,24 +519,24 @@ router.post('/bulk', authenticateToken, async (req, res) => {
         if (req.user.rango === 'admin') {
           const q = `
             UPDATE polizas
-            SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7,
-                frecuencia_pago = $8, tipo_negocio = $9, tipo_cobertura = $10
-            WHERE id = $11
+            SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, deducible = $5, prima_anual = $6, estado = $7, motivo_rechazo = $8,
+                frecuencia_pago = $9, tipo_negocio = $10, tipo_cobertura = $11
+            WHERE id = $12
           `;
           await db.query(q, [
-            policy.asesor_id ? parseInt(policy.asesor_id) : null, parseInt(policy.compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual),
+            policy.asesor_id ? parseInt(policy.asesor_id) : null, parseInt(policy.compania_id), plan, parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima_anual),
             estado, motivoVal, newFreq, bizType, covType, parseInt(id)
           ]);
         } else {
           // Asesor: no puede reasignar compañía ni asesor
           const q = `
             UPDATE polizas
-            SET plan = $1, suma_asegurada = $2, prima_anual = $3, estado = $4, motivo_rechazo = $5,
-                frecuencia_pago = $6, tipo_negocio = $7, tipo_cobertura = $8
-            WHERE id = $9
+            SET plan = $1, suma_asegurada = $2, deducible = $3, prima_anual = $4, estado = $5, motivo_rechazo = $6,
+                frecuencia_pago = $7, tipo_negocio = $8, tipo_cobertura = $9
+            WHERE id = $10
           `;
           await db.query(q, [
-            plan, parseFloat(suma_asegurada), parseFloat(prima_anual), estado, motivoVal,
+            plan, parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima_anual), estado, motivoVal,
             newFreq, bizType, covType, parseInt(id)
           ]);
         }
@@ -558,7 +563,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
   const { id } = req.params;
   const { 
-    asesor_id, compania_id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo,
+    asesor_id, compania_id, plan, suma_asegurada, deducible, prima_anual, estado, motivo_rechazo,
     frecuencia_pago, tipo_negocio, tipo_cobertura, bono_pronto_pago, emision_online 
   } = req.body;
 
@@ -579,6 +584,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         compania_id: parseInt(compania_id),
         plan,
         suma_asegurada: parseFloat(suma_asegurada),
+        deducible: deducible !== undefined ? parseFloat(deducible) : (fData.polizas[idx].deducible || 0),
         prima_anual: parseFloat(prima_anual),
         estado,
         motivo_rechazo: estado === 'rechazado' ? (motivo_rechazo || '') : null,
@@ -606,9 +612,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
       const q = `
         UPDATE polizas
-        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, prima_anual = $5, estado = $6, motivo_rechazo = $7,
-            frecuencia_pago = $8, tipo_negocio = $9, tipo_cobertura = $10, bono_pronto_pago = $11, emision_online = $12
-        WHERE id = $13
+        SET asesor_id = $1, compania_id = $2, plan = $3, suma_asegurada = $4, deducible = $5, prima_anual = $6, estado = $7, motivo_rechazo = $8,
+            frecuencia_pago = $9, tipo_negocio = $10, tipo_cobertura = $11, bono_pronto_pago = $12, emision_online = $13
+        WHERE id = $14
       `;
       const motivoVal = estado === 'rechazado' ? (motivo_rechazo || '') : null;
       const freqVal = frecuencia_pago || oldRes.rows[0].frecuencia_pago || 'contado';
@@ -618,7 +624,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       const online = emision_online === true || emision_online === 'true';
 
       await db.query(q, [
-        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(prima_anual), 
+        asesor_id ? parseInt(asesor_id) : null, parseInt(compania_id), plan, parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima_anual), 
         estado, motivoVal, freqVal, bizType, covType, pronto, online, parseInt(id)
       ]);
 

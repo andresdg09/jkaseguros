@@ -102,6 +102,7 @@ export default function CotizacionPublicaPage() {
           plan: option.plan,
           prima_anual: option.prima,
           suma_asegurada: targetSuma,
+          deducible: option.deducible !== undefined ? option.deducible : 0,
           frecuencia_pago: freq
         })
       });
@@ -170,6 +171,7 @@ export default function CotizacionPublicaPage() {
             <li><strong>Aseguradora:</strong> {compMatch?.nombre || 'Seleccionada'}</li>
             <li><strong>Plan:</strong> {acceptedPolicy.plan}</li>
             <li><strong>Suma Asegurada:</strong> ${Number(acceptedPolicy.suma_asegurada).toLocaleString('en-US')}</li>
+            <li><strong>Deducible:</strong> <span style={{ color: acceptedPolicy.deducible > 0 ? '#b45309' : '#15803d', fontWeight: 'bold' }}>{acceptedPolicy.deducible > 0 ? `$${Number(acceptedPolicy.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}</span></li>
             <li><strong>Frecuencia de Pago:</strong> <span style={{ color: '#2563eb', fontWeight: 'bold', textTransform: 'capitalize' }}>{acceptedPolicy.frecuencia_pago || 'contado'}</span></li>
             <li><strong>Estado:</strong> <span style={{ color: '#d97706', fontWeight: 'bold' }}>{acceptedPolicy.estado.toUpperCase()}</span></li>
             <li><strong>Asesor Asignado:</strong> {advisorName}</li>
@@ -318,6 +320,7 @@ export default function CotizacionPublicaPage() {
               {/* Beneficios */}
               <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  <div><strong>🛡️ Deducible:</strong> <span style={{ fontWeight: 700, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>{(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}</span></div>
                   <div><strong>🤰 Maternidad:</strong> {comp.maternidad_suma ? comp.maternidad_suma + (comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : '') : 'No incluida'}</div>
                   <div><strong>🌍 Asistencia Intl:</strong> {comp.asist_intl_suma ? comp.asist_intl_suma + (comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : '') : 'No incluida'}</div>
                   <div><strong>⚰ Funeral:</strong> {comp.funeral_suma ? comp.funeral_suma + (comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : '') : 'No incluido'}</div>

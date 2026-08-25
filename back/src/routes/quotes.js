@@ -119,6 +119,7 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       plan: t.plan,
       pago: t.pago,
       suma_asegurada: parseFloat(t.suma_asegurada),
+      deducible: parseFloat(t.deducible || 0),
       prima,
       pago_contado: !!t.pago_contado,
       pago_semestral: !!t.pago_semestral,
@@ -231,7 +232,9 @@ router.post('/', async (req, res) => {
 router.get('/sums', async (req, res) => {
   try {
     const tarifasRes = await db.query('SELECT DISTINCT suma_asegurada FROM tarifas', []);
-    const sums = [...new Set(tarifasRes.rows.map(t => parseFloat(t.suma_asegurada)))].sort((a, b) => a - b);
+    const fromTariffs = tarifasRes.rows.map(t => parseFloat(t.suma_asegurada)).filter(Boolean);
+    const baseSums = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000];
+    const sums = [...new Set([...baseSums, ...fromTariffs])].sort((a, b) => a - b);
     res.json(sums);
   } catch (err) {
     console.error('Error al obtener sumas aseguradas:', err);
@@ -300,7 +303,9 @@ router.post('/email', async (req, res) => {
 
     let planCardsHtml = '';
     comparativas.forEach(comp => {
-      const waMsg = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${comp.nombre}* (Plan ${comp.plan || 'N/A'}) con una prima anual de *$${comp.prima}* para la suma asegurada de *$${comp.suma_asegurada || suma_asegurada}*. Por favor contácteme.`;
+      const dedLabel = comp.deducible > 0 ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)';
+      const dedWa = comp.deducible > 0 ? `, deducible de *$${Number(comp.deducible).toLocaleString('en-US')}*` : ' (Sin deducible)';
+      const waMsg = `Hola ${advisorName}, estoy interesado en contratar el seguro de salud de *${comp.nombre}* (Plan ${comp.plan || 'N/A'})${dedWa} con una prima anual de *$${comp.prima}* para la suma asegurada de *$${comp.suma_asegurada || suma_asegurada}*. Por favor contácteme.`;
       const waLink = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(waMsg)}`;
       
       const isBest = !!comp.recomendada;
@@ -337,12 +342,16 @@ router.post('/email', async (req, res) => {
           <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #334155; line-height: 1.5;">
               <tr>
+                <td width="50%" style="padding: 4px 0;"><strong>Deducible:</strong> <span style="color: ${comp.deducible > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">${dedLabel}</span></td>
+                <td width="50%" style="padding: 4px 0;"><strong>Forma de Pago:</strong> ${comp.pago || 'Consultar'}</td>
+              </tr>
+              <tr>
                 <td width="50%" style="padding: 4px 0;"><strong>Maternidad:</strong> ${comp.maternidad_suma ? comp.maternidad_suma + (comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : '') : 'No incluida'}</td>
                 <td width="50%" style="padding: 4px 0;"><strong>Asistencia Intl:</strong> ${comp.asist_intl_suma ? comp.asist_intl_suma + (comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : '') : 'No incluida'}</td>
               </tr>
               <tr>
                 <td width="50%" style="padding: 4px 0;"><strong>Funeral:</strong> ${comp.funeral_suma ? comp.funeral_suma + (comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : '') : 'No incluido'}</td>
-                <td width="50%" style="padding: 4px 0;"><strong>Forma de Pago:</strong> ${comp.pago || 'Consultar'}</td>
+                <td width="50%" style="padding: 4px 0;"><strong>Suma Asegurada:</strong> $${Number(comp.suma_asegurada || suma_asegurada).toLocaleString('en-US')}</td>
               </tr>
             </table>
           </div>
@@ -487,7 +496,7 @@ router.get('/share/:token', async (req, res) => {
 // 7. Aceptar cotización por parte del cliente (Public Link click en "Quiero esta")
 router.post('/share/:token/accept', async (req, res) => {
   const { token } = req.params;
-  const { compania_id, plan, prima_anual, suma_asegurada, frecuencia_pago } = req.body;
+  const { compania_id, plan, prima_anual, suma_asegurada, frecuencia_pago, deducible } = req.body;
 
   const validFrequencies = ['contado', 'semestral', 'trimestral', 'mensual'];
   const freq = validFrequencies.includes(frecuencia_pago) ? frecuencia_pago : 'contado';
@@ -583,8 +592,8 @@ router.post('/share/:token/accept', async (req, res) => {
     const codPoliza = `POL-${Math.floor(100000 + Math.random() * 900000)}`;
     const newPolRes = await db.query(
       `INSERT INTO polizas (
-        codigo_poliza, cliente_id, asesor_id, compania_id, plan, area, suma_asegurada, prima_anual, estado, pago_estado, frecuencia_pago
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        codigo_poliza, cliente_id, asesor_id, compania_id, plan, area, suma_asegurada, deducible, prima_anual, estado, pago_estado, frecuencia_pago
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         codPoliza,
         finalClienteId,
@@ -593,6 +602,7 @@ router.post('/share/:token/accept', async (req, res) => {
         plan,
         areaVal,
         parseFloat(suma_asegurada),
+        parseFloat(deducible || 0),
         parseFloat(prima_anual),
         'negociacion',
         'pendiente',
@@ -683,4 +693,5 @@ router.post('/share/:token/accept', async (req, res) => {
   }
 });
 
+export { calcularComparativa };
 export default router;
