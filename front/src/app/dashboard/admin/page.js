@@ -94,10 +94,12 @@ export default function AdminDashboard() {
   const [detailedColWidths, setDetailedColWidths] = useState({
     compania_id: 150,
     plan: 110,
+    ramo: 100,
     pago: 130,
     edad_min: 80,
     edad_max: 80,
     suma_asegurada: 120,
+    deducible: 100,
     prima: 95,
     maternidad_suma: 110,
     maternidad_costo: 110,
@@ -105,11 +107,11 @@ export default function AdminDashboard() {
     asist_intl_costo: 110,
     funeral_suma: 110,
     funeral_costo: 110,
-    at_situ_medicamentos: 120,
-    consultas_medicas: 120,
+    atencion_medica_primaria: 110,
+    medicinas: 100,
+    consultas_medicas: 110,
     examenes_lab_imagenologia: 130,
     ambulancia: 110,
-    ramo: 100,
     acciones: 110
   });
   const [comparativeColWidths, setComparativeColWidths] = useState({});
@@ -701,8 +703,10 @@ export default function AdminDashboard() {
           edad_min: parseInt(tariff.edad_min),
           edad_max: parseInt(tariff.edad_max),
           suma_asegurada: parseFloat(tariff.suma_asegurada),
+          deducible: parseFloat(tariff.deducible || 0),
           prima: parseFloat(tariff.prima),
           plan: tariff.plan || '',
+          ramo: tariff.ramo || 'Salud',
           pago_contado: !!tariff.pago_contado,
           pago_semestral: !!tariff.pago_semestral,
           pago_trimestral: !!tariff.pago_trimestral,
@@ -713,8 +717,10 @@ export default function AdminDashboard() {
           asist_intl_costo: tariff.asist_intl_costo || '',
           funeral_suma: tariff.funeral_suma || '',
           funeral_costo: tariff.funeral_costo || '',
-          at_situ_medicamentos: tariff.at_situ_medicamentos || '',
-          consultas_medicas: tariff.consultas_medicas || '',
+          at_situ_medicamentos: tariff.at_situ_medicamentos || (tariff.atencion_medica_primaria ? 'INCL' : ''),
+          atencion_medica_primaria: !!(tariff.atencion_medica_primaria || tariff.at_situ_medicamentos === 'INCL'),
+          medicinas: !!(tariff.medicinas === true || tariff.medicinas === 'true' || tariff.medicinas === 'INCL'),
+          consultas_medicas: !!(tariff.consultas_medicas === true || tariff.consultas_medicas === 'true' || tariff.consultas_medicas === 'INCL' || (typeof tariff.consultas_medicas === 'string' && tariff.consultas_medicas.length > 0 && tariff.consultas_medicas !== 'NO')),
           examenes_lab_imagenologia: tariff.examenes_lab_imagenologia || '',
           ambulancia: tariff.ambulancia || ''
         })
@@ -786,8 +792,10 @@ export default function AdminDashboard() {
       asist_intl_costo: '',
       funeral_suma: '',
       funeral_costo: '',
-      at_situ_medicamentos: '',
-      consultas_medicas: '',
+      at_situ_medicamentos: 'INCL',
+      atencion_medica_primaria: true,
+      medicinas: false,
+      consultas_medicas: true,
       examenes_lab_imagenologia: '',
       ambulancia: ''
     };
@@ -2602,6 +2610,7 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.edad_min}px` }} />
                       <col style={{ width: `${detailedColWidths.edad_max}px` }} />
                       <col style={{ width: `${detailedColWidths.suma_asegurada}px` }} />
+                      <col style={{ width: `${detailedColWidths.deducible}px` }} />
                       <col style={{ width: `${detailedColWidths.prima}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_costo}px` }} />
@@ -2609,7 +2618,8 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.asist_intl_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.funeral_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.funeral_costo}px` }} />
-                      <col style={{ width: `${detailedColWidths.at_situ_medicamentos}px` }} />
+                      <col style={{ width: `${detailedColWidths.atencion_medica_primaria}px` }} />
+                      <col style={{ width: `${detailedColWidths.medicinas}px` }} />
                       <col style={{ width: `${detailedColWidths.consultas_medicas}px` }} />
                       <col style={{ width: `${detailedColWidths.examenes_lab_imagenologia}px` }} />
                       <col style={{ width: `${detailedColWidths.ambulancia}px` }} />
@@ -2677,11 +2687,15 @@ export default function AdminDashboard() {
                           Funerario Costo
                           <div className={`resize-handle ${resizingCol === 'funeral_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'funeral_costo')} />
                         </th>
-                        <th style={{ position: 'relative' }}>
-                          atencion medica primaria
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Atención Médica Primaria
                           <div className={`resize-handle ${resizingCol === 'atencion_medica_primaria' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'atencion_medica_primaria')} />
                         </th>
-                        <th style={{ position: 'relative' }}>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Medicinas
+                          <div className={`resize-handle ${resizingCol === 'medicinas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'medicinas')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
                           Cons Médicas
                           <div className={`resize-handle ${resizingCol === 'consultas_medicas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas_medicas')} />
                         </th>
@@ -2702,7 +2716,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredTariffs.length === 0 ? (
                         <tr>
-                          <td colSpan="21" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan="24" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas registradas en la planilla.
                           </td>
                         </tr>
@@ -2753,6 +2767,7 @@ export default function AdminDashboard() {
                                   checked={!!t.pago_contado}
                                   onChange={(e) => handleCellChange(t.id, 'pago_contado', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
+                                  title="Contado"
                                 />
                               </td>
                               <td style={{ textAlign: 'center' }}>
@@ -2761,6 +2776,7 @@ export default function AdminDashboard() {
                                   checked={!!t.pago_semestral}
                                   onChange={(e) => handleCellChange(t.id, 'pago_semestral', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
+                                  title="Semestral"
                                 />
                               </td>
                               <td style={{ textAlign: 'center' }}>
@@ -2769,6 +2785,7 @@ export default function AdminDashboard() {
                                   checked={!!t.pago_trimestral}
                                   onChange={(e) => handleCellChange(t.id, 'pago_trimestral', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
+                                  title="Trimestral"
                                 />
                               </td>
                               <td style={{ textAlign: 'center' }}>
@@ -2777,6 +2794,7 @@ export default function AdminDashboard() {
                                   checked={!!t.pago_mensual}
                                   onChange={(e) => handleCellChange(t.id, 'pago_mensual', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
+                                  title="Mensual"
                                 />
                               </td>
 
@@ -2845,8 +2863,43 @@ export default function AdminDashboard() {
                               <td>{textInput('asist_intl_costo')}</td>
                               <td>{textInput('funeral_suma')}</td>
                               <td>{textInput('funeral_costo')}</td>
-                              <td>{textInput('at_situ_medicamentos')}</td>
-                              <td>{textInput('consultas_medicas')}</td>
+
+                              {/* Atención Médica Primaria */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.atencion_medica_primaria || t.at_situ_medicamentos === 'INCL' || t.atencion_medica_primaria === 'true')}
+                                  onChange={(e) => {
+                                    handleCellChange(t.id, 'atencion_medica_primaria', e.target.checked);
+                                    handleCellChange(t.id, 'at_situ_medicamentos', e.target.checked ? 'INCL' : '');
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Atención Médica Primaria"
+                                />
+                              </td>
+
+                              {/* Medicinas */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'medicinas', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Medicinas"
+                                />
+                              </td>
+
+                              {/* Cons Médicas */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))}
+                                  onChange={(e) => handleCellChange(t.id, 'consultas_medicas', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Consultas Médicas"
+                                />
+                              </td>
+
                               <td>{textInput('examenes_lab_imagenologia')}</td>
                               <td>{textInput('ambulancia')}</td>
 

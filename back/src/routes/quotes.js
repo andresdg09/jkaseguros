@@ -21,16 +21,17 @@ function calcularEdad(fechaNacimiento) {
 }
 
 // Beneficios considerados para calcular el score de cobertura. Un campo vacío
-// o con valor "NO" se entiende como beneficio no incluido en ese plan.
+// o con valor "NO" / false se entiende como beneficio no incluido en ese plan.
 const BENEFIT_FIELDS = [
   'maternidad_suma', 'asist_intl_suma', 'funeral_suma',
-  'at_situ_medicamentos', 'consultas_medicas', 'examenes_lab_imagenologia', 'ambulancia'
+  'at_situ_medicamentos', 'atencion_medica_primaria', 'medicinas', 'consultas_medicas', 'examenes_lab_imagenologia', 'ambulancia'
 ];
 
 function tieneBeneficio(valor) {
-  if (!valor) return false;
+  if (valor === true) return true;
+  if (valor === false || valor === null || valor === undefined) return false;
   const v = String(valor).trim().toUpperCase();
-  return v !== '' && v !== 'NO';
+  return v !== '' && v !== 'NO' && v !== 'FALSE';
 }
 
 // Helper: Puntuación de calidad de cobertura según cantidad de beneficios incluidos en el plan
@@ -132,7 +133,9 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       funeral_suma: t.funeral_suma,
       funeral_costo: t.funeral_costo,
       at_situ_medicamentos: t.at_situ_medicamentos,
-      consultas_medicas: t.consultas_medicas,
+      atencion_medica_primaria: t.atencion_medica_primaria !== undefined ? !!t.atencion_medica_primaria : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos),
+      medicinas: !!t.medicinas,
+      consultas_medicas: t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false,
       examenes_lab_imagenologia: t.examenes_lab_imagenologia,
       ambulancia: t.ambulancia,
       calidadScore,

@@ -119,6 +119,8 @@ CREATE TABLE IF NOT EXISTS tarifas (
     funeral_suma VARCHAR(50),
     funeral_costo VARCHAR(50),
     at_situ_medicamentos VARCHAR(50),
+    atencion_medica_primaria BOOLEAN DEFAULT FALSE,
+    medicinas BOOLEAN DEFAULT FALSE,
     consultas_medicas VARCHAR(50),
     examenes_lab_imagenologia VARCHAR(50),
     ambulancia VARCHAR(50),
