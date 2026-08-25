@@ -276,6 +276,33 @@ export default function CotizacionPublicaPage() {
           const currentFreqInfo = FREQ_OPTIONS.find(f => f.key === currentFreq) || FREQ_OPTIONS[0];
           const cuotaMonto = parseFloat(comp.prima) / currentFreqInfo.cuotas;
 
+          const parseExtraCost = (costStr) => {
+            if (!costStr) return 0;
+            const num = parseFloat(String(costStr).replace(/[^0-9.]/g, ''));
+            return isNaN(num) ? 0 : num;
+          };
+          const costoMat = parseExtraCost(comp.maternidad_costo);
+          const costoAsist = parseExtraCost(comp.asist_intl_costo);
+          const costoFuneral = parseExtraCost(comp.funeral_costo);
+          const totalExtras = costoMat + costoAsist + costoFuneral;
+          const primaBase = parseFloat(comp.prima || 0);
+          const primaConExtras = primaBase + totalExtras;
+
+          const serviciosBase = [
+            { name: 'At. Primaria', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
+            { name: 'Medicamentos', active: !!comp.medicinas },
+            { name: 'Cons. Médicas', active: !!comp.consultas_medicas },
+            { name: 'Exámenes', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO') },
+            { name: 'Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO') },
+            { name: 'Rehabilitación', active: !!comp.rehabilitacion },
+            { name: 'Prótesis', active: !!comp.protesis },
+            { name: 'Muleta + Silla', active: !!comp.muleta_silla_ruedas },
+            { name: 'Consultas', active: !!comp.consultas },
+            { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
+            { name: 'Oftalmología', active: !!comp.oftalmologia },
+            { name: 'Odontología', active: !!comp.odontologia }
+          ];
+
           return (
             <div 
               key={compKey} 
@@ -288,25 +315,6 @@ export default function CotizacionPublicaPage() {
                 position: 'relative'
               }}
             >
-              {/* Insignia de recomendación comentada por requerimiento institucional
-              {comp.recomendada && (
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '-14px', 
-                  right: '20px', 
-                  backgroundColor: '#10b981', 
-                  color: '#fff', 
-                  fontSize: '0.75rem', 
-                  fontWeight: 'bold', 
-                  padding: '0.35rem 0.85rem', 
-                  borderRadius: '20px',
-                  boxShadow: '0 2px 4px rgba(16,185,129,0.3)'
-                }}>
-                  👍 MEJOR RELACIÓN CALIDAD/PRECIO
-                </div>
-              )}
-              */}
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <h4 style={{ color: 'var(--primary)', fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>{comp.nombre}</h4>
@@ -314,20 +322,76 @@ export default function CotizacionPublicaPage() {
                     Plan: {comp.plan || 'Único'}
                   </span>
                 </div>
-                <div style={{ backgroundColor: 'var(--secondary)', padding: '0.75rem 1.25rem', borderRadius: '8px', textAlign: 'center', minWidth: '130px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Prima Total Anual</span>
-                  <span style={{ fontSize: '1.5rem', color: 'var(--primary)', fontWeight: 800 }}>${parseFloat(comp.prima).toLocaleString('en-US')}</span>
+                
+                {/* Caja de Precio Dual */}
+                <div style={{ backgroundColor: 'var(--secondary)', border: '1px solid var(--border)', padding: '0.75rem 1.25rem', borderRadius: '8px', textAlign: 'center', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Prima Base (Sin Extras)</span>
+                  <span style={{ fontSize: '1.4rem', color: 'var(--primary)', fontWeight: 800 }}>${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>por año</span>
+                  
+                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.35rem', marginTop: '0.2rem' }}>
+                    {totalExtras > 0 ? (
+                      <>
+                        <span style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Total con Extras</span>
+                        <span style={{ fontSize: '1.15rem', color: '#15803d', fontWeight: 800 }}>${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span style={{ fontSize: '0.68rem', color: '#b45309', display: 'block' }}>(+${totalExtras.toFixed(2)} en extras)</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '0.7rem', color: '#15803d', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Plan Completo</span>
+                        <span style={{ fontSize: '1rem', color: '#15803d', fontWeight: 800 }}>${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>(sin costos extras)</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Beneficios */}
+              {/* SECCIÓN 1: INCLUIDO EN PLAN BASE */}
               <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <div><strong>🛡️ Deducible:</strong> <span style={{ fontWeight: 700, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>{(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}</span></div>
-                  <div><strong>🤰 Maternidad:</strong> {comp.maternidad_suma ? comp.maternidad_suma + (comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : '') : 'No incluida'}</div>
-                  <div><strong>🌍 Asistencia Intl:</strong> {comp.asist_intl_suma ? comp.asist_intl_suma + (comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : '') : 'No incluida'}</div>
-                  <div><strong>⚰ Funeral:</strong> {comp.funeral_suma ? comp.funeral_suma + (comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : '') : 'No incluido'}</div>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', display: 'block', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                  ✓ Incluido en el Plan Base:
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
                   <div><strong>💳 Suma Asegurada:</strong> ${parseFloat(targetSuma).toLocaleString('en-US')}</div>
+                  <div><strong>🛡️ Deducible:</strong> <span style={{ fontWeight: 700, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>{(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}</span></div>
+                  <div><strong>📋 Modalidad Base:</strong> Anual / Contado</div>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                  {serviciosBase.map((s, idx) => (
+                    <span 
+                      key={idx}
+                      style={{ 
+                        fontSize: '0.75rem', 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '4px',
+                        background: s.active ? '#dcfce7' : '#f1f5f9',
+                        color: s.active ? '#15803d' : '#94a3b8',
+                        fontWeight: s.active ? 700 : 500
+                      }}
+                    >
+                      {s.active ? '✓' : '○'} {s.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECCIÓN 2: COBERTURAS Y BENEFICIOS EXTRAS (OPCIONALES CON COSTO) */}
+              <div style={{ marginTop: '1rem', background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: totalExtras > 0 ? '#b45309' : 'var(--primary)', display: 'block', marginBottom: '0.4rem' }}>
+                  {totalExtras > 0 ? '➕ Coberturas Extras Opcionales (con costo adicional):' : '➕ Coberturas Opcionales / Suplementarias:'}
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                  <div>
+                    <strong>🤰 Maternidad:</strong> {comp.maternidad_suma ? comp.maternidad_suma : 'No incluida'} {costoMat > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoMat.toFixed(2)}/año)</span>}
+                  </div>
+                  <div>
+                    <strong>🌍 Asist. Internacional:</strong> {comp.asist_intl_suma ? comp.asist_intl_suma : 'No incluida'} {costoAsist > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoAsist.toFixed(2)}/año)</span>}
+                  </div>
+                  <div>
+                    <strong>⚰ Funeral:</strong> {comp.funeral_suma ? comp.funeral_suma : 'No incluido'} {costoFuneral > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoFuneral.toFixed(2)}/año)</span>}
+                  </div>
                 </div>
               </div>
 

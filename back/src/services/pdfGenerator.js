@@ -120,8 +120,15 @@ function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
   doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.5).text(`Fecha de emisión: ${fechaHoy}`, col1, footY, { lineBreak: false });
 }
 
+function parseExtraCost(costStr) {
+  if (!costStr) return 0;
+  const num = parseFloat(String(costStr).replace(/[^0-9.]/g, ''));
+  return isNaN(num) ? 0 : num;
+}
+
 /**
- * Dibuja una tarjeta de plan de seguro para una aseguradora
+ * Dibuja una tarjeta de plan de seguro para una aseguradora con distinción clara
+ * entre lo Incluido en el Plan Base y los Beneficios Extras (con costos y precio dual).
  */
 function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   const cardBg = isBest ? '#eff6ff' : '#ffffff';
@@ -130,82 +137,181 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   doc.roundedRect(x, y, width, height, 6).fill(cardBg);
   doc.roundedRect(x, y, width, height, 6).lineWidth(isBest ? 1.5 : 1).stroke(cardBorder);
 
-  const priceBoxW = 120;
-  const leftW = width - priceBoxW - 30;
-  const padX = x + 14;
-  let topY = y + 12;
-
-  /* Insignia comentada por requerimiento institucional
-  if (isBest) {
-    doc.roundedRect(x + 12, y - 8, 165, 16, 8).fill(COLORS.success);
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(6.5).text('RECOMENDACIÓN', x + 12, y - 4, { width: 165, align: 'center', lineBreak: false });
-    topY += 6;
-  }
-  */
+  const priceBoxW = 126;
+  const leftW = width - priceBoxW - 26;
+  const padX = x + 12;
+  let topY = y + 8;
 
   // Nombre y plan
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11).text(comp.nombre, padX, topY, { width: leftW, lineBreak: false });
-  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5).text(`PLAN: ${(comp.plan || 'N/A').toUpperCase()}`, padX, topY + 15, { width: leftW, lineBreak: false });
+  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5).text(`PLAN: ${(comp.plan || 'N/A').toUpperCase()}`, padX, topY + 13, { width: leftW, lineBreak: false });
 
   const deducibleVal = comp.deducible !== undefined && comp.deducible !== null && parseFloat(comp.deducible) > 0 
     ? `$${Number(comp.deducible).toLocaleString('en-US')}` 
     : '$0 (Sin deducible)';
 
-  // Grid de beneficios (3 columnas x 2 filas)
-  const beneficios = [
-    ['DEDUCIBLE', deducibleVal],
-    ['FORMA DE PAGO', comp.pago || 'Consultar con asesor'],
-    ['MATERNIDAD', comp.maternidad_suma ? `${comp.maternidad_suma}${comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : ''}` : 'No incluida'],
-    ['ASIST. INTERNACIONAL', comp.asist_intl_suma ? `${comp.asist_intl_suma}${comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : ''}` : 'No incluida'],
-    ['FUNERAL', comp.funeral_suma ? `${comp.funeral_suma}${comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : ''}` : 'No incluido'],
-    ['SUMA ASEGURADA', comp.suma_asegurada ? `$${Number(comp.suma_asegurada).toLocaleString('en-US')}` : 'Según cotización']
-  ];
+  const metodosPago = [];
+  if (comp.pago_contado) metodosPago.push('Contado');
+  if (comp.pago_semestral) metodosPago.push('Semestral');
+  if (comp.pago_cuatrimestral) metodosPago.push('Cuatrimestral');
+  if (comp.pago_trimestral) metodosPago.push('Trimestral');
+  if (comp.pago_mensual) metodosPago.push('Mensual');
+  const formaPagoVal = metodosPago.length > 0 ? metodosPago.join(', ') : (comp.pago || 'Consultar con asesor');
 
-  const colsCount = 3;
-  const colW = leftW / colsCount;
-  const gridY = topY + 30;
-  beneficios.forEach(([label, val], i) => {
-    const colX = padX + (i % colsCount) * colW;
-    const rowY = gridY + Math.floor(i / colsCount) * 24;
-    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(6).text(label, colX, rowY, { width: colW - 6, lineBreak: false });
+  // Parsear extras opcionales con costo
+  const costoMat = parseExtraCost(comp.maternidad_costo);
+  const costoAsist = parseExtraCost(comp.asist_intl_costo);
+  const costoFuneral = parseExtraCost(comp.funeral_costo);
+  const totalExtras = costoMat + costoAsist + costoFuneral;
+  const primaBase = parseFloat(comp.prima || 0);
+  const primaConExtras = primaBase + totalExtras;
+
+  // --- SECCIÓN 1 (ARRIBA): INCLUIDO EN EL PLAN BASE ---
+  const incStartY = topY + 26;
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6.5).text('✓ INCLUIDO EN EL PLAN BASE:', padX, incStartY, { lineBreak: false });
+
+  // Grid de datos base (3 columnas)
+  const baseData = [
+    ['SUMA ASEGURADA', comp.suma_asegurada ? `$${Number(comp.suma_asegurada).toLocaleString('en-US')}` : 'Según cotización'],
+    ['DEDUCIBLE', deducibleVal],
+    ['FORMA DE PAGO', formaPagoVal]
+  ];
+  const colW3 = leftW / 3;
+  baseData.forEach(([label, val], i) => {
+    const colX = padX + i * colW3;
+    const rowY = incStartY + 9;
+    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(5.8).text(label, colX, rowY, { width: colW3 - 6, lineBreak: false });
     const isDed = label === 'DEDUCIBLE';
     const valColor = isDed ? (parseFloat(comp.deducible || 0) > 0 ? '#b45309' : COLORS.success) : COLORS.dark;
-    doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(7).text(val, colX, rowY + 8, { width: colW - 6, height: 13, lineBreak: false });
+    doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(6.8).text(val, colX, rowY + 7, { width: colW3 - 6, height: 10, lineBreak: false });
   });
 
-  // Servicios incluidos (fila de indicadores)
+  // Servicios incluidos base (2 filas de 6 columnas)
   const servicios = [
     ['At. Primaria', comp.atencion_medica_primaria !== undefined ? comp.atencion_medica_primaria : comp.at_situ_medicamentos],
-    ['Medicinas', comp.medicinas],
-    ['Consultas', comp.consultas_medicas],
+    ['Medicamentos', comp.medicinas],
+    ['Cons. Médicas', comp.consultas_medicas],
     ['Exámenes', comp.examenes_lab_imagenologia],
-    ['Ambulancia', comp.ambulancia]
+    ['Ambulancia', comp.ambulancia],
+    ['Rehabilitación', comp.rehabilitacion],
+    ['Prótesis', comp.protesis],
+    ['Muleta + Silla', comp.muleta_silla_ruedas],
+    ['Consultas', comp.consultas],
+    ['Maternidad', (comp.maternidad || comp.maternidad_suma) && costoMat === 0],
+    ['Oftalmología', comp.oftalmologia],
+    ['Odontología', comp.odontologia]
   ];
-  const servY = gridY + 2 * 26 + 4;
-  let sx = padX;
-  const servW = leftW / servicios.length;
-  servicios.forEach(([label, val]) => {
+
+  const servCols = 6;
+  const servW = leftW / servCols;
+  const servStartY = incStartY + 27;
+
+  servicios.forEach(([label, val], idx) => {
+    const col = idx % servCols;
+    const row = Math.floor(idx / servCols);
+    const itemX = padX + col * servW;
+    const itemY = servStartY + row * 10.5;
+
     const incluido = val === true || (val && String(val).trim() !== '' && String(val).toUpperCase() !== 'NO' && String(val).toUpperCase() !== 'FALSE');
-    doc.circle(sx + 3, servY + 4, 2.7).fill(incluido ? COLORS.success : '#cbd5e1');
-    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font('Helvetica').fontSize(5.5).text(label, sx + 8, servY, { width: servW - 8, lineBreak: false });
-    sx += servW;
+    doc.circle(itemX + 2.5, itemY + 3, 2).fill(incluido ? COLORS.success : '#cbd5e1');
+    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font(incluido ? 'Helvetica-Bold' : 'Helvetica').fontSize(5.1).text(label, itemX + 6, itemY, { width: servW - 7, lineBreak: false });
   });
 
-  // Caja de prima anual
-  const priceX = x + width - priceBoxW - 12;
-  const priceY = y + 10;
-  const priceH = height - 20;
-  doc.roundedRect(priceX, priceY, priceBoxW, priceH, 4).fill(isBest ? '#dbeafe' : COLORS.lightBg);
-  doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(6.5).text('PRIMA ANUAL', priceX, priceY + 12, { width: priceBoxW, align: 'center', lineBreak: false });
-  doc.fillColor(isBest ? COLORS.success : COLORS.primary).font('Helvetica-Bold').fontSize(17)
-     .text(comp.prima ? `$${Number(comp.prima).toLocaleString('en-US')}` : 'N/D', priceX, priceY + 24, { width: priceBoxW, align: 'center', lineBreak: false });
+  // --- SECCIÓN 2 (ABAJO): COBERTURAS Y BENEFICIOS EXTRAS (OPCIONALES) ---
+  const extraStartY = servStartY + 23;
+  const extraBoxW = leftW;
+  const extraBoxH = 34;
   
-  const numDeps = comp.desglosePrimas ? comp.desglosePrimas.length - 1 : 0;
-  const labelDeps = numDeps > 0 ? `(titular + ${numDeps} dep.)` : 'por año';
-  doc.fillColor('#94a3b8').font('Helvetica').fontSize(6.5).text(labelDeps, priceX, priceY + 46, { width: priceBoxW, align: 'center', lineBreak: false });
+  doc.roundedRect(padX, extraStartY, extraBoxW, extraBoxH, 4).fill('#f8fafc');
+  doc.roundedRect(padX, extraStartY, extraBoxW, extraBoxH, 4).lineWidth(0.5).stroke('#e2e8f0');
 
-  doc.moveTo(priceX + 14, priceY + priceH - 26).lineTo(priceX + priceBoxW - 14, priceY + priceH - 26).lineWidth(0.5).strokeColor(COLORS.border).stroke();
-  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(7).text(`Score: ${comp.calidadScore ?? 0}/50`, priceX, priceY + priceH - 18, { width: priceBoxW, align: 'center', lineBreak: false });
+  const extrasList = [];
+  if (comp.maternidad_suma || costoMat > 0) {
+    extrasList.push({
+      nombre: 'Maternidad',
+      suma: comp.maternidad_suma || 'Cubierta',
+      costo: costoMat > 0 ? `+ $${costoMat.toFixed(2)}/año` : 'Incluida en base'
+    });
+  }
+  if (comp.asist_intl_suma || costoAsist > 0) {
+    extrasList.push({
+      nombre: 'Asist. Internacional',
+      suma: comp.asist_intl_suma || 'Cubierta',
+      costo: costoAsist > 0 ? `+ $${costoAsist.toFixed(2)}/año` : 'Incluida en base'
+    });
+  }
+  if (comp.funeral_suma || costoFuneral > 0) {
+    extrasList.push({
+      nombre: 'Gastos Funerarios',
+      suma: comp.funeral_suma || 'Cubierta',
+      costo: costoFuneral > 0 ? `+ $${costoFuneral.toFixed(2)}/año` : 'Incluido en base'
+    });
+  }
+
+  doc.fillColor(totalExtras > 0 ? '#b45309' : COLORS.primary).font('Helvetica-Bold').fontSize(6).text(
+    totalExtras > 0 ? '➕ COBERTURAS EXTRAS DISPONIBLES (CON COSTO ADICIONAL):' : '➕ COBERTURAS ADICIONALES DEL PLAN:',
+    padX + 6, extraStartY + 4, { lineBreak: false }
+  );
+
+  if (extrasList.length > 0) {
+    const extColW = (extraBoxW - 12) / 3;
+    extrasList.forEach((ext, idx) => {
+      const extX = padX + 6 + idx * extColW;
+      const extY = extraStartY + 14;
+      doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(5.8).text(ext.nombre, extX, extY, { width: extColW - 4, lineBreak: false });
+      doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.3).text(`${ext.suma} | `, extX, extY + 7, { continued: true });
+      doc.fillColor(ext.costo.includes('+') ? '#b45309' : COLORS.success).font('Helvetica-Bold').fontSize(5.3).text(ext.costo, { lineBreak: false });
+    });
+  } else {
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.8).text('✓ Este plan no requiere contratación de extras (cobertura integral en plan base).', padX + 6, extraStartY + 16, { lineBreak: false });
+  }
+
+  // --- CAJA DE PRECIO / PRIMA (DERECHA) ---
+  const priceX = x + width - priceBoxW - 10;
+  const priceY = y + 8;
+  const priceH = height - 16;
+
+  doc.roundedRect(priceX, priceY, priceBoxW, priceH, 5).fill(isBest ? '#dbeafe' : '#f8fafc');
+  doc.roundedRect(priceX, priceY, priceBoxW, priceH, 5).lineWidth(1).stroke(isBest ? '#93c5fd' : COLORS.border);
+
+  // 1. Bloque Superior: Precio Base
+  let py = priceY + 6;
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6.5).text('PRIMA BASE (SIN EXTRAS)', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+  py += 9;
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(14)
+     .text(`$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+  py += 15;
+  const numDeps = comp.desglosePrimas ? comp.desglosePrimas.length - 1 : 0;
+  const labelDeps = numDeps > 0 ? `(titular + ${numDeps} dep.)` : 'por año (plan base)';
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.8).text(labelDeps, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+
+  // Línea divisoria
+  py += 10;
+  doc.moveTo(priceX + 10, py).lineTo(priceX + priceBoxW - 10, py).lineWidth(0.5).strokeColor('#cbd5e1').stroke();
+
+  // 2. Bloque Inferior: Precio con Extras
+  py += 5;
+  if (totalExtras > 0) {
+    doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(6.2).text('TOTAL CON EXTRAS', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+    py += 8;
+    doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(12)
+       .text(`$${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+    py += 13;
+    doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(5.5).text(`(+ $${totalExtras.toFixed(2)} en extras opcionales)`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+  } else {
+    doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(6.2).text('PLAN COMPLETO', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+    py += 8;
+    doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(11)
+       .text(`$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+    py += 13;
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.5).text('(sin costos adicionales)', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+  }
+
+  // 3. Score de Cobertura al final de la caja de precio
+  py += 9;
+  doc.moveTo(priceX + 12, py).lineTo(priceX + priceBoxW - 12, py).lineWidth(0.5).strokeColor('#cbd5e1').stroke();
+  py += 4;
+  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(6.5).text(`Score: ${comp.calidadScore ?? 0}/50 pts`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
 }
 
 /**
@@ -498,7 +604,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
      .text('Cada tarjeta resume el plan, la prima anual y los beneficios adicionales ofrecidos para la edad y suma asegurada cotizadas.', MARGIN, subtitleY, { width: CONTENT_W, lineBreak: false });
 
   let cardY = startCardsY;
-  const cardH = 140;
+  const cardH = 150;
   const cardGap = 14;
 
   comparativas.forEach((comp) => {

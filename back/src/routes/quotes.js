@@ -322,18 +322,59 @@ router.post('/email', async (req, res) => {
       const isBest = !!comp.recomendada;
       const cardBg = isBest ? '#eff6ff' : '#ffffff';
       const cardBorder = isBest ? '#2563eb' : '#cbd5e1';
-      /* Insignia de recomendación comentada por requerimiento institucional
-      const badgeHtml = isBest ? `
-        <div style="background-color: #10b981; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px;">
-          RECOMENDACIÓN JKA
-        </div>
-      ` : '';
-      */
-      const badgeHtml = '';
+
+      // Parsear costos extras
+      const parseExtraCost = (costStr) => {
+        if (!costStr) return 0;
+        const num = parseFloat(String(costStr).replace(/[^0-9.]/g, ''));
+        return isNaN(num) ? 0 : num;
+      };
+      const costoMat = parseExtraCost(comp.maternidad_costo);
+      const costoAsist = parseExtraCost(comp.asist_intl_costo);
+      const costoFuneral = parseExtraCost(comp.funeral_costo);
+      const totalExtras = costoMat + costoAsist + costoFuneral;
+      const primaBase = parseFloat(comp.prima || 0);
+      const primaConExtras = primaBase + totalExtras;
+
+      // Métodos de pago
+      const metodosPago = [];
+      if (comp.pago_contado) metodosPago.push('Contado');
+      if (comp.pago_semestral) metodosPago.push('Semestral');
+      if (comp.pago_cuatrimestral) metodosPago.push('Cuatrimestral');
+      if (comp.pago_trimestral) metodosPago.push('Trimestral');
+      if (comp.pago_mensual) metodosPago.push('Mensual');
+      const formaPagoVal = metodosPago.length > 0 ? metodosPago.join(', ') : (comp.pago || 'Consultar');
+
+      // Lista de extras opcionales con costo
+      const extrasList = [];
+      if (comp.maternidad_suma || costoMat > 0) {
+        extrasList.push(`<strong>Maternidad:</strong> ${comp.maternidad_suma || 'Cubierta'} <span style="color: ${costoMat > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoMat > 0 ? '+ $' + costoMat.toFixed(2) + '/año' : 'Incluida en base'})</span>`);
+      }
+      if (comp.asist_intl_suma || costoAsist > 0) {
+        extrasList.push(`<strong>Asist. Internacional:</strong> ${comp.asist_intl_suma || 'Cubierta'} <span style="color: ${costoAsist > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoAsist > 0 ? '+ $' + costoAsist.toFixed(2) + '/año' : 'Incluida en base'})</span>`);
+      }
+      if (comp.funeral_suma || costoFuneral > 0) {
+        extrasList.push(`<strong>Gastos Funerarios:</strong> ${comp.funeral_suma || 'Cubierta'} <span style="color: ${costoFuneral > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoFuneral > 0 ? '+ $' + costoFuneral.toFixed(2) + '/año' : 'Incluido en base'})</span>`);
+      }
+
+      // Lista de servicios base
+      const serviciosBase = [
+        { name: 'At. Primaria', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
+        { name: 'Medicamentos', active: !!comp.medicinas },
+        { name: 'Cons. Médicas', active: !!comp.consultas_medicas },
+        { name: 'Exámenes', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO') },
+        { name: 'Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO') },
+        { name: 'Rehabilitación', active: !!comp.rehabilitacion },
+        { name: 'Prótesis', active: !!comp.protesis },
+        { name: 'Muleta+Silla', active: !!comp.muleta_silla_ruedas },
+        { name: 'Consultas', active: !!comp.consultas },
+        { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
+        { name: 'Oftalmología', active: !!comp.oftalmologia },
+        { name: 'Odontología', active: !!comp.odontologia }
+      ];
 
       planCardsHtml += `
         <div style="background-color: ${cardBg}; border: 1.5px solid ${cardBorder}; border-radius: 8px; margin-bottom: 20px; padding: 20px; font-family: sans-serif; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-          ${badgeHtml}
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td style="vertical-align: top;">
@@ -341,38 +382,58 @@ router.post('/email', async (req, res) => {
                 <span style="font-size: 13px; font-weight: bold; color: #2563eb; text-transform: uppercase;">PLAN: ${comp.plan || 'N/A'}</span>
               </td>
               <td align="right" style="vertical-align: top;">
-                <div style="background-color: ${isBest ? '#dbeafe' : '#f1f5f9'}; padding: 10px 15px; border-radius: 6px; text-align: center; min-width: 100px; display: inline-block;">
-                  <span style="font-size: 9px; color: #64748b; font-weight: bold; display: block; text-transform: uppercase; letter-spacing: 0.5px;">PRIMA ANUAL</span>
-                  <span style="font-size: 18px; color: #1e3a8a; font-weight: bold; display: block;">$${Number(comp.prima).toLocaleString('en-US')}</span>
-                  <span style="font-size: 8px; color: #94a3b8; display: block;">por año</span>
+                <div style="background-color: ${isBest ? '#dbeafe' : '#f8fafc'}; border: 1px solid ${isBest ? '#93c5fd' : '#e2e8f0'}; padding: 10px 14px; border-radius: 8px; text-align: center; min-width: 135px; display: inline-block;">
+                  <span style="font-size: 9px; color: #1e3a8a; font-weight: bold; display: block; text-transform: uppercase; letter-spacing: 0.5px;">PRIMA BASE (SIN EXTRAS)</span>
+                  <span style="font-size: 18px; color: #1e3a8a; font-weight: bold; display: block;">$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span style="font-size: 8px; color: #64748b; display: block; margin-bottom: 6px;">por año</span>
+                  <div style="border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 4px;">
+                    ${totalExtras > 0 ? `
+                      <span style="font-size: 8.5px; color: #b45309; font-weight: bold; display: block; text-transform: uppercase;">TOTAL CON EXTRAS</span>
+                      <span style="font-size: 14px; color: #15803d; font-weight: bold; display: block;">$${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span style="font-size: 7.5px; color: #b45309; display: block;">(+ $${totalExtras.toFixed(2)} en extras)</span>
+                    ` : `
+                      <span style="font-size: 8.5px; color: #15803d; font-weight: bold; display: block; text-transform: uppercase;">PLAN COMPLETO</span>
+                      <span style="font-size: 13px; color: #15803d; font-weight: bold; display: block;">$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span style="font-size: 7.5px; color: #64748b; display: block;">(sin costos extras)</span>
+                    `}
+                  </div>
                 </div>
               </td>
             </tr>
           </table>
           
+          {/* SECCIÓN 1: INCLUIDO EN PLAN BASE */}
           <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+            <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; display: block; margin-bottom: 6px;">✓ INCLUIDO EN EL PLAN BASE:</span>
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #334155; line-height: 1.5;">
               <tr>
-                <td width="50%" style="padding: 4px 0;"><strong>Deducible:</strong> <span style="color: ${comp.deducible > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">${dedLabel}</span></td>
-                <td width="50%" style="padding: 4px 0;"><strong>Forma de Pago:</strong> ${comp.pago || 'Consultar'}</td>
-              </tr>
-              <tr>
-                <td width="50%" style="padding: 4px 0;"><strong>Maternidad:</strong> ${comp.maternidad_suma ? comp.maternidad_suma + (comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : '') : 'No incluida'}</td>
-                <td width="50%" style="padding: 4px 0;"><strong>Asistencia Intl:</strong> ${comp.asist_intl_suma ? comp.asist_intl_suma + (comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : '') : 'No incluida'}</td>
-              </tr>
-              <tr>
-                <td width="50%" style="padding: 4px 0;"><strong>Funeral:</strong> ${comp.funeral_suma ? comp.funeral_suma + (comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : '') : 'No incluido'}</td>
-                <td width="50%" style="padding: 4px 0;"><strong>Suma Asegurada:</strong> $${Number(comp.suma_asegurada || suma_asegurada).toLocaleString('en-US')}</td>
+                <td width="33%" style="padding: 3px 0;"><strong>Suma Asegurada:</strong> $${Number(comp.suma_asegurada || suma_asegurada).toLocaleString('en-US')}</td>
+                <td width="33%" style="padding: 3px 0;"><strong>Deducible:</strong> <span style="color: ${comp.deducible > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">${dedLabel}</span></td>
+                <td width="34%" style="padding: 3px 0;"><strong>Formas de Pago:</strong> ${formaPagoVal}</td>
               </tr>
             </table>
+
+            <div style="margin-top: 8px; font-size: 11px; color: #475569; display: flex; flex-wrap: wrap; gap: 6px;">
+              ${serviciosBase.map(s => `
+                <span style="display: inline-block; margin-right: 8px; margin-bottom: 4px; font-size: 10.5px; color: ${s.active ? '#15803d' : '#94a3b8'}; font-weight: ${s.active ? 'bold' : 'normal'};">
+                  ${s.active ? '●' : '○'} ${s.name}
+                </span>
+              `).join('')}
+            </div>
           </div>
-          
-          <div style="margin-top: 12px; font-size: 11px; color: #64748b; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
-            <strong>Servicios:</strong>
-            <span style="margin-right: 8px; color: ${comp.at_situ_medicamentos && comp.at_situ_medicamentos !== 'NO' ? '#10b981' : '#94a3b8'};">● At. Situ+Med</span>
-            <span style="margin-right: 8px; color: ${comp.consultas_medicas && comp.consultas_medicas !== 'NO' ? '#10b981' : '#94a3b8'};">● Consultas</span>
-            <span style="margin-right: 8px; color: ${comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' ? '#10b981' : '#94a3b8'};">● Exámenes</span>
-            <span style="color: ${comp.ambulancia && comp.ambulancia !== 'NO' ? '#10b981' : '#94a3b8'};">● Ambulancia</span>
+
+          {/* SECCIÓN 2: BENEFICIOS Y COBERTURAS EXTRAS OPCIONALES */}
+          <div style="margin-top: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 11px;">
+            <strong style="color: ${totalExtras > 0 ? '#b45309' : '#1e3a8a'}; display: block; margin-bottom: 4px;">
+              ${totalExtras > 0 ? '➕ Coberturas Extras Opcionales (con costo adicional):' : '➕ Coberturas Adicionales:'}
+            </strong>
+            ${extrasList.length > 0 ? `
+              <div style="line-height: 1.6; color: #334155;">
+                ${extrasList.map(e => `<div>• ${e}</div>`).join('')}
+              </div>
+            ` : `
+              <span style="color: #64748b;">✓ Plan integral sin costo de extras adicionales.</span>
+            `}
           </div>
 
           <div style="margin-top: 10px; font-size: 11px; color: #1e3a8a; font-weight: bold;">
