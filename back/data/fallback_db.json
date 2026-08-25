@@ -116,7 +116,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -125,7 +125,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 2,
@@ -143,7 +145,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -152,7 +154,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 3,
@@ -170,7 +174,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -179,7 +183,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 4,
@@ -197,7 +203,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -206,7 +212,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 5,
@@ -224,7 +232,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -233,7 +241,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 6,
@@ -251,7 +261,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -260,7 +270,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 7,
@@ -278,7 +290,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -287,7 +299,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 8,
@@ -305,7 +319,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -314,7 +328,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 9,
@@ -332,7 +348,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -341,7 +357,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 10,
@@ -359,7 +377,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -368,7 +386,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 11,
@@ -386,7 +406,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -395,7 +415,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 12,
@@ -413,7 +435,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -422,7 +444,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 13,
@@ -440,7 +464,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -449,7 +473,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 14,
@@ -467,7 +493,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -476,7 +502,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 15,
@@ -494,7 +522,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -503,7 +531,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 16,
@@ -521,7 +551,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -530,7 +560,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 17,
@@ -548,7 +580,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -557,7 +589,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 18,
@@ -575,7 +609,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -584,7 +618,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 19,
@@ -602,7 +638,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -611,7 +647,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 20,
@@ -629,7 +667,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -638,7 +676,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 21,
@@ -656,7 +696,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -665,7 +705,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 22,
@@ -683,7 +725,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -692,7 +734,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 23,
@@ -710,7 +754,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -719,7 +763,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 24,
@@ -737,7 +783,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -746,7 +792,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 25,
@@ -764,7 +812,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -773,7 +821,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 26,
@@ -791,7 +841,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -800,7 +850,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 27,
@@ -818,7 +870,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -827,7 +879,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 28,
@@ -845,7 +899,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -854,7 +908,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 29,
@@ -872,7 +928,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -881,7 +937,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 30,
@@ -899,7 +957,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -908,7 +966,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 31,
@@ -926,7 +986,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -935,7 +995,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 32,
@@ -953,7 +1015,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -962,7 +1024,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 33,
@@ -980,7 +1044,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -989,7 +1053,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 34,
@@ -1007,7 +1073,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1016,7 +1082,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 35,
@@ -1034,7 +1102,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1043,7 +1111,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 36,
@@ -1061,7 +1131,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1070,7 +1140,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 37,
@@ -1088,7 +1160,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1097,7 +1169,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 38,
@@ -1115,7 +1189,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1124,7 +1198,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 39,
@@ -1142,7 +1218,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1151,7 +1227,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 40,
@@ -1169,7 +1247,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1178,7 +1256,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 41,
@@ -1196,7 +1276,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1205,7 +1285,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 42,
@@ -1223,7 +1305,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1232,7 +1314,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 43,
@@ -1250,7 +1334,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1259,7 +1343,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 44,
@@ -1277,7 +1363,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1286,7 +1372,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 45,
@@ -1304,7 +1392,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1313,7 +1401,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 46,
@@ -1331,7 +1421,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1340,7 +1430,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 47,
@@ -1358,7 +1450,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1367,7 +1459,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 48,
@@ -1385,7 +1479,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1394,7 +1488,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 49,
@@ -1412,7 +1508,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1421,7 +1517,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 50,
@@ -1439,7 +1537,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1448,7 +1546,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 51,
@@ -1466,7 +1566,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1475,7 +1575,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 52,
@@ -1493,7 +1595,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1502,7 +1604,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 53,
@@ -1520,7 +1624,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1529,7 +1633,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 54,
@@ -1547,7 +1653,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1556,7 +1662,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 55,
@@ -1574,7 +1682,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1583,7 +1691,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 56,
@@ -1601,7 +1711,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1610,7 +1720,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 57,
@@ -1628,7 +1740,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1637,7 +1749,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 58,
@@ -1655,7 +1769,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1664,7 +1778,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 59,
@@ -1682,7 +1798,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1691,7 +1807,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 60,
@@ -1709,7 +1827,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1718,7 +1836,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 61,
@@ -1736,7 +1856,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1745,7 +1865,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 62,
@@ -1763,7 +1885,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1772,7 +1894,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 63,
@@ -1790,7 +1914,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1799,7 +1923,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 64,
@@ -1817,7 +1943,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$24",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "2/AÑO",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "1 AÑO",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1826,7 +1952,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 65,
@@ -1844,7 +1972,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1853,7 +1981,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 66,
@@ -1871,7 +2001,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1880,7 +2010,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 67,
@@ -1898,7 +2030,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1907,7 +2039,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 68,
@@ -1925,7 +2059,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1934,7 +2068,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 69,
@@ -1952,7 +2088,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1961,7 +2097,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 70,
@@ -1979,7 +2117,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -1988,7 +2126,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 71,
@@ -2006,7 +2146,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2015,7 +2155,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 72,
@@ -2033,7 +2175,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$96",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "INCL",
+      "consultas_medicas": true,
       "examenes_lab_imagenologia": "INCL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2042,7 +2184,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 73,
@@ -2060,7 +2204,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2069,7 +2213,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 74,
@@ -2087,7 +2233,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2096,7 +2242,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 75,
@@ -2114,7 +2262,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2123,7 +2271,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 76,
@@ -2141,7 +2291,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2150,7 +2300,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 77,
@@ -2168,7 +2320,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2177,7 +2329,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 78,
@@ -2195,7 +2349,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2204,7 +2358,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 79,
@@ -2222,7 +2378,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2231,7 +2387,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 80,
@@ -2249,7 +2407,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2258,7 +2416,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 81,
@@ -2276,7 +2436,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2285,7 +2445,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 82,
@@ -2303,7 +2465,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2312,7 +2474,9 @@
       "pago_trimestral": true,
       "pago_mensual": true,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 83,
@@ -2330,7 +2494,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2339,7 +2503,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 84,
@@ -2357,7 +2523,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2366,7 +2532,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 85,
@@ -2384,7 +2552,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -2393,7 +2561,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 86,
@@ -2411,7 +2581,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2420,7 +2590,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 87,
@@ -2438,7 +2610,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2447,7 +2619,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 88,
@@ -2465,7 +2639,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2474,7 +2648,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 89,
@@ -2492,7 +2668,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2501,7 +2677,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 90,
@@ -2519,7 +2697,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2528,7 +2706,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 91,
@@ -2546,7 +2726,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2555,7 +2735,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 92,
@@ -2573,7 +2755,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2582,7 +2764,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 93,
@@ -2600,7 +2784,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2609,7 +2793,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 94,
@@ -2627,7 +2813,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2636,7 +2822,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 95,
@@ -2654,7 +2842,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2663,7 +2851,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 96,
@@ -2681,7 +2871,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2690,7 +2880,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 97,
@@ -2708,7 +2900,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2717,7 +2909,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 98,
@@ -2735,7 +2929,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2744,7 +2938,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 99,
@@ -2762,7 +2958,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2771,7 +2967,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 100,
@@ -2789,7 +2987,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2798,7 +2996,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 101,
@@ -2816,7 +3016,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2825,7 +3025,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 102,
@@ -2843,7 +3045,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2852,7 +3054,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 103,
@@ -2870,7 +3074,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2879,7 +3083,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 104,
@@ -2897,7 +3103,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2906,7 +3112,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 105,
@@ -2924,7 +3132,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2933,7 +3141,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 106,
@@ -2951,7 +3161,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2960,7 +3170,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 107,
@@ -2978,7 +3190,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -2987,7 +3199,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 108,
@@ -3005,7 +3219,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3014,7 +3228,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 109,
@@ -3032,7 +3248,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3041,7 +3257,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 110,
@@ -3059,7 +3277,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3068,7 +3286,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 111,
@@ -3086,7 +3306,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3095,7 +3315,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 112,
@@ -3113,7 +3335,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3122,7 +3344,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 113,
@@ -3140,7 +3364,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3149,7 +3373,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 114,
@@ -3167,7 +3393,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3176,7 +3402,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 115,
@@ -3194,7 +3422,7 @@
       "funeral_suma": "$3,000",
       "funeral_costo": "$ 60",
       "at_situ_medicamentos": "INCL",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3203,7 +3431,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": true,
+      "medicinas": false
     },
     {
       "id": 116,
@@ -3221,7 +3451,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$ 25",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3230,7 +3460,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 117,
@@ -3248,7 +3480,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$ 25",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3257,7 +3489,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 118,
@@ -3275,7 +3509,7 @@
       "funeral_suma": "$2,000",
       "funeral_costo": "$ 25",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3284,7 +3518,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 119,
@@ -3302,7 +3538,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3311,7 +3547,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 120,
@@ -3329,7 +3567,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3338,7 +3576,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 121,
@@ -3356,7 +3596,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3365,7 +3605,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 122,
@@ -3383,7 +3625,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3392,7 +3634,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 123,
@@ -3410,7 +3654,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3419,7 +3663,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 124,
@@ -3437,7 +3683,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3446,7 +3692,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 125,
@@ -3464,7 +3712,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3473,7 +3721,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 126,
@@ -3491,7 +3741,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3500,7 +3750,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 127,
@@ -3518,7 +3770,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3527,7 +3779,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 128,
@@ -3545,7 +3799,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3554,7 +3808,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 129,
@@ -3572,7 +3828,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3581,7 +3837,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 130,
@@ -3599,7 +3857,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "REEMB / C AVAL",
       "ambulancia": "INCL",
       "ramo": "Salud",
@@ -3608,7 +3866,9 @@
       "pago_trimestral": true,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 131,
@@ -3626,7 +3886,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3635,7 +3895,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 132,
@@ -3653,7 +3915,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3662,7 +3924,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 133,
@@ -3680,7 +3944,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3689,7 +3953,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 134,
@@ -3707,7 +3973,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3716,7 +3982,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 135,
@@ -3734,7 +4002,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3743,7 +4011,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 136,
@@ -3761,7 +4031,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3770,7 +4040,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 137,
@@ -3788,7 +4060,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3797,7 +4069,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 138,
@@ -3815,7 +4089,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3824,7 +4098,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 139,
@@ -3842,7 +4118,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3851,7 +4127,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 140,
@@ -3869,7 +4147,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3878,7 +4156,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 141,
@@ -3896,7 +4176,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3905,7 +4185,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 142,
@@ -3923,7 +4205,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3932,7 +4214,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 143,
@@ -3950,7 +4234,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3959,7 +4243,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 144,
@@ -3977,7 +4263,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -3986,7 +4272,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 145,
@@ -4004,7 +4292,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4013,7 +4301,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 146,
@@ -4031,7 +4321,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4040,7 +4330,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 147,
@@ -4058,7 +4350,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4067,7 +4359,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 148,
@@ -4085,7 +4379,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4094,7 +4388,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 149,
@@ -4112,7 +4408,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4121,7 +4417,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 150,
@@ -4139,7 +4437,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4148,7 +4446,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 151,
@@ -4166,7 +4466,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4175,7 +4475,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 152,
@@ -4193,7 +4495,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4202,7 +4504,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 153,
@@ -4220,7 +4524,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4229,7 +4533,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     },
     {
       "id": 154,
@@ -4247,7 +4553,7 @@
       "funeral_suma": "",
       "funeral_costo": "",
       "at_situ_medicamentos": "",
-      "consultas_medicas": "",
+      "consultas_medicas": false,
       "examenes_lab_imagenologia": "",
       "ambulancia": "",
       "ramo": "Salud",
@@ -4256,7 +4562,9 @@
       "pago_trimestral": false,
       "pago_mensual": false,
       "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "deducible": 0,
+      "atencion_medica_primaria": false,
+      "medicinas": false
     }
   ],
   "matriz_comisiones": [

@@ -175,7 +175,8 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
 
   // Servicios incluidos (fila de indicadores)
   const servicios = [
-    ['At. Situ+Med', comp.at_situ_medicamentos],
+    ['At. Primaria', comp.atencion_medica_primaria !== undefined ? comp.atencion_medica_primaria : comp.at_situ_medicamentos],
+    ['Medicinas', comp.medicinas],
     ['Consultas', comp.consultas_medicas],
     ['Exámenes', comp.examenes_lab_imagenologia],
     ['Ambulancia', comp.ambulancia]
@@ -184,9 +185,9 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   let sx = padX;
   const servW = leftW / servicios.length;
   servicios.forEach(([label, val]) => {
-    const incluido = val && String(val).trim() !== '' && String(val).toUpperCase() !== 'NO';
+    const incluido = val === true || (val && String(val).trim() !== '' && String(val).toUpperCase() !== 'NO' && String(val).toUpperCase() !== 'FALSE');
     doc.circle(sx + 3, servY + 4, 2.7).fill(incluido ? COLORS.success : '#cbd5e1');
-    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font('Helvetica').fontSize(6).text(label, sx + 9, servY, { width: servW - 9, lineBreak: false });
+    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font('Helvetica').fontSize(5.5).text(label, sx + 8, servY, { width: servW - 8, lineBreak: false });
     sx += servW;
   });
 

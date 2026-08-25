@@ -108,7 +108,10 @@ function initFallback() {
         pago_contado: t.pago_contado !== undefined ? t.pago_contado : false,
         pago_semestral: t.pago_semestral !== undefined ? t.pago_semestral : false,
         pago_trimestral: t.pago_trimestral !== undefined ? t.pago_trimestral : false,
-        pago_mensual: t.pago_mensual !== undefined ? t.pago_mensual : false
+        pago_mensual: t.pago_mensual !== undefined ? t.pago_mensual : false,
+        atencion_medica_primaria: t.atencion_medica_primaria !== undefined ? !!t.atencion_medica_primaria : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos),
+        medicinas: t.medicinas !== undefined ? !!t.medicinas : false,
+        consultas_medicas: t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false
       }));
 
       seedFallbackElearning();
@@ -186,7 +189,9 @@ function initFallback() {
             funeral_suma: t.funeral_suma || '',
             funeral_costo: t.funeral_costo || '',
             at_situ_medicamentos: t.at_situ_medicamentos || '',
-            consultas_medicas: t.consultas_medicas || '',
+            atencion_medica_primaria: t.atencion_medica_primaria !== undefined ? !!t.atencion_medica_primaria : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos),
+            medicinas: t.medicinas !== undefined ? !!t.medicinas : false,
+            consultas_medicas: t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false,
             examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
             ambulancia: t.ambulancia || '',
             pago_contado: s.includes('CONT') || s.includes('CONTADO'),
@@ -449,6 +454,9 @@ function seedFallback() {
       pago_semestral: s.includes('SEM') || s.includes('SEMESTRAL'),
       pago_trimestral: s.includes('TRIM') || s.includes('TRIMESTRAL'),
       pago_mensual: s.includes('MENS') || s.includes('MEN') || s.includes('MENSUAL'),
+      atencion_medica_primaria: t.atencion_medica_primaria !== undefined ? !!t.atencion_medica_primaria : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos),
+      medicinas: t.medicinas !== undefined ? !!t.medicinas : false,
+      consultas_medicas: t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false,
       created_at: new Date().toISOString()
     };
   });
@@ -863,6 +871,8 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT \'Salud\';');
 
   await client.query(`
