@@ -1030,6 +1030,24 @@ export default function AdminDashboard() {
   // Agrupación de pagos por póliza con filtrado inteligente
   const groupedPaymentsByPolicy = (() => {
     const map = new Map();
+
+    // 1. Inicializar todas las pólizas registradas
+    policies.forEach(pol => {
+      const pKey = String(pol.id);
+      map.set(pKey, {
+        poliza_id: pol.id,
+        poliza_codigo: pol.codigo_poliza || 'POL-GENERAL',
+        cliente_nombre: pol.cliente_nombre || 'Cliente',
+        compania_nombre: pol.compania_nombre || 'Seguros',
+        asesor_nombre: pol.asesor_nombre || 'Sin Asesor',
+        frecuencia: pol.frecuencia_pago || 'contado',
+        plan: pol.plan || '',
+        total_prima: parseFloat(pol.prima_anual || 0),
+        cuotas: []
+      });
+    });
+
+    // 2. Asociar cuotas / pagos a cada póliza
     payments.forEach(pa => {
       const pKey = pa.poliza_id ? String(pa.poliza_id) : (pa.poliza_codigo || `temp-${pa.id}`);
       if (!map.has(pKey)) {

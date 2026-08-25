@@ -3,6 +3,7 @@ import { db } from '../db/db.js';
 import { authenticateToken } from './auth.js';
 import { registrarAccion } from '../db/logger.js';
 import { procesarComisionPago } from '../services/commissionService.js';
+import { generarPagosFraccionados } from './policies.js';
 
 const router = express.Router();
 
@@ -18,7 +19,25 @@ router.get('/client', authenticateToken, async (req, res) => {
 
     if (polIds.length === 0) return res.json([]);
 
-    const payRes = await db.query('SELECT * FROM pagos ORDER BY cuota_numero ASC, id ASC');
+    let payRes = await db.query('SELECT * FROM pagos ORDER BY cuota_numero ASC, id ASC');
+    
+    // Auto-generar cuotas si alguna póliza del cliente aún no tiene registros en pagos
+    let needRequery = false;
+    for (const pol of polRes.rows) {
+      const hasPay = payRes.rows.some(pa => String(pa.poliza_id) === String(pol.id));
+      if (!hasPay && pol.prima_anual && parseFloat(pol.prima_anual) > 0) {
+        try {
+          await generarPagosFraccionados(pol.id, parseFloat(pol.prima_anual), pol.frecuencia_pago);
+          needRequery = true;
+        } catch (e) {
+          console.error('Error al autogenerar pagos:', e);
+        }
+      }
+    }
+    if (needRequery) {
+      payRes = await db.query('SELECT * FROM pagos ORDER BY cuota_numero ASC, id ASC');
+    }
+
     const compRes = await db.query('SELECT * FROM companias_seguros');
 
     const matchedPayments = payRes.rows
@@ -50,10 +69,28 @@ router.get('/admin', authenticateToken, async (req, res) => {
   }
 
   try {
-    const payRes = await db.query('SELECT * FROM pagos ORDER BY id DESC');
+    const polRes = await db.query('SELECT * FROM polizas');
+    let payRes = await db.query('SELECT * FROM pagos ORDER BY id DESC');
     let rows = payRes.rows;
 
-    const polRes = await db.query('SELECT * FROM polizas');
+    // Auto-generar cuotas si alguna póliza aún no tiene registros en pagos
+    let needRequery = false;
+    for (const pol of polRes.rows) {
+      const hasPays = rows.some(pa => String(pa.poliza_id) === String(pol.id));
+      if (!hasPays && pol.prima_anual && parseFloat(pol.prima_anual) > 0) {
+        try {
+          await generarPagosFraccionados(pol.id, parseFloat(pol.prima_anual), pol.frecuencia_pago);
+          needRequery = true;
+        } catch (e) {
+          console.error('Auto-generación de pagos fraccionados para poliza:', pol.id, e);
+        }
+      }
+    }
+    if (needRequery) {
+      payRes = await db.query('SELECT * FROM pagos ORDER BY id DESC');
+      rows = payRes.rows;
+    }
+
     const cliRes = await db.query('SELECT * FROM datos_personales');
     const compRes = await db.query('SELECT * FROM companias_seguros');
     const aseRes = await db.query('SELECT * FROM asesores');

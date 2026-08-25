@@ -86,11 +86,11 @@ router.get('/clients', authenticateToken, async (req, res) => {
     const usersRes = await db.query('SELECT id, correo FROM usuarios');
 
     const mapped = clientsRes.rows.map(c => {
-      const cliPols = polsRes.rows.filter(p => p.cliente_id === c.id);
-      const cliPolIds = cliPols.map(p => p.id);
-      const cliPays = paysRes.rows.filter(pa => cliPolIds.includes(pa.poliza_id) && pa.estado_pago === 'pagado');
-      const totalPagado = cliPays.reduce((sum, p) => sum + parseFloat(p.monto), 0);
-      const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
+      const cliPols = polsRes.rows.filter(p => parseInt(p.cliente_id) === parseInt(c.id));
+      const cliPolIds = cliPols.map(p => parseInt(p.id));
+      const cliPays = paysRes.rows.filter(pa => cliPolIds.includes(parseInt(pa.poliza_id)) && pa.estado_pago === 'pagado');
+      const totalPagado = cliPays.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
+      const userObj = usersRes.rows.find(u => parseInt(u.id) === parseInt(c.usuario_id));
 
       return {
         id: c.id,

@@ -96,10 +96,10 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
 
     // Buscar clientes únicos vinculados a pólizas con este asesor o creados directamente por él
     const polRes = await db.query('SELECT DISTINCT cliente_id FROM polizas WHERE asesor_id = $1', [asesorId]);
-    const clientIdsFromPols = polRes.rows.map(r => r.cliente_id);
+    const clientIdsFromPols = polRes.rows.map(r => parseInt(r.cliente_id)).filter(id => !isNaN(id));
 
     const directClientsRes = await db.query('SELECT id FROM datos_personales WHERE asesor_id = $1', [asesorId]);
-    const clientIdsFromDirect = directClientsRes.rows.map(r => r.id);
+    const clientIdsFromDirect = directClientsRes.rows.map(r => parseInt(r.id)).filter(id => !isNaN(id));
 
     const clientIds = [...new Set([...clientIdsFromPols, ...clientIdsFromDirect])];
 
@@ -109,7 +109,7 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
     const usersRes = await db.query('SELECT id, correo FROM usuarios');
 
     const matchedClients = clientsRes.rows
-      .filter(c => clientIds.includes(c.id))
+      .filter(c => clientIds.includes(parseInt(c.id)))
       .map(c => {
         const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
         return {

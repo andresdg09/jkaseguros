@@ -855,6 +855,23 @@ export default function AsesorDashboard() {
   // Agrupación de pagos por póliza con filtrado inteligente
   const groupedPaymentsByPolicy = (() => {
     const map = new Map();
+
+    // 1. Inicializar todas las pólizas del asesor
+    policies.forEach(pol => {
+      const pKey = String(pol.id);
+      map.set(pKey, {
+        poliza_id: pol.id,
+        poliza_codigo: pol.codigo_poliza || 'POL-GENERAL',
+        cliente_nombre: pol.cliente_nombre || 'Cliente',
+        compania_nombre: pol.compania_nombre || 'Seguros',
+        frecuencia: pol.frecuencia_pago || 'contado',
+        plan: pol.plan || '',
+        total_prima: parseFloat(pol.prima_anual || 0),
+        cuotas: []
+      });
+    });
+
+    // 2. Asociar cuotas / pagos
     payments.forEach(pa => {
       const pKey = pa.poliza_id ? String(pa.poliza_id) : (pa.poliza_codigo || `temp-${pa.id}`);
       if (!map.has(pKey)) {
@@ -943,6 +960,45 @@ export default function AsesorDashboard() {
         <button onClick={loadData} className="btn btn-secondary" style={{ padding: '0.5rem 1rem' }} disabled={loading}>
           {loading ? 'Cargando...' : 'Actualizar Data ↻'}
         </button>
+      </div>
+      {/* KPI METRICS DE ASESOR */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '1.2rem',
+        marginBottom: '2rem'
+      }}>
+        <div className="card" style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', borderLeft: '4px solid var(--primary)' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Mis Asegurados</span>
+          <span style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--primary)', margin: '0.3rem 0' }}>
+            {clients.length}
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clientes en cartera</span>
+        </div>
+
+        <div className="card" style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', borderLeft: '4px solid #10b981' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Pólizas Vigentes</span>
+          <span style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', margin: '0.3rem 0' }}>
+            {policies.filter(p => p.estado === 'vigente').length} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 400 }}>/ {policies.length} tot.</span>
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>En negociación: {policies.filter(p => p.estado === 'negociacion').length}</span>
+        </div>
+
+        <div className="card" style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', borderLeft: '4px solid var(--accent)' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cartera Total ($)</span>
+          <span style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent)', margin: '0.3rem 0' }}>
+            ${policies.filter(p => p.estado === 'vigente').reduce((sum, p) => sum + parseFloat(p.prima_anual || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Primas anuales vigentes</span>
+        </div>
+
+        <div className="card" style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', borderLeft: '4px solid #f59e0b' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cobranzas Pendientes</span>
+          <span style={{ fontSize: '1.7rem', fontWeight: 800, color: '#f59e0b', margin: '0.3rem 0' }}>
+            {payments.filter(p => p.estado_pago === 'pendiente').length}
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cuotas por cobrar</span>
+        </div>
       </div>
 
       {/* TABS DE ASESOR */}
