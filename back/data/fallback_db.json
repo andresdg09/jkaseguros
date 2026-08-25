@@ -4621,7 +4621,7 @@
       "deducible": 0,
       "prima_anual": 78.24,
       "estado": "vigente",
-      "pago_estado": "al_dia",
+      "pago_estado": "parcial",
       "frecuencia_pago": "trimestral",
       "tipo_negocio": "nuevo",
       "tipo_cobertura": "individual",
