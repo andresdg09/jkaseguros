@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS polizas (
     comision_porcentaje NUMERIC,
     estado VARCHAR(50) NOT NULL DEFAULT 'negociacion' CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada')),
     pago_estado VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (pago_estado IN ('pendiente', 'pagado', 'parcial')),
-    frecuencia_pago VARCHAR(50) DEFAULT 'contado' CHECK (frecuencia_pago IN ('contado', 'semestral', 'trimestral', 'mensual')),
+    frecuencia_pago VARCHAR(50) DEFAULT 'contado' CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'mensual')),
     tipo_negocio VARCHAR(50) DEFAULT 'nuevo' CHECK (tipo_negocio IN ('nuevo', 'renovacion')),
     tipo_cobertura VARCHAR(50) DEFAULT 'individual' CHECK (tipo_cobertura IN ('individual', 'colectivo')),
     bono_pronto_pago BOOLEAN DEFAULT FALSE,
@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS pagos (
     fecha_vencimiento DATE,
     cuota_numero INT,
     cuota_total INT,
+    observaciones TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -110,6 +111,7 @@ CREATE TABLE IF NOT EXISTS tarifas (
     pago VARCHAR(100),
     pago_contado BOOLEAN DEFAULT FALSE,
     pago_semestral BOOLEAN DEFAULT FALSE,
+    pago_cuatrimestral BOOLEAN DEFAULT FALSE,
     pago_trimestral BOOLEAN DEFAULT FALSE,
     pago_mensual BOOLEAN DEFAULT FALSE,
     maternidad_suma VARCHAR(50),
@@ -122,7 +124,14 @@ CREATE TABLE IF NOT EXISTS tarifas (
     atencion_medica_primaria BOOLEAN DEFAULT FALSE,
     medicinas BOOLEAN DEFAULT FALSE,
     consultas_medicas VARCHAR(50),
+    rehabilitacion BOOLEAN DEFAULT FALSE,
+    protesis BOOLEAN DEFAULT FALSE,
+    muleta_silla_ruedas BOOLEAN DEFAULT FALSE,
     examenes_lab_imagenologia VARCHAR(50),
+    consultas BOOLEAN DEFAULT FALSE,
+    maternidad BOOLEAN DEFAULT FALSE,
+    oftalmologia BOOLEAN DEFAULT FALSE,
+    odontologia BOOLEAN DEFAULT FALSE,
     ambulancia VARCHAR(50),
     ramo VARCHAR(100) NOT NULL DEFAULT 'Salud',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
