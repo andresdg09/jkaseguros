@@ -24,38 +24,66 @@ app.use(cors());
 app.use(express.json());
 app.use('/docs', express.static('public/docs'));
 
+// Middleware para asegurar la conexión a DB en Serverless
+let isDbInitialized = false;
+app.use(async (req, res, next) => {
+  if (!isDbInitialized) {
+    try {
+      await initDb();
+      isDbInitialized = true;
+    } catch (err) {
+      console.error('Error inicializando DB:', err);
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+  }
+  next();
+});
+
 // Montar Rutas Modulares
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/quote', quotesRouter);
 app.use('/api/policies', policiesRouter);
 app.use('/api/payments', paymentsRouter);
-app.use('/api', advisorsRouter); // /client/advisors, /public/advisors, /advisor/clients, /advisor/create-client
-app.use('/api/admin', adminRouter); // /admin/clients, /admin/advisors, /admin/users, /admin/logs, /admin/data
+app.use('/api', advisorsRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/elearning', elearningRouter);
+
+// Endpoints para Vercel Cron Jobs (Reemplazo de los crons continuos)
+app.get('/api/cron/reminders', async (req, res) => {
+  try {
+    await procesarRecordatoriosPolizas();
+    res.json({ success: true, message: 'Recordatorios procesados.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/cron/commissions', async (req, res) => {
+  try {
+    await iniciarCronComisiones();
+    res.json({ success: true, message: 'Cron de comisiones ejecutado.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Ruta de diagnóstico inicial
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor API de Protección y Seguros 360 en funcionamiento.' });
 });
 
-// Levantar Servidor: se espera explícitamente a que initDb() termine (conexión +
-// schema.sql + migraciones) antes de aceptar tráfico o disparar el cron de
-// recordatorios, para no depender de que el top-level await de db.js propague
-// el bloqueo de forma implícita a través de la cadena de imports de las rutas.
-async function startServer() {
-  await initDb();
-
-  app.listen(port, () => {
-    console.log(`🚀 Servidor backend modularizado escuchando en http://localhost:${port}`);
-
-    // Ejecutar cron de recordatorios al arrancar y luego cada hora
-    procesarRecordatoriosPolizas();
-    setInterval(procesarRecordatoriosPolizas, 3600000); // 1 hora
-
-    // Iniciar cron automático de corridas de comisiones (Lunes, Miércoles y Viernes)
-    iniciarCronComisiones();
-  });
+// Solo levantar app.listen() si se ejecuta localmente (no en Vercel)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  async function startServer() {
+    await initDb();
+    isDbInitialized = true;
+    app.listen(port, () => {
+      console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
+    });
+  }
+  startServer();
 }
 
-startServer();
+// Exportar app para la función Serverless de Vercel
+export default app;
