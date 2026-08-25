@@ -137,12 +137,14 @@ router.post('/', authenticateToken, async (req, res) => {
       finalAsesorId = advisorsRes.rows.length > 0 ? advisorsRes.rows[0].id : null;
     }
 
-    // Generar un código único de póliza
-    const codPoliza = `POL-${Math.floor(100000 + Math.random() * 900000)}`;
+    // Código único de póliza (o el provisto por el usuario/compañía)
+    const codPoliza = req.body.codigo_poliza && String(req.body.codigo_poliza).trim() !== ''
+      ? String(req.body.codigo_poliza).trim()
+      : `POL-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    // Si es administrador el que crea la póliza, se crea como "vigente" directamente.
+    // Si es administrador el que crea la póliza, se crea como "vigente" directamente por defecto.
     // Si es cliente, se crea en estado de "negociacion"
-    const initialStatus = req.user.rango === 'admin' ? 'vigente' : 'negociacion';
+    const initialStatus = req.body.estado || (req.user.rango === 'admin' ? 'vigente' : 'negociacion');
 
     const freq = frecuencia_pago || 'contado';
     const bizType = tipo_negocio || 'nuevo';

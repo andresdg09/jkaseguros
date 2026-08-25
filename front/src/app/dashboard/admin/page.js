@@ -78,6 +78,25 @@ export default function AdminDashboard() {
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
   const [submittingAdvisor, setSubmittingAdvisor] = useState(false);
 
+  // --- ESTADOS PARA EMISIÓN DIRECTA DE PÓLIZAS ---
+  const [showNewPolicyModal, setShowNewPolicyModal] = useState(false);
+  const [submittingNewPolicy, setSubmittingNewPolicy] = useState(false);
+  const [newPolicyForm, setNewPolicyForm] = useState({
+    cliente_id: '',
+    codigo_poliza: '',
+    compania_id: '1',
+    plan: '',
+    area: 'Salud',
+    suma_asegurada: '10000',
+    deducible: '0',
+    prima_anual: '',
+    frecuencia_pago: 'contado',
+    tipo_negocio: 'nuevo',
+    tipo_cobertura: 'individual',
+    asesor_id: '',
+    estado: 'vigente'
+  });
+
   // --- ESTADOS INTERNOS ---
   const [loading, setLoading] = useState(true);
   const [clearingData, setClearingData] = useState(false);
@@ -236,6 +255,49 @@ export default function AdminDashboard() {
       showToast(err.message, 'error');
     } finally {
       setSubmittingAdvisor(false);
+    }
+  };
+
+  const handleCreateNewPolicy = async (e) => {
+    e.preventDefault();
+    if (!newPolicyForm.cliente_id || !newPolicyForm.compania_id || !newPolicyForm.suma_asegurada || !newPolicyForm.prima_anual) {
+      return showToast('Por favor seleccione el cliente, compañía, suma asegurada y prima anual.', 'error');
+    }
+    setSubmittingNewPolicy(true);
+    try {
+      const res = await fetch(`${API_URL}/policies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newPolicyForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al emitir póliza');
+
+      showToast(`¡Póliza ${data.poliza?.codigo_poliza || ''} emitida con éxito!`);
+      setShowNewPolicyModal(false);
+      setNewPolicyForm({
+        cliente_id: '',
+        codigo_poliza: '',
+        compania_id: '1',
+        plan: '',
+        area: 'Salud',
+        suma_asegurada: '10000',
+        deducible: '0',
+        prima_anual: '',
+        frecuencia_pago: 'contado',
+        tipo_negocio: 'nuevo',
+        tipo_cobertura: 'individual',
+        asesor_id: '',
+        estado: 'vigente'
+      });
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSubmittingNewPolicy(false);
     }
   };
 
@@ -1488,7 +1550,223 @@ export default function AdminDashboard() {
           {/* --- GESTIÓN DE CASOS (PÓLIZAS) --- */}
           {activeTab === 'polizas' && (
             <div className="card">
-              <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Control de Solicitudes y Casos de Pólizas</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 className="card-title" style={{ margin: 0 }}>Control de Solicitudes y Casos de Pólizas</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Administre, asigne asesores o emita nuevas pólizas directamente.</p>
+                </div>
+                <button
+                  onClick={() => setShowNewPolicyModal(true)}
+                  className="btn btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.1rem', fontWeight: 600 }}
+                >
+                  ➕ Emitir / Registrar Póliza
+                </button>
+              </div>
+
+              {/* MODAL DE EMISIÓN DE PÓLIZA */}
+              {showNewPolicyModal && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 9999, padding: '1rem'
+                }}>
+                  <div className="card" style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+                      <h4 style={{ margin: 0, color: 'var(--primary)', fontWeight: 700 }}>📋 Emitir / Registrar Nueva Póliza</h4>
+                      <button 
+                        onClick={() => setShowNewPolicyModal(false)}
+                        style={{ border: 'none', background: 'transparent', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreateNewPolicy} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Cliente Asegurado *</label>
+                        <select
+                          className="form-input"
+                          value={newPolicyForm.cliente_id}
+                          onChange={(e) => setNewPolicyForm(prev => ({ ...prev, cliente_id: e.target.value }))}
+                          required
+                        >
+                          <option value="">-- Seleccionar Cliente --</option>
+                          {clients.map(c => (
+                            <option key={c.id_cliente} value={c.id_cliente}>
+                              {c.primer_nombre} {c.primer_apellido} ({c.nro_documento}) - {c.correo}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Nro. / Código de Póliza</label>
+                          <input
+                            type="text"
+                            placeholder="Ej. 150-352750"
+                            className="form-input"
+                            value={newPolicyForm.codigo_poliza}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, codigo_poliza: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Compañía Aseguradora *</label>
+                          <select
+                            className="form-input"
+                            value={newPolicyForm.compania_id}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, compania_id: e.target.value }))}
+                            required
+                          >
+                            {companies.map(comp => (
+                              <option key={comp.id} value={comp.id}>{comp.nombre}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Plan / Producto</label>
+                          <input
+                            type="text"
+                            placeholder="Ej. Seguros de Vida Mercantil"
+                            className="form-input"
+                            value={newPolicyForm.plan}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, plan: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Área / Ramo</label>
+                          <select
+                            className="form-input"
+                            value={newPolicyForm.area}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, area: e.target.value }))}
+                          >
+                            <option value="Salud">Salud</option>
+                            <option value="Vida">Vida</option>
+                            <option value="Patrimoniales">Patrimoniales</option>
+                            <option value="Automóvil">Automóvil</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Suma Asegurada ($) *</label>
+                          <input
+                            type="number"
+                            placeholder="10000"
+                            className="form-input"
+                            value={newPolicyForm.suma_asegurada}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, suma_asegurada: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Deducible ($)</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            className="form-input"
+                            value={newPolicyForm.deducible}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, deducible: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Prima Anual ($) *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="78.24"
+                            className="form-input"
+                            value={newPolicyForm.prima_anual}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, prima_anual: e.target.value }))}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Frecuencia de Pago</label>
+                          <select
+                            className="form-input"
+                            value={newPolicyForm.frecuencia_pago}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, frecuencia_pago: e.target.value }))}
+                          >
+                            <option value="contado">Contado (1 cuota)</option>
+                            <option value="semestral">Semestral (2 cuotas)</option>
+                            <option value="trimestral">Trimestral (4 cuotas)</option>
+                            <option value="mensual">Mensual (12 cuotas)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Asesor Asignado</label>
+                          <select
+                            className="form-input"
+                            value={newPolicyForm.asesor_id}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, asesor_id: e.target.value }))}
+                          >
+                            <option value="">-- Sin Asesor (Asignar luego) --</option>
+                            {advisors.map(adv => (
+                              <option key={adv.id} value={adv.id}>{adv.nombre}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Tipo de Negocio</label>
+                          <select
+                            className="form-input"
+                            value={newPolicyForm.tipo_negocio}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, tipo_negocio: e.target.value }))}
+                          >
+                            <option value="nuevo">Nuevo</option>
+                            <option value="renovacion">Renovación</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600 }}>Estado Inicial</label>
+                          <select
+                            className="form-input"
+                            value={newPolicyForm.estado}
+                            onChange={(e) => setNewPolicyForm(prev => ({ ...prev, estado: e.target.value }))}
+                          >
+                            <option value="vigente">🟢 Vigente</option>
+                            <option value="negociacion">🟡 En Negociación</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPolicyModal(false)}
+                          className="btn btn-secondary"
+                          style={{ flex: 1 }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          style={{ flex: 1.5 }}
+                          disabled={submittingNewPolicy}
+                        >
+                          {submittingNewPolicy ? 'Emitiendo...' : '✓ Confirmar Emisión'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: '1.2rem' }}>
                 <input
                   type="text"
