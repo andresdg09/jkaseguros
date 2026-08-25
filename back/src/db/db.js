@@ -122,6 +122,48 @@ function initFallback() {
         ];
       }
 
+      if (!fallbackData.polizas || fallbackData.polizas.length === 0) {
+        fallbackData.polizas = [
+          {
+            id: 1,
+            codigo_poliza: 'POL-882731',
+            cliente_id: 1,
+            asesor_id: 1,
+            compania_id: 1,
+            plan: 'ACCESS',
+            area: 'Salud',
+            suma_asegurada: 50000,
+            deducible: 0,
+            prima_anual: 612,
+            estado: 'vigente',
+            pago_estado: 'en_revision',
+            frecuencia_pago: 'mensual',
+            tipo_negocio: 'nuevo',
+            tipo_cobertura: 'individual',
+            bono_pronto_pago: false,
+            emision_online: false,
+            created_at: new Date().toISOString()
+          }
+        ];
+      }
+
+      if (!fallbackData.pagos || fallbackData.pagos.length === 0) {
+        fallbackData.pagos = [
+          { id: 1, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'pagado', referencia: '789456', fecha_vencimiento: '2026-09-25', cuota_numero: 1, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+          { id: 2, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '457892', fecha_vencimiento: '2026-10-25', cuota_numero: 2, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+          { id: 3, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '123456', fecha_vencimiento: '2026-11-25', cuota_numero: 3, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+          { id: 4, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2026-12-25', cuota_numero: 4, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 5, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-01-25', cuota_numero: 5, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 6, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-02-25', cuota_numero: 6, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 7, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-03-25', cuota_numero: 7, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 8, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-04-25', cuota_numero: 8, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 9, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-05-25', cuota_numero: 9, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 10, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-06-25', cuota_numero: 10, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 11, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-07-25', cuota_numero: 11, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 12, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-08-25', cuota_numero: 12, cuota_total: 12, created_at: new Date().toISOString() }
+        ];
+      }
+
       if (!fallbackData.tarifas || fallbackData.tarifas.length === 0) {
         fallbackData.tarifas = tarifasSemilla.map((t, index) => {
           const comp = fallbackData.companias_seguros.find(c => c.nombre.toLowerCase().trim() === t.compania.toLowerCase().trim()) || fallbackData.companias_seguros[0];
@@ -476,7 +518,6 @@ function seedFallback() {
   });
 
   // Agregar Pólizas Semilla
-  // Póliza 1: Jorge Fanianos (Client ID 1, Advisor ID 1), Vigente, Pagado
   fallbackData.polizas.push({
     id: 1,
     codigo_poliza: 'POL-882731',
@@ -487,50 +528,32 @@ function seedFallback() {
     area: 'Salud',
     suma_asegurada: 50000,
     deducible: 0,
-    prima_anual: 740,
+    prima_anual: 612,
     estado: 'vigente',
-    pago_estado: 'pagado',
+    pago_estado: 'en_revision',
+    frecuencia_pago: 'mensual',
+    tipo_negocio: 'nuevo',
+    tipo_cobertura: 'individual',
+    bono_pronto_pago: false,
+    emision_online: false,
     created_at: new Date().toISOString()
   });
 
-  fallbackData.pagos.push({
-    id: 1,
-    poliza_id: 1,
-    monto: 740,
-    fecha_pago: '2026-06-15',
-    estado_pago: 'pagado',
-    referencia: 'REF-99887766',
-    fecha_vencimiento: '2026-06-15',
-    created_at: new Date().toISOString()
-  });
-
-  // Póliza 2: Jorge Fanianos (Client ID 1, Advisor ID 1), Negociación, Pendiente
-  fallbackData.polizas.push({
-    id: 2,
-    codigo_poliza: 'POL-449201',
-    cliente_id: 1,
-    asesor_id: 1,
-    compania_id: 2, // Seguros Caracas
-    plan: 'ACCESS',
-    area: 'Salud',
-    suma_asegurada: 30000,
-    deducible: 0,
-    prima_anual: 657,
-    estado: 'negociacion',
-    pago_estado: 'pendiente',
-    created_at: new Date().toISOString()
-  });
-
-  fallbackData.pagos.push({
-    id: 2,
-    poliza_id: 2,
-    monto: 657,
-    fecha_pago: new Date().toISOString().split('T')[0],
-    estado_pago: 'pendiente',
-    referencia: null,
-    fecha_vencimiento: '2026-08-20',
-    created_at: new Date().toISOString()
-  });
+  const samplePagos = [
+    { id: 1, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'pagado', referencia: '789456', fecha_vencimiento: '2026-09-25', cuota_numero: 1, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+    { id: 2, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '457892', fecha_vencimiento: '2026-10-25', cuota_numero: 2, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+    { id: 3, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '123456', fecha_vencimiento: '2026-11-25', cuota_numero: 3, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+    { id: 4, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2026-12-25', cuota_numero: 4, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 5, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-01-25', cuota_numero: 5, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 6, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-02-25', cuota_numero: 6, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 7, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-03-25', cuota_numero: 7, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 8, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-04-25', cuota_numero: 8, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 9, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-05-25', cuota_numero: 9, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 10, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-06-25', cuota_numero: 10, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 11, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-07-25', cuota_numero: 11, cuota_total: 12, created_at: new Date().toISOString() },
+    { id: 12, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-08-25', cuota_numero: 12, cuota_total: 12, created_at: new Date().toISOString() }
+  ];
+  fallbackData.pagos.push(...samplePagos);
 
   // Agregar Logs Semilla
   fallbackData.logs_actividad.push({
@@ -1208,15 +1231,15 @@ function fallbackQuery(text, params = []) {
       };
     });
 
-    if (cleanSql.includes('WHERE id = $1')) {
+    if (cleanSql.includes('WHERE id = $1') || cleanSql.includes('WHERE p.id = $1')) {
       const polId = parseInt(params[0]);
-      result = result.filter(p => p.id === polId);
+      result = result.filter(p => parseInt(p.id) === polId);
     } else if (cleanSql.includes('cliente_id = $1')) {
       const cliId = parseInt(params[0]);
-      result = result.filter(p => p.cliente_id === cliId);
+      result = result.filter(p => parseInt(p.cliente_id) === cliId);
     } else if (cleanSql.includes('asesor_id = $1')) {
       const aseId = parseInt(params[0]);
-      result = result.filter(p => p.asesor_id === aseId);
+      result = result.filter(p => parseInt(p.asesor_id) === aseId);
     }
     
     return { rows: result };
@@ -1368,26 +1391,33 @@ function fallbackQuery(text, params = []) {
   if (cleanSql.startsWith('SELECT * FROM pagos') || cleanSql.includes('FROM pagos')) {
     let result = [...fallbackData.pagos];
     
-    if (cleanSql.includes('WHERE id = $1') || cleanSql.includes('WHERE id = $1')) {
+    if (cleanSql.includes('WHERE id = $1') || cleanSql.includes('WHERE pa.id = $1')) {
       const pId = parseInt(params[0]);
-      result = result.filter(pa => pa.id === pId);
+      result = result.filter(pa => parseInt(pa.id) === pId);
     } else if (cleanSql.includes('poliza_id = $1')) {
       const polId = parseInt(params[0]);
-      result = result.filter(pa => pa.poliza_id === polId);
+      result = result.filter(pa => parseInt(pa.poliza_id) === polId);
     } else if (cleanSql.includes('poliza_id IN (')) {
-      // Filtrado por lista de ids de polizas del cliente
-      const ids = params; // simplificamos asumiendo que los params son los ids
-      result = result.filter(pa => ids.includes(pa.poliza_id));
+      const ids = params.map(x => String(x));
+      result = result.filter(pa => ids.includes(String(pa.poliza_id)));
     }
     
-    // Cruzar con detalles de póliza
+    // Cruzar con detalles de póliza, compañía, cliente y asesor
     result = result.map(pa => {
-      const pol = fallbackData.polizas.find(p => p.id === pa.poliza_id);
-      const compania = pol ? fallbackData.companias_seguros.find(c => c.id === pol.compania_id) : null;
+      const pol = fallbackData.polizas.find(p => String(p.id) === String(pa.poliza_id));
+      const compania = pol ? fallbackData.companias_seguros.find(c => String(c.id) === String(pol.compania_id)) : null;
+      const cliente = pol ? fallbackData.datos_personales.find(d => String(d.id) === String(pol.cliente_id)) : null;
+      const asesor = pol ? fallbackData.asesores.find(a => String(a.id) === String(pol.asesor_id)) : null;
       return {
         ...pa,
-        poliza_codigo: pol ? pol.codigo_poliza : '',
-        compania_nombre: compania ? compania.nombre : 'Seguros'
+        asesor_id: pol ? pol.asesor_id : (pa.asesor_id || null),
+        poliza_codigo: pol ? pol.codigo_poliza : (pa.poliza_codigo || `POL-${pa.poliza_id}`),
+        poliza_plan: pol ? pol.plan : (pa.poliza_plan || ''),
+        poliza_frecuencia: pol ? pol.frecuencia_pago : (pa.poliza_frecuencia || 'contado'),
+        poliza_prima: pol ? pol.prima_anual : (pa.poliza_prima || 0),
+        compania_nombre: compania ? compania.nombre : (pa.compania_nombre || 'Seguros'),
+        cliente_nombre: cliente ? `${cliente.primer_nombre} ${cliente.primer_apellido}` : (pa.cliente_nombre || 'Asociado'),
+        asesor_nombre: asesor ? asesor.nombre : (pa.asesor_nombre || 'Sin Asesor')
       };
     });
 
@@ -1396,20 +1426,48 @@ function fallbackQuery(text, params = []) {
 
   // 16. INSERT INTO pagos
   if (cleanSql.startsWith('INSERT INTO pagos')) {
-    const [poliza_id, monto, fecha_pago, estado_pago, referencia, fecha_vencimiento] = params;
+    const colMatch = cleanSql.match(/INSERT INTO pagos\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i);
+    const columns = colMatch ? colMatch[1].split(',').map(c => c.trim()) : [];
+    const valueExprs = colMatch ? colMatch[2].split(',').map(v => v.trim()) : [];
+
+    const row = {};
+    columns.forEach((col, i) => {
+      const expr = valueExprs[i];
+      if (!expr) return;
+      const placeholderMatch = expr.match(/^\$(\d+)$/);
+      let val;
+      if (placeholderMatch) {
+        val = params[parseInt(placeholderMatch[1]) - 1];
+      } else if (/^'.*'$/.test(expr)) {
+        val = expr.slice(1, -1);
+      } else if (!isNaN(parseFloat(expr))) {
+        val = parseFloat(expr);
+      } else {
+        val = expr;
+      }
+      row[col] = val;
+    });
+
     const newId = fallbackData.pagos.length ? Math.max(...fallbackData.pagos.map(pa => pa.id)) + 1 : 1;
     const newPay = {
       id: newId,
-      poliza_id: parseInt(poliza_id),
-      monto: parseFloat(monto),
-      fecha_pago: fecha_pago || new Date().toISOString().split('T')[0],
-      estado_pago: estado_pago || 'pendiente',
-      referencia: referencia || null,
-      fecha_vencimiento: fecha_vencimiento || null,
+      poliza_id: parseInt(row.poliza_id || params[0] || 1),
+      monto: parseFloat(row.monto !== undefined ? row.monto : (params[1] || 0)),
+      monto_reportado: row.monto_reportado !== undefined ? (row.monto_reportado ? parseFloat(row.monto_reportado) : null) : null,
+      moneda_pago: row.moneda_pago || 'USD',
+      tasa_bcv: row.tasa_bcv ? parseFloat(row.tasa_bcv) : null,
+      fecha_pago: row.fecha_pago || (row.estado_pago === 'en_revision' ? new Date().toISOString().split('T')[0] : null),
+      estado_pago: row.estado_pago || 'pendiente',
+      referencia: row.referencia || null,
+      fecha_vencimiento: row.fecha_vencimiento || null,
+      cuota_numero: row.cuota_numero !== undefined ? parseInt(row.cuota_numero) : 1,
+      cuota_total: row.cuota_total !== undefined ? parseInt(row.cuota_total) : 1,
+      observaciones: row.observaciones || null,
       created_at: new Date().toISOString()
     };
     fallbackData.pagos.push(newPay);
     saveFallback();
+    return { rows: [newPay], rowCount: 1 };
   }
 
   // 17. DELETE FROM asesores WHERE usuario_id = $1
@@ -1432,20 +1490,67 @@ function fallbackQuery(text, params = []) {
     return { rows: [], rowCount: 0 };
   }
 
-  // 19. UPDATE pagos SET referencia = $1, estado_pago = $2 WHERE id = $3 or UPDATE pagos SET estado_pago = $1 ...
+  // 19. UPDATE pagos SET ...
   if (cleanSql.startsWith('UPDATE pagos SET')) {
-    const id = parseInt(params[2]);
-    const idx = fallbackData.pagos.findIndex(pa => pa.id === id);
-    if (idx !== -1) {
-      if (cleanSql.includes('referencia = $1, estado_pago = $2') || cleanSql.includes('referencia = $1 , estado_pago = $2')) {
-        fallbackData.pagos[idx].referencia = params[0];
-        fallbackData.pagos[idx].estado_pago = params[1];
-      } else {
-        fallbackData.pagos[idx].estado_pago = params[0];
-        fallbackData.pagos[idx].referencia = params[1];
+    let targetId = null;
+    const whereIdParam = cleanSql.match(/WHERE id\s*=\s*\$(\d+)/i);
+    if (whereIdParam) {
+      targetId = parseInt(params[parseInt(whereIdParam[1]) - 1]);
+    } else {
+      const whereIdDirect = cleanSql.match(/WHERE id\s*=\s*(\d+)/i);
+      if (whereIdDirect) targetId = parseInt(whereIdDirect[1]);
+    }
+
+    if (targetId) {
+      const idx = fallbackData.pagos.findIndex(pa => parseInt(pa.id) === targetId);
+      if (idx !== -1) {
+        const setMatch = cleanSql.match(/UPDATE pagos SET\s+([\s\S]+?)\s+WHERE/i);
+        if (setMatch) {
+          const assignments = setMatch[1].split(',').map(a => a.trim());
+          assignments.forEach(assign => {
+            const parts = assign.split('=').map(p => p.trim());
+            if (parts.length === 2) {
+              const col = parts[0];
+              const expr = parts[1];
+              const phMatch = expr.match(/\$(\d+)/);
+              let val;
+              if (phMatch) {
+                val = params[parseInt(phMatch[1]) - 1];
+              } else if (/^'.*'$/.test(expr)) {
+                val = expr.slice(1, -1);
+              } else if (!isNaN(parseFloat(expr))) {
+                val = parseFloat(expr);
+              } else {
+                val = expr;
+              }
+
+              if (col.includes('monto') && !col.includes('monto_reportado')) {
+                if (val !== undefined && val !== null && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
+                  fallbackData.pagos[idx].monto = parseFloat(val);
+                }
+              } else if (col === 'monto_reportado') {
+                fallbackData.pagos[idx].monto_reportado = val ? parseFloat(val) : fallbackData.pagos[idx].monto_reportado;
+              } else if (col === 'moneda_pago') {
+                fallbackData.pagos[idx].moneda_pago = val || fallbackData.pagos[idx].moneda_pago;
+              } else if (col === 'tasa_bcv') {
+                fallbackData.pagos[idx].tasa_bcv = val ? parseFloat(val) : null;
+              } else if (col === 'referencia') {
+                fallbackData.pagos[idx].referencia = val;
+              } else if (col === 'fecha_pago') {
+                fallbackData.pagos[idx].fecha_pago = val;
+              } else if (col === 'estado_pago') {
+                fallbackData.pagos[idx].estado_pago = val;
+              } else if (col === 'observaciones') {
+                fallbackData.pagos[idx].observaciones = val;
+              } else if (col === 'motivo_rechazo') {
+                fallbackData.pagos[idx].motivo_rechazo = val;
+              }
+            }
+          });
+        }
+        saveFallback();
+        return { rows: [fallbackData.pagos[idx]], rowCount: 1 };
       }
-      saveFallback();
-      return { rows: [fallbackData.pagos[idx]], rowCount: 1 };
     }
     return { rows: [], rowCount: 0 };
   }
@@ -1726,6 +1831,53 @@ function fallbackQuery(text, params = []) {
       return { rows: [fallbackData.cotizaciones[idx]], rowCount: 1 };
     }
     return { rows: [], rowCount: 0 };
+  }
+
+  // 30. DELETE FROM cotizaciones
+  if (cleanSql.startsWith('DELETE FROM cotizaciones')) {
+    const prev = (fallbackData.cotizaciones || []).length;
+    fallbackData.cotizaciones = [];
+    saveFallback();
+    return { rowCount: prev };
+  }
+
+  // 31. DELETE FROM polizas
+  if (cleanSql.startsWith('DELETE FROM polizas')) {
+    const prev = (fallbackData.polizas || []).length;
+    fallbackData.polizas = [];
+    saveFallback();
+    return { rowCount: prev };
+  }
+
+  // 32. DELETE FROM pagos
+  if (cleanSql.startsWith('DELETE FROM pagos')) {
+    if (cleanSql.includes('WHERE poliza_id =')) {
+      const targetPolId = parseInt(params[0]);
+      const prevLen = (fallbackData.pagos || []).length;
+      fallbackData.pagos = (fallbackData.pagos || []).filter(pa => pa.poliza_id !== targetPolId);
+      saveFallback();
+      return { rowCount: prevLen - fallbackData.pagos.length };
+    }
+    const prev = (fallbackData.pagos || []).length;
+    fallbackData.pagos = [];
+    saveFallback();
+    return { rowCount: prev };
+  }
+
+  // 33. DELETE FROM historico_comisiones
+  if (cleanSql.startsWith('DELETE FROM historico_comisiones')) {
+    const prev = (fallbackData.historico_comisiones || []).length;
+    fallbackData.historico_comisiones = [];
+    saveFallback();
+    return { rowCount: prev };
+  }
+
+  // 34. DELETE FROM corridas_comisiones
+  if (cleanSql.startsWith('DELETE FROM corridas_comisiones')) {
+    const prev = (fallbackData.corridas_comisiones || []).length;
+    fallbackData.corridas_comisiones = [];
+    saveFallback();
+    return { rowCount: prev };
   }
 
   console.log(`⚠️ Consulta SQL no emulada en fallback: "${cleanSql}"`);

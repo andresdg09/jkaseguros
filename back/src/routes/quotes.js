@@ -239,6 +239,23 @@ router.get('/sums', async (req, res) => {
   }
 });
 
+// 2b. Listar todas las tarifas completas con su compañía para asesores y cotizadores
+router.get('/tariffs', async (req, res) => {
+  try {
+    const q = `
+      SELECT t.*, c.nombre AS compania_nombre
+      FROM tarifas t
+      LEFT JOIN companias_seguros c ON t.compania_id = c.id
+      ORDER BY t.compania_id ASC, t.plan ASC, t.suma_asegurada ASC, t.edad_min ASC
+    `;
+    const result = await db.query(q, []);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error al obtener tarifas:', err);
+    res.status(500).json({ error: 'Error al obtener tarifas.' });
+  }
+});
+
 // 3. Descargar PDF de Cotización
 router.post('/pdf', async (req, res) => {
   const { cliente, edad, suma_asegurada, comparativas, asesor } = req.body;

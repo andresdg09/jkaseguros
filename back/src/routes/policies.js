@@ -7,6 +7,10 @@ import { registrarAccion } from '../db/logger.js';
 const router = express.Router();
 
 export async function generarPagosFraccionados(polizaId, primaAnual, frecuenciaPago) {
+  const pid = parseInt(polizaId);
+  // Eliminar cuotas pendientes anteriores para esta póliza para evitar duplicación
+  await db.query('DELETE FROM pagos WHERE poliza_id = $1', [pid]);
+
   const freq = frecuenciaPago || 'contado';
   const numCuotas = freq === 'contado' ? 1 : freq === 'semestral' ? 2 : freq === 'trimestral' ? 4 : 12;
   const mesesIntervalo = freq === 'contado' ? 0 : freq === 'semestral' ? 6 : freq === 'trimestral' ? 3 : 1;
@@ -25,7 +29,7 @@ export async function generarPagosFraccionados(polizaId, primaAnual, frecuenciaP
     await db.query(
       `INSERT INTO pagos (poliza_id, monto, estado_pago, referencia, fecha_vencimiento, cuota_numero, cuota_total)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [parseInt(polizaId), monto, 'pendiente', null, fechaVencimiento, i, numCuotas]
+      [pid, monto, 'pendiente', null, fechaVencimiento, i, numCuotas]
     );
   }
 }
@@ -120,8 +124,14 @@ router.post('/', authenticateToken, async (req, res) => {
       finalClienteId = clientRes.rows[0].id;
     }
 
-    // Asignar el asesor seleccionado o el primer asesor en la base de datos
+    // Asignar el asesor seleccionado o el asesor logueado o el primer asesor en la base de datos
     let finalAsesorId = asesor_id ? parseInt(asesor_id) : null;
+    if (!finalAsesorId && req.user.rango === 'asesor') {
+      const aseRes = await db.query('SELECT id FROM asesores WHERE usuario_id = $1', [req.user.id]);
+      if (aseRes.rows.length > 0) {
+        finalAsesorId = aseRes.rows[0].id;
+      }
+    }
     if (!finalAsesorId) {
       const advisorsRes = await db.query('SELECT id FROM asesores ORDER BY id ASC LIMIT 1');
       finalAsesorId = advisorsRes.rows.length > 0 ? advisorsRes.rows[0].id : null;
@@ -476,7 +486,8 @@ router.post('/bulk', authenticateToken, async (req, res) => {
           fData.polizas[idx].compania_id = parseInt(policy.compania_id);
         }
 
-        if (estado === 'vigente' && (oldStatus !== 'vigente' || oldFreq !== newFreq)) {
+        const existingPays = (fData.pagos || []).filter(pa => pa.poliza_id === parseInt(id));
+        if (existingPays.length === 0 || oldFreq !== newFreq) {
           await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), newFreq);
         }
       }
@@ -525,7 +536,8 @@ router.post('/bulk', authenticateToken, async (req, res) => {
           ]);
         }
 
-        if (estado === 'vigente' && (oldStatus !== 'vigente' || oldFreq !== newFreq)) {
+        const checkPay = await db.query('SELECT id FROM pagos WHERE poliza_id = $1', [parseInt(id)]);
+        if (checkPay.rows.length === 0 || oldFreq !== newFreq) {
           await generarPagosFraccionados(parseInt(id), parseFloat(prima_anual), newFreq);
         }
       }

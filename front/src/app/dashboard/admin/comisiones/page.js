@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../components/ToastProvider';
+import PaginationControls from '../../../components/PaginationControls';
 
 function normalizeApiUrl(url) {
   if (!url) return '';
@@ -26,6 +27,22 @@ export default function ComisionesPage() {
   const [matrizComisiones, setMatrizComisiones] = useState([]);
   const [historicoComisiones, setHistoricoComisiones] = useState([]);
   const [corridasComisiones, setCorridasComisiones] = useState([]);
+
+  // --- PAGINACIÓN ---
+  const [pagePolizas, setPagePolizas] = useState(1);
+  const [pageSizePolizas, setPageSizePolizas] = useState(10);
+
+  const [pageMatriz, setPageMatriz] = useState(1);
+  const [pageSizeMatriz, setPageSizeMatriz] = useState(10);
+
+  const [pageCorridas, setPageCorridas] = useState(1);
+  const [pageSizeCorridas, setPageSizeCorridas] = useState(10);
+
+  const [pageHistorico, setPageHistorico] = useState(1);
+  const [pageSizeHistorico, setPageSizeHistorico] = useState(10);
+
+  const [pageBnc, setPageBnc] = useState(1);
+  const [pageSizeBnc, setPageSizeBnc] = useState(10);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -581,7 +598,9 @@ export default function ComisionesPage() {
                       <td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay pólizas registradas.</td>
                     </tr>
                   ) : (
-                    polizas.map(p => (
+                    polizas
+                      .slice((pagePolizas - 1) * pageSizePolizas, pagePolizas * pageSizePolizas)
+                      .map(p => (
                       <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '0.75rem', fontWeight: 600 }}>{p.codigo_poliza}</td>
                         <td style={{ padding: '0.75rem' }}>{p.compania_nombre}</td>
@@ -638,6 +657,13 @@ export default function ComisionesPage() {
                   )}
                 </tbody>
               </table>
+              <PaginationControls
+                currentPage={pagePolizas}
+                totalItems={polizas.length}
+                pageSize={pageSizePolizas}
+                onPageChange={setPagePolizas}
+                onPageSizeChange={setPageSizePolizas}
+              />
             </div>
           )}
 
@@ -691,7 +717,9 @@ export default function ComisionesPage() {
                       <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay reglas jerárquicas configuradas. Haz clic en "Sincronizar con Tarifario" para sembrar las reglas oficiales.</td>
                     </tr>
                   ) : (
-                    matrizComisiones.map(r => {
+                    matrizComisiones
+                      .slice((pageMatriz - 1) * pageSizeMatriz, pageMatriz * pageSizeMatriz)
+                      .map(r => {
                       const totalPct = parseFloat(r.total_comision || 0);
                       const a3Pct = parseFloat(r.asesor_3 !== undefined ? r.asesor_3 : 0);
                       const margenEmpresaA3 = Math.max(0, totalPct - a3Pct);
@@ -733,6 +761,13 @@ export default function ComisionesPage() {
                   )}
                 </tbody>
               </table>
+              <PaginationControls
+                currentPage={pageMatriz}
+                totalItems={matrizComisiones.length}
+                pageSize={pageSizeMatriz}
+                onPageChange={setPageMatriz}
+                onPageSizeChange={setPageSizeMatriz}
+              />
             </div>
           )}
 
@@ -760,7 +795,9 @@ export default function ComisionesPage() {
                         <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No se han ejecutado corridas bancarias todavía.</td>
                       </tr>
                     ) : (
-                      corridasComisiones.map(run => (
+                      corridasComisiones
+                        .slice((pageCorridas - 1) * pageSizeCorridas, pageCorridas * pageSizeCorridas)
+                        .map(run => (
                         <tr key={run.id} style={{ borderBottom: '1px solid var(--border)' }}>
                           <td style={{ padding: '0.75rem', fontWeight: 600 }}>#{run.id}</td>
                           <td style={{ padding: '0.75rem' }}>{new Date(run.fecha_ejecucion).toLocaleString()}</td>
@@ -781,6 +818,13 @@ export default function ComisionesPage() {
                     )}
                   </tbody>
                 </table>
+                <PaginationControls
+                  currentPage={pageCorridas}
+                  totalItems={corridasComisiones.length}
+                  pageSize={pageSizeCorridas}
+                  onPageChange={setPageCorridas}
+                  onPageSizeChange={setPageSizeCorridas}
+                />
               </div>
 
               {/* Sección B: Desglose de Comisiones del Histórico */}
@@ -808,7 +852,9 @@ export default function ComisionesPage() {
                         <td colSpan="11" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No se registran transacciones de comisiones en el histórico.</td>
                       </tr>
                     ) : (
-                      historicoComisiones.map(h => (
+                      historicoComisiones
+                        .slice((pageHistorico - 1) * pageSizeHistorico, pageHistorico * pageSizeHistorico)
+                        .map(h => (
                         <tr key={h.id} style={{ borderBottom: '1px solid var(--border)' }}>
                           <td style={{ padding: '0.75rem', fontWeight: 600 }}>#{h.pago_id}</td>
                           <td style={{ padding: '0.75rem' }}>{h.codigo_poliza} ({h.plan})</td>
@@ -835,6 +881,13 @@ export default function ComisionesPage() {
                     )}
                   </tbody>
                 </table>
+                <PaginationControls
+                  currentPage={pageHistorico}
+                  totalItems={historicoComisiones.length}
+                  pageSize={pageSizeHistorico}
+                  onPageChange={setPageHistorico}
+                  onPageSizeChange={setPageSizeHistorico}
+                />
               </div>
 
             </div>
@@ -913,7 +966,9 @@ export default function ComisionesPage() {
                         <td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay abonos pendientes para liquidar a asesores en este momento.</td>
                       </tr>
                     ) : (
-                      bncPreview.map((r, idx) => (
+                      bncPreview
+                        .slice((pageBnc - 1) * pageSizeBnc, pageBnc * pageSizeBnc)
+                        .map((r, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--border)', fontSize: '0.8rem' }}>
                           <td style={{ padding: '0.5rem' }}>{r.fecha_pago}</td>
                           <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{cuentaDebitar}</td>
@@ -929,6 +984,13 @@ export default function ComisionesPage() {
                     )}
                   </tbody>
                 </table>
+                <PaginationControls
+                  currentPage={pageBnc}
+                  totalItems={bncPreview.length}
+                  pageSize={pageSizeBnc}
+                  onPageChange={setPageBnc}
+                  onPageSizeChange={setPageSizeBnc}
+                />
               </div>
 
             </div>

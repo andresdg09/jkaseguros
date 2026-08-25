@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
 import { createWhatsAppLink } from '../../utils/whatsapp';
+import PaginationControls from '../../components/PaginationControls';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -29,6 +30,15 @@ export default function ClienteDashboard() {
   const [activeTab, setActiveTab] = useState('polizas'); // 'polizas', 'pagos', 'asesores'
   const [reportedRefs, setReportedRefs] = useState({}); // { [paymentId]: referenceNumber }
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedPolicies, setExpandedPolicies] = useState({});
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('todos');
+
+  // --- PAGINACIÓN ---
+  const [pagePolicies, setPagePolicies] = useState(1);
+  const [pageSizePolicies, setPageSizePolicies] = useState(10);
+
+  const [pagePayments, setPagePayments] = useState(1);
+  const [pageSizePayments, setPageSizePayments] = useState(10);
 
   // Redirigir si no está logueado o no tiene datos completos
   useEffect(() => {
@@ -81,7 +91,7 @@ export default function ClienteDashboard() {
     if (hydrated && isLoggedIn && user?.rango === 'cliente') {
       loadData();
     }
-  }, [hydrated, isLoggedIn, user]);
+  }, [hydrated, isLoggedIn, user, activeTab]);
 
   // --- ESTADO REPORTE DE PAGO EN BOLÍVARES ---
   const [payModal, setPayModal] = useState(null);
@@ -112,7 +122,11 @@ export default function ClienteDashboard() {
   const handleReportPayment = async (e) => {
     if (e) e.preventDefault();
     if (!payForm.referencia || !payForm.monto_reportado_ves) {
-      return showToast('Por favor, introduzca una referencia bancaria válida y el monto en Bolívares.', 'error');
+      return showToast('Por favor, introduzca una referencia válida y el monto en Bolívares.', 'error');
+    }
+
+    if (!/^\d{6}$/.test(payForm.referencia.trim())) {
+      return showToast('La referencia debe contener exactamente 6 dígitos numéricos.', 'error');
     }
 
     // Normalizar formato numérico venezolano (ej. 1.500,50 o 1500,50 o 1500.50)
@@ -150,8 +164,30 @@ export default function ClienteDashboard() {
       if (!res.ok) throw new Error(data.error || 'Error al reportar pago');
 
       showToast('¡Pago en Bolívares reportado con éxito! Se encuentra En Revisión por el Administrador.');
+      
+      // Actualización optimista inmediata en la UI
+      setPayments(prev => prev.map(p => {
+        if (String(p.id) === String(payForm.pago_id) || (!payForm.pago_id && String(p.poliza_id) === String(payForm.poliza_id) && p.estado_pago === 'pendiente')) {
+          return {
+            ...p,
+            estado_pago: 'en_revision',
+            referencia: payForm.referencia,
+            monto_reportado: cleanMontoVES,
+            moneda_pago: 'VES',
+            fecha_pago: payForm.fecha_pago,
+            observaciones: payForm.observaciones || p.observaciones
+          };
+        }
+        return p;
+      }));
+
+      // Mantener la póliza expandida para ver el cambio de inmediato
+      if (payForm.poliza_id) {
+        setExpandedPolicies(prev => ({ ...prev, [String(payForm.poliza_id)]: true }));
+      }
+
       setPayModal(null);
-      loadData();
+      await loadData();
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -168,13 +204,60 @@ export default function ClienteDashboard() {
     p.estado?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPayments = payments.filter(pa =>
-    !searchQuery ||
-    pa.poliza_codigo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.compania_nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.referencia?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pa.estado_pago?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Agrupación de pagos por póliza individual (estrictamente separadas por poliza_id)
+  const groupedPaymentsByPolicy = (() => {
+    const map = new Map();
+    payments.forEach(pa => {
+      const pKey = pa.poliza_id ? String(pa.poliza_id) : (pa.poliza_codigo || `temp-${pa.id}`);
+      if (!map.has(pKey)) {
+        map.set(pKey, {
+          poliza_id: pa.poliza_id,
+          poliza_codigo: pa.poliza_codigo || 'POL-GENERAL',
+          compania_nombre: pa.compania_nombre || 'Seguros',
+          frecuencia: pa.poliza_frecuencia || 'contado',
+          plan: pa.poliza_plan || '',
+          total_prima: parseFloat(pa.poliza_prima || 0),
+          cuotas: []
+        });
+      }
+      map.get(pKey).cuotas.push(pa);
+    });
+
+    const groups = [...map.values()].map(group => {
+      group.cuotas.sort((a, b) => (a.cuota_numero || a.id) - (b.cuota_numero || b.id));
+      const pagadas = group.cuotas.filter(c => c.estado_pago === 'pagado').length;
+      const revision = group.cuotas.filter(c => c.estado_pago === 'en_revision').length;
+      const pendientes = group.cuotas.filter(c => c.estado_pago === 'pendiente').length;
+      const rechazadas = group.cuotas.filter(c => c.estado_pago === 'rechazado').length;
+      const montoTotalCobrado = group.cuotas.filter(c => c.estado_pago === 'pagado').reduce((acc, c) => acc + parseFloat(c.monto || 0), 0);
+      const montoTotalCuotas = group.cuotas.reduce((acc, c) => acc + parseFloat(c.monto || 0), 0);
+
+      const cuotasVisibles = paymentStatusFilter === 'todos' 
+        ? group.cuotas 
+        : group.cuotas.filter(c => c.estado_pago === paymentStatusFilter);
+
+      return {
+        ...group,
+        totalCuotas: group.cuotas.length,
+        cuotasPagadas: pagadas,
+        cuotasEnRevision: revision,
+        cuotasPendientes: pendientes,
+        cuotasRechazadas: rechazadas,
+        montoTotalCobrado,
+        montoTotalCuotas: montoTotalCuotas || group.total_prima,
+        cuotas: cuotasVisibles
+      };
+    });
+
+    if (!searchQuery) return groups;
+    const q = searchQuery.toLowerCase();
+    return groups.filter(g =>
+      g.poliza_codigo?.toLowerCase().includes(q) ||
+      g.compania_nombre?.toLowerCase().includes(q) ||
+      g.plan?.toLowerCase().includes(q) ||
+      g.cuotas.some(c => c.referencia?.toLowerCase().includes(q) || c.estado_pago?.toLowerCase().includes(q))
+    );
+  })();
 
   const filteredAdvisors = advisors.filter(adv =>
     !searchQuery ||
@@ -261,7 +344,9 @@ export default function ClienteDashboard() {
                     {filteredPolicies.length === 0 ? (
                       <tr><td colSpan="7" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
-                      filteredPolicies.map((p) => (
+                      filteredPolicies
+                        .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
+                        .map((p) => (
                         <tr key={p.id}>
                           <td><strong>{p.codigo_poliza}</strong></td>
                           <td>{p.plan || 'N/A'}</td>
@@ -286,6 +371,13 @@ export default function ClienteDashboard() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={pagePolicies}
+                totalItems={filteredPolicies.length}
+                pageSize={pageSizePolicies}
+                onPageChange={setPagePolicies}
+                onPageSizeChange={setPageSizePolicies}
+              />
             </div>
           )}
 
@@ -293,81 +385,242 @@ export default function ClienteDashboard() {
           {activeTab === 'pagos' && (
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Estatus de Cuotas y Facturas</h3>
-              <div style={{ marginBottom: '1.2rem' }}>
+
+              {/* Filtros de Cobranzas */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
                 <input
                   type="text"
                   placeholder="🔍 Buscar cobros por póliza, aseguradora, referencia o estado..."
                   className="form-input"
-                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
+                  style={{ minWidth: '280px', maxWidth: '380px', padding: '0.5rem 1rem', margin: 0 }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    Filtrar por Estado:
+                  </label>
+                  <select
+                    value={paymentStatusFilter}
+                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                    className="form-input"
+                    style={{ padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem', fontWeight: 600, minWidth: '150px' }}
+                  >
+                    <option value="todos">Todos los Estados</option>
+                    <option value="en_revision">🟡 En Revisión</option>
+                    <option value="pendiente">⚪ Pendiente de Pago</option>
+                    <option value="pagado">🟢 Verificados y Pagados</option>
+                    <option value="rechazado">🔴 Rechazados</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      const allKeys = {};
+                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_id || g.poliza_codigo] = true; });
+                      setExpandedPolicies(prev => (Object.keys(prev).length === groupedPaymentsByPolicy.length ? {} : allKeys));
+                  </button>
+                </div>
               </div>
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Código Póliza</th>
-                      <th>Aseguradora</th>
-                      <th>Monto a Pagar</th>
-                      <th>Fecha Vencimiento</th>
-                      <th>Estatus</th>
-                      <th>Referencia Reportada</th>
-                      <th>Reportar Pago</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPayments.length === 0 ? (
-                      <tr><td colSpan="7" className="text-center">No hay cuotas que coincidan con la búsqueda.</td></tr>
-                    ) : (
-                      filteredPayments.map((pa) => (
-                        <tr key={pa.id}>
-                          <td><strong>{pa.poliza_codigo}</strong></td>
-                          <td>{pa.compania_nombre}</td>
-                          <td>${parseFloat(pa.monto).toLocaleString('en-US')}</td>
-                          <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
-                          <td>
-                            <span 
-                              className="badge"
-                              style={{
-                                background: pa.estado_pago === 'pagado' ? '#e6fffa' : '#fffbeb',
-                                color: pa.estado_pago === 'pagado' ? '#047487' : '#b45309',
-                                fontWeight: 'bold'
-                              }}
-                            >
-                              {pa.estado_pago.toUpperCase()}
-                            </span>
-                          </td>
-                          <td>
-                            {pa.referencia ? (
-                              <span style={{ fontFamily: 'monospace', background: 'var(--secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                                {pa.referencia}
+
+              {/* LISTADO DE PÓLIZAS CON SUS CUOTAS INDIVIDUALES */}
+              {groupedPaymentsByPolicy.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                  No hay cobros registrados con los criterios seleccionados.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {groupedPaymentsByPolicy
+                    .slice((pagePayments - 1) * pageSizePayments, pagePayments * pageSizePayments)
+                    .map((group) => {
+                    const groupKey = group.poliza_id || group.poliza_codigo;
+                    const isExpanded = expandedPolicies[groupKey] !== false; // Abierto por defecto
+                    const progressPercent = group.totalCuotas > 0 ? Math.round((group.cuotasPagadas / group.totalCuotas) * 100) : 0;
+
+                    return (
+                      <div
+                        key={groupKey}
+                        style={{
+                          background: '#ffffff',
+                          border: group.cuotasEnRevision > 0 ? '2px solid #f59e0b' : '1.5px solid var(--border)',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        {/* Cabecera de la Póliza Individual */}
+                        <div 
+                          style={{ 
+                            padding: '1.25rem', 
+                            background: group.cuotasEnRevision > 0 ? '#fffbeb' : '#f8fafc', 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '1rem',
+                            cursor: 'pointer',
+                            borderBottom: isExpanded ? '1px solid var(--border)' : 'none'
+                          }}
+                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [groupKey]: !isExpanded }))}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '8px',
+                              background: group.cuotasEnRevision > 0 ? '#fef3c7' : '#e0f2fe',
+                              color: group.cuotasEnRevision > 0 ? '#d97706' : '#0284c7',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.2rem',
+                              fontWeight: 'bold'
+                            }}>
+                              🛡️
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <strong style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>{group.poliza_codigo}</strong>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>• {group.compania_nombre}</span>
+                              </div>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                                Plan {group.plan} | Modalidad: <span style={{ textTransform: 'capitalize' }}>{group.frecuencia}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Estadísticas de Cobro */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                {group.cuotasPagadas}/{group.totalCuotas} Cuotas Pagadas ({progressPercent}%)
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                Pagado: ${group.montoTotalCobrado.toFixed(2)} de ${group.montoTotalCuotas.toFixed(2)}
+                              </div>
+                            </div>
+
+                            {/* Badges de Alerta */}
+                            {group.cuotasEnRevision > 0 && (
+                              <span style={{ background: '#f59e0b', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.6rem', borderRadius: '20px' }}>
+                                🟡 {group.cuotasEnRevision} en Revisión
                               </span>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No Informado</span>
                             )}
-                          </td>
-                          <td>
-                            {pa.estado_pago === 'pendiente' ? (
-                              <button 
-                                onClick={() => handleOpenPayModal(pa)} 
-                                className="btn btn-primary"
-                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer' }}
-                              >
-                                💳 Reportar en Bs.
-                              </button>
-                            ) : pa.estado_pago === 'en_revision' ? (
-                              <span style={{ color: '#b45309', fontWeight: 'bold', fontSize: '0.85rem' }}>🟡 En Revisión</span>
-                            ) : (
-                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>✓ Verificado</span>
+
+                            {group.cuotasPendientes > 0 && (
+                              <span style={{ background: '#e2e8f0', color: '#475569', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.6rem', borderRadius: '20px' }}>
+                                ⚪ {group.cuotasPendientes} por Pagar
+                              </span>
                             )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+
+                            {group.cuotasRechazadas > 0 && (
+                              <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.6rem', borderRadius: '20px' }}>
+                                🔴 {group.cuotasRechazadas} Rechazadas
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                            >
+                              {isExpanded ? 'Ocultar Cuotas 🔼' : `Ver Cuotas (${group.cuotas.length}) 🔽`}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Desglose de Cuotas Expandible */}
+                        {isExpanded && (
+                          <div style={{ padding: '0.75rem' }}>
+                            {group.cuotas.length === 0 ? (
+                              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                No hay cuotas registradas para esta póliza.
+                              </div>
+                            ) : (
+                              <div className="table-container" style={{ margin: 0 }}>
+                                <table className="table" style={{ fontSize: '0.85rem' }}>
+                                  <thead>
+                                    <tr>
+                                      <th>Cuota / Nro</th>
+                                      <th>Monto Cuota ($)</th>
+                                      <th>Vencimiento</th>
+                                      <th>Estatus</th>
+                                      <th>Referencia Bancaria</th>
+                                      <th>Fecha Pago</th>
+                                      <th>Acción</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.cuotas.map((pa, idx) => (
+                                      <tr key={pa.id} style={{ background: pa.estado_pago === 'en_revision' ? '#fffbeb' : 'inherit' }}>
+                                        <td>
+                                          <strong>Cuota #{pa.cuota_numero || (idx + 1)}</strong>
+                                        </td>
+                                        <td>
+                                          <strong style={{ color: 'var(--primary)' }}>${parseFloat(pa.monto).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+                                        </td>
+                                        <td>
+                                          {pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}
+                                        </td>
+                                        <td>
+                                          <span 
+                                            className="badge"
+                                            style={{
+                                              background: pa.estado_pago === 'pagado' ? '#e6fffa' : pa.estado_pago === 'en_revision' ? '#fffbeb' : pa.estado_pago === 'rechazado' ? '#fee2e2' : '#f1f5f9',
+                                              color: pa.estado_pago === 'pagado' ? '#047487' : pa.estado_pago === 'en_revision' ? '#b45309' : pa.estado_pago === 'rechazado' ? '#b91c1c' : '#475569',
+                                              fontWeight: 'bold'
+                                            }}
+                                          >
+                                            {pa.estado_pago === 'en_revision' ? 'EN REVISIÓN' : pa.estado_pago.toUpperCase()}
+                                          </span>
+                                        </td>
+                                        <td>
+                                          {pa.referencia ? (
+                                            <span style={{ fontFamily: 'monospace', background: 'var(--secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                              {pa.referencia}
+                                            </span>
+                                          ) : (
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No Informado</span>
+                                          )}
+                                        </td>
+                                        <td>
+                                          {pa.fecha_pago ? (typeof pa.fecha_pago === 'string' ? pa.fecha_pago.split('T')[0] : new Date(pa.fecha_pago).toISOString().split('T')[0]) : '—'}
+                                        </td>
+                                        <td>
+                                          {pa.estado_pago === 'pendiente' || pa.estado_pago === 'rechazado' ? (
+                                            <button 
+                                              onClick={() => handleOpenPayModal(pa)} 
+                                              className="btn btn-primary"
+                                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                                            >
+                                              💳 Reportar en Bs.
+                                            </button>
+                                          ) : pa.estado_pago === 'en_revision' ? (
+                                            <span style={{ color: '#b45309', fontWeight: 'bold', fontSize: '0.8rem' }}>🟡 Esperando Aprobación</span>
+                                          ) : (
+                                            <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.8rem' }}>✓ Pagado</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <PaginationControls
+                currentPage={pagePayments}
+                totalItems={groupedPaymentsByPolicy.length}
+                pageSize={pageSizePayments}
+                onPageChange={setPagePayments}
+                onPageSizeChange={setPageSizePayments}
+              />
             </div>
           )}
 
@@ -518,13 +771,19 @@ export default function ClienteDashboard() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Número de Referencia Bancaria *</label>
+                      <label className="form-label">Referencia (últimos 6)</label>
                       <input 
                         type="text" 
+                        inputMode="numeric"
+                        maxLength={6}
+                        pattern="\d{6}"
                         className="form-input" 
-                        placeholder="Ej: 9876543210"
+                        placeholder="123456"
                         value={payForm.referencia} 
-                        onChange={e => setPayForm({ ...payForm, referencia: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setPayForm({ ...payForm, referencia: val });
+                        }}
                         required 
                       />
                     </div>

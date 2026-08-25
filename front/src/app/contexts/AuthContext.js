@@ -130,21 +130,26 @@ export function AuthProvider({ children }) {
 
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      const res = await originalFetch(...args);
-      if (res.status === 401 || res.status === 403) {
-        const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-        if (!url.includes('/auth/login') && !url.includes('/auth/register') && !url.includes('/public/')) {
-          logout();
-          window.location.href = '/login';
+      try {
+        const res = await originalFetch(...args);
+        if (res.status === 401 || res.status === 403) {
+          const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+          if (!url.includes('/auth/login') && !url.includes('/auth/register') && !url.includes('/public/')) {
+            logout();
+            window.location.href = '/login';
+          }
         }
+        return res;
+      } catch (err) {
+        // Si el backend no responde o hay error de conexión de red
+        throw err;
       }
-      return res;
     };
 
     return () => {
       window.fetch = originalFetch;
     };
-  }, [token]);
+  }, []);
 
   const updateProfile = async (profileData) => {
     setLoading(true);

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
 import { createWhatsAppLink } from '../../utils/whatsapp';
+import PaginationControls from '../../components/PaginationControls';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -13,6 +14,110 @@ function normalizeApiUrl(url) {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 }
 const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api');
+
+function calculateAge(birthDateStr) {
+  if (!birthDateStr) return null;
+  const today = new Date();
+  const birthDate = new Date(birthDateStr);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return isNaN(age) || age < 0 ? null : age;
+}
+
+const DEFAULT_COMPANIES = [
+  { id: 1, nombre: "Mercantil Seguros" },
+  { id: 2, nombre: "Seguros Caracas" },
+  { id: 3, nombre: "Seguros Venezuela" },
+  { id: 4, nombre: "Mapfre Seguros" },
+  { id: 5, nombre: "Internacional de Seguros" }
+];
+
+const DEFAULT_COMPANY_PLANS = {
+  '1': ['ACCESS', 'PLATINO', 'EMERGENCIAS'],
+  '2': ['SALUD EXTERIOR', 'SALUD INDIVIDUAL'],
+  '3': ['BRONCE', 'PLATA', 'ORO'],
+  '4': ['Salud Global', 'Incendio', 'Vehículos'],
+  '5': ['Cobertura Internacional', 'Asistencia en Viajes']
+};
+
+const DEFAULT_PLAN_SUMS = {
+  'ACCESS': [30000, 50000, 100000, 200000],
+  'PLATINO': [5000, 10000],
+  'EMERGENCIAS': [5000, 10000],
+  'SALUD EXTERIOR': [50000, 100000, 200000],
+  'SALUD INDIVIDUAL': [30000],
+  'BRONCE': [50000],
+  'PLATA': [100000],
+  'ORO': [200000],
+  'Salud Global': [10000, 20000, 50000, 100000],
+  'Incendio': [50000, 100000, 250000],
+  'Vehículos': [10000, 25000, 50000],
+  'Cobertura Internacional': [50000, 100000, 200000],
+  'Asistencia en Viajes': [25000, 50000]
+};
+
+function isTariffOfCompany(t, compId, companyList = []) {
+  if (!t || !compId) return false;
+  if (String(t.compania_id) === String(compId)) return true;
+  const compObj = companyList.find(c => String(c.id) === String(compId));
+  if (compObj) {
+    const compName = (compObj.nombre || '').toLowerCase();
+    const tCompName = (t.compania_nombre || t.compania || '').toLowerCase();
+    if (tCompName && (compName.includes(tCompName) || tCompName.includes(compName))) return true;
+    if (compName.includes('mercantil') && (String(t.compania_id) === '1' || tCompName.includes('mercantil'))) return true;
+    if (compName.includes('caracas') && (String(t.compania_id) === '2' || tCompName.includes('caracas'))) return true;
+    if (compName.includes('venezuela') && (String(t.compania_id) === '3' || tCompName.includes('venezuela'))) return true;
+    if (compName.includes('mapfre') && (String(t.compania_id) === '4' || tCompName.includes('mapfre'))) return true;
+    if (compName.includes('internacional') && (String(t.compania_id) === '5' || tCompName.includes('internacional'))) return true;
+  }
+  return false;
+}
+
+function getAvailablePlans(compId, tariffsList = [], companyList = []) {
+  if (!compId) return [];
+  const fromTariffs = Array.from(new Set(
+    tariffsList
+      .filter(t => isTariffOfCompany(t, compId, companyList))
+      .map(t => t.plan)
+      .filter(Boolean)
+  )).sort();
+
+  if (fromTariffs.length > 0) return fromTariffs;
+
+  const compKey = String(compId);
+  if (DEFAULT_COMPANY_PLANS[compKey]) return DEFAULT_COMPANY_PLANS[compKey];
+  
+  const compObj = companyList.find(c => String(c.id) === compKey);
+  if (compObj) {
+    const cName = compObj.nombre.toLowerCase();
+    if (cName.includes('mercantil')) return DEFAULT_COMPANY_PLANS['1'];
+    if (cName.includes('caracas')) return DEFAULT_COMPANY_PLANS['2'];
+    if (cName.includes('venezuela')) return DEFAULT_COMPANY_PLANS['3'];
+    if (cName.includes('mapfre')) return DEFAULT_COMPANY_PLANS['4'];
+    if (cName.includes('internacional')) return DEFAULT_COMPANY_PLANS['5'];
+  }
+
+  return ['Plan Estándar', 'Plan Especial'];
+}
+
+function getAvailableSums(compId, planName, tariffsList = [], companyList = []) {
+  if (!planName) return [];
+  const fromTariffs = Array.from(new Set(
+    tariffsList
+      .filter(t => isTariffOfCompany(t, compId, companyList) && t.plan === planName)
+      .map(t => parseFloat(t.suma_asegurada))
+      .filter(n => !isNaN(n) && n > 0)
+  )).sort((a, b) => a - b);
+
+  if (fromTariffs.length > 0) return fromTariffs;
+
+  if (DEFAULT_PLAN_SUMS[planName]) return DEFAULT_PLAN_SUMS[planName];
+
+  return [5000, 10000, 20000, 30000, 50000, 100000, 200000];
+}
 
 export default function AsesorDashboard() {
   const { token, isLoggedIn, user, asesor, hydrated } = useAuth();
@@ -24,8 +129,17 @@ export default function AsesorDashboard() {
   const [policies, setPolicies] = useState([]);
   const [payments, setPayments] = useState([]);
   const [tempRefs, setTempRefs] = useState({});
-  const [companies, setCompanies] = useState([]);
-  const [policyForm, setPolicyForm] = useState({ cliente_id: '', compania_id: '', plan: '', suma_asegurada: 5000, prima_anual: 300, frecuencia_pago: 'contado' });
+  const [companies, setCompanies] = useState(DEFAULT_COMPANIES);
+  const [tariffs, setTariffs] = useState([]);
+  const [policyForm, setPolicyForm] = useState({ 
+    cliente_id: '', 
+    compania_id: '', 
+    plan: '', 
+    suma_asegurada: '', 
+    prima_anual: '', 
+    frecuencia_pago: 'contado',
+    edad_calculada: null
+  });
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DE E-LEARNING ---
@@ -40,6 +154,16 @@ export default function AsesorDashboard() {
   // --- ESTADOS DE PANELES ---
   const [activeTab, setActiveTab] = useState('clientes'); // 'clientes', 'registrar-cliente', 'pagos'
   const [searchQuery, setSearchQuery] = useState('');
+
+  // --- PAGINACIÓN ---
+  const [pageClients, setPageClients] = useState(1);
+  const [pageSizeClients, setPageSizeClients] = useState(10);
+
+  const [pagePayments, setPagePayments] = useState(1);
+  const [pageSizePayments, setPageSizePayments] = useState(10);
+
+  const [pagePolicies, setPagePolicies] = useState(1);
+  const [pageSizePolicies, setPageSizePolicies] = useState(10);
 
   // --- ESTADOS DE ENVÍO DE DOCUMENTOS ---
   const [docModalOpen, setDocModalOpen] = useState(false);
@@ -91,7 +215,11 @@ export default function AsesorDashboard() {
   const handleSendPaymentReport = async (e) => {
     e.preventDefault();
     if (!reportPayForm.referencia || !reportPayForm.monto_reportado_ves) {
-      return showToast('Por favor ingrese el monto en Bolívares y la referencia bancaria.', 'error');
+      return showToast('Por favor ingrese el monto en Bolívares y la referencia (últimos 6 dígitos).', 'error');
+    }
+
+    if (!/^\d{6}$/.test(reportPayForm.referencia.trim())) {
+      return showToast('La referencia debe contener exactamente 6 dígitos numéricos.', 'error');
     }
 
     // Normalizar formato numérico venezolano (ej. 1.500,50 o 1500,50 o 1500.50)
@@ -129,8 +257,26 @@ export default function AsesorDashboard() {
       if (!res.ok) throw new Error(data.error || 'Error al reportar pago');
 
       showToast('¡Pago en Bolívares reportado con éxito! Se encuentra En Revisión por el Administrador.');
+      
+      // Actualización optimista inmediata en la UI
+      setPayments(prev => prev.map(p => {
+        if (String(p.id) === String(reportPayForm.pago_id) || (!reportPayForm.pago_id && String(p.poliza_id) === String(reportPayForm.poliza_id) && p.estado_pago === 'pendiente')) {
+          return {
+            ...p,
+            estado_pago: 'en_revision',
+            referencia: reportPayForm.referencia,
+            monto_reportado: cleanMontoVES,
+            moneda_pago: 'VES',
+            fecha_pago: reportPayForm.fecha_pago,
+            observaciones: reportPayForm.observaciones || p.observaciones
+          };
+        }
+        return p;
+      }));
+
       setReportPayModal(null);
-      loadData();
+      setActiveTab('clientes');
+      await loadData();
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -219,7 +365,8 @@ export default function AsesorDashboard() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataPols = await resPols.json();
-      setPolicies(Array.isArray(dataPols) ? dataPols : []);
+      const validPols = Array.isArray(dataPols) ? dataPols : [];
+      setPolicies(validPols);
 
       // 3. Cargar cobros/pagos globales
       const resPays = await fetch(`${API_URL}/payments/admin`, {
@@ -227,21 +374,66 @@ export default function AsesorDashboard() {
       });
       const dataPays = await resPays.json();
       
-      if (Array.isArray(dataPays) && Array.isArray(dataPols)) {
-        // Filtrar pagos para mostrar solo aquellos vinculados a pólizas de este asesor
-        const policyIds = dataPols.map(p => p.id);
-        const filteredPays = dataPays.filter(pa => policyIds.includes(pa.poliza_id));
+      if (Array.isArray(dataPays)) {
+        // Filtrar pagos para mostrar aquellos vinculados a pólizas de este asesor
+        const policyIds = new Set(validPols.map(p => String(p.id)));
+        const advisorId = asesor?.id || user?.id;
+        const filteredPays = dataPays.filter(pa => 
+          policyIds.has(String(pa.poliza_id)) || 
+          (advisorId && pa.asesor_id && String(pa.asesor_id) === String(advisorId))
+        );
         setPayments(filteredPays);
       } else {
         setPayments([]);
       }
 
       // Cargar compañías para solicitudes de pólizas
-      const resComps = await fetch(`${API_URL}/admin/companies`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataComps = await resComps.json();
-      setCompanies(Array.isArray(dataComps) ? dataComps : []);
+      let loadedComps = [];
+      try {
+        const resComps = await fetch(`${API_URL}/admin/companies`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resComps.ok) {
+          const dataComps = await resComps.json();
+          if (Array.isArray(dataComps) && dataComps.length > 0) {
+            loadedComps = dataComps;
+          }
+        }
+      } catch (e) {
+        console.warn('Error al cargar companias:', e);
+      }
+      setCompanies(loadedComps.length > 0 ? loadedComps : DEFAULT_COMPANIES);
+
+      // Cargar tarifas del tarifario oficial (intentar /quote/tariffs o /admin/tariffs)
+      let loadedTariffs = [];
+      try {
+        const resTariffs = await fetch(`${API_URL}/quote/tariffs`);
+        if (resTariffs.ok) {
+          const dataTariffs = await resTariffs.json();
+          if (Array.isArray(dataTariffs) && dataTariffs.length > 0) {
+            loadedTariffs = dataTariffs;
+          }
+        }
+      } catch (e) {
+        console.warn('Error al cargar /quote/tariffs:', e);
+      }
+
+      if (loadedTariffs.length === 0) {
+        try {
+          const resAdminTariffs = await fetch(`${API_URL}/admin/tariffs`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resAdminTariffs.ok) {
+            const dataAdminTariffs = await resAdminTariffs.json();
+            if (Array.isArray(dataAdminTariffs) && dataAdminTariffs.length > 0) {
+              loadedTariffs = dataAdminTariffs;
+            }
+          }
+        } catch (e) {
+          console.warn('Error al cargar /admin/tariffs:', e);
+        }
+      }
+      setTariffs(loadedTariffs);
 
     } catch (err) {
       console.error('Error al cargar datos de asesor:', err);
@@ -258,7 +450,7 @@ export default function AsesorDashboard() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [hydrated, isLoggedIn, user]);
+  }, [hydrated, isLoggedIn, user, activeTab]);
 
   const loadElearningData = async () => {
     if (!token) return;
@@ -378,11 +570,97 @@ export default function AsesorDashboard() {
     }
   };
 
+  // Helper: Encontrar tarifa correspondiente según Aseguradora, Plan, Suma y Edad
+  const findMatchingTariff = (companyId, planName, sumVal, age) => {
+    if (!companyId || !planName || !sumVal) return null;
+    const cleanSum = parseFloat(sumVal);
+    const clientAge = (age !== null && age !== undefined && !isNaN(age)) ? age : null;
+
+    if (clientAge !== null) {
+      const match = tariffs.find(t =>
+        isTariffOfCompany(t, companyId, companies) &&
+        t.plan === planName &&
+        parseFloat(t.suma_asegurada) === cleanSum &&
+        t.edad_min <= clientAge &&
+        t.edad_max >= clientAge
+      );
+      if (match) return match;
+    }
+
+    return tariffs.find(t =>
+      isTariffOfCompany(t, companyId, companies) &&
+      t.plan === planName &&
+      parseFloat(t.suma_asegurada) === cleanSum
+    ) || null;
+  };
+
+  const handlePolicyClientChange = (clientId) => {
+    const selectedCli = clients.find(c => String(c.id) === String(clientId));
+    const age = selectedCli?.fecha_nacimiento ? calculateAge(selectedCli.fecha_nacimiento) : null;
+    
+    let newPrima = policyForm.prima_anual;
+    let matchingTariff = null;
+    if (policyForm.compania_id && policyForm.plan && policyForm.suma_asegurada) {
+      matchingTariff = findMatchingTariff(policyForm.compania_id, policyForm.plan, policyForm.suma_asegurada, age);
+      if (matchingTariff) newPrima = matchingTariff.prima;
+    }
+
+    setPolicyForm(prev => ({
+      ...prev,
+      cliente_id: clientId,
+      edad_calculada: age,
+      prima_anual: matchingTariff ? String(matchingTariff.prima) : newPrima
+    }));
+  };
+
+  const handlePolicyCompanyChange = (companyId) => {
+    const availablePlans = getAvailablePlans(companyId, tariffs, companies);
+    const firstPlan = availablePlans[0] || '';
+    
+    const availableSums = getAvailableSums(companyId, firstPlan, tariffs, companies);
+    const firstSum = availableSums[0] || '';
+    const match = findMatchingTariff(companyId, firstPlan, firstSum, policyForm.edad_calculada);
+
+    setPolicyForm(prev => ({
+      ...prev,
+      compania_id: companyId,
+      plan: firstPlan,
+      suma_asegurada: firstSum ? String(firstSum) : '',
+      prima_anual: match ? String(match.prima) : prev.prima_anual,
+      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual'))
+    }));
+  };
+
+  const handlePolicyPlanChange = (planName) => {
+    const availableSums = getAvailableSums(policyForm.compania_id, planName, tariffs, companies);
+    const firstSum = availableSums[0] || '';
+    const match = findMatchingTariff(policyForm.compania_id, planName, firstSum, policyForm.edad_calculada);
+
+    setPolicyForm(prev => ({
+      ...prev,
+      plan: planName,
+      suma_asegurada: firstSum ? String(firstSum) : '',
+      prima_anual: match ? String(match.prima) : prev.prima_anual,
+      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual'))
+    }));
+  };
+
+  const handlePolicySumChange = (sumVal) => {
+    const match = findMatchingTariff(policyForm.compania_id, policyForm.plan, sumVal, policyForm.edad_calculada);
+
+    setPolicyForm(prev => ({
+      ...prev,
+      suma_asegurada: sumVal,
+      prima_anual: match ? String(match.prima) : prev.prima_anual,
+      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual'))
+    }));
+  };
+
   // Solicitar nueva póliza al admin
   const handleRequestPolicy = async (e) => {
     e.preventDefault();
     if (!policyForm.cliente_id || !policyForm.compania_id || !policyForm.suma_asegurada || !policyForm.prima_anual) {
-      return showToast('Por favor, rellene todos los campos obligatorios del formulario.', 'error');
+      return showToast('Por favor, seleccione el cliente, aseguradora, plan y suma asegurada.', 'error');
     }
     setLoading(true);
     try {
@@ -398,20 +676,22 @@ export default function AsesorDashboard() {
           suma_asegurada: parseFloat(policyForm.suma_asegurada),
           prima_anual: parseFloat(policyForm.prima_anual),
           cliente_id: parseInt(policyForm.cliente_id),
-          frecuencia_pago: policyForm.frecuencia_pago || 'contado'
+          frecuencia_pago: policyForm.frecuencia_pago || 'contado',
+          asesor_id: asesor?.id ? parseInt(asesor.id) : undefined
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al solicitar póliza');
 
-      showToast(`¡Solicitud de póliza enviada! Código: ${data.poliza.codigo_poliza}. Estado: Negociación.`);
+      showToast(`¡Solicitud de póliza enviada con éxito! Código: ${data.poliza.codigo_poliza}. Estado: Negociación.`);
       setPolicyForm({
         cliente_id: '',
-        compania_id: companies[0]?.id || '',
+        compania_id: '',
         plan: '',
-        suma_asegurada: 5000,
-        prima_anual: 300,
-        frecuencia_pago: 'contado'
+        suma_asegurada: '',
+        prima_anual: '',
+        frecuencia_pago: 'contado',
+        edad_calculada: null
       });
       loadData();
       setActiveTab('clientes');
@@ -513,10 +793,10 @@ export default function AsesorDashboard() {
       });
 
       if (!emailjsRes.ok) {
-        throw new Error(`EmailJS falló con código ${emailjsRes.status}`);
+        throw new Error('No se pudo enviar el correo de recordatorio.');
       }
 
-      showToast(`Recordatorio de cobro enviado por correo a ${targetEmail}.`);
+      showToast(`Recordatorio de pago enviado exitosamente a ${targetEmail}`);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -614,7 +894,7 @@ export default function AsesorDashboard() {
         cuotasPendientes: pendientes,
         cuotasRechazadas: rechazadas,
         montoTotalCobrado,
-        montoTotalCuotas,
+        montoTotalCuotas: montoTotalCuotas || group.total_prima,
         cuotas: cuotasVisibles
       };
     });
@@ -628,12 +908,17 @@ export default function AsesorDashboard() {
       if (paymentStatusFilter === 'rechazado' && group.cuotasRechazadas === 0) return false;
 
       if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
       return (
         group.poliza_codigo?.toLowerCase().includes(q) ||
         group.cliente_nombre?.toLowerCase().includes(q) ||
         group.compania_nombre?.toLowerCase().includes(q) ||
-        group.cuotas.some(c => c.referencia?.toLowerCase().includes(q))
+        group.plan?.toLowerCase().includes(q) ||
+        group.cuotas.some(c => 
+          (c.referencia && String(c.referencia).toLowerCase().includes(q)) ||
+          (c.monto_reportado && String(c.monto_reportado).includes(q)) ||
+          (c.estado_pago && String(c.estado_pago).toLowerCase().includes(q))
+        )
       );
     });
   })();
@@ -753,7 +1038,9 @@ export default function AsesorDashboard() {
                     {filteredClients.length === 0 ? (
                       <tr><td colSpan="6" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
                     ) : (
-                      filteredClients.map((c) => {
+                      filteredClients
+                        .slice((pageClients - 1) * pageSizeClients, pageClients * pageSizeClients)
+                        .map((c) => {
                         const clientPols = policies.filter(p => p.cliente_id === c.id);
                         return (
                           <tr key={c.id}>
@@ -797,6 +1084,13 @@ export default function AsesorDashboard() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={pageClients}
+                totalItems={filteredClients.length}
+                pageSize={pageSizeClients}
+                onPageChange={setPageClients}
+                onPageSizeChange={setPageSizeClients}
+              />
             </div>
           )}
 
@@ -932,7 +1226,7 @@ export default function AsesorDashboard() {
                   <button
                     onClick={() => {
                       const allKeys = {};
-                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_codigo] = true; });
+                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_id || g.poliza_codigo] = true; });
                       setExpandedPolicies(prev => (Object.keys(prev).length === groupedPaymentsByPolicy.length ? {} : allKeys));
                     }}
                     className="btn btn-secondary"
@@ -950,13 +1244,16 @@ export default function AsesorDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  {groupedPaymentsByPolicy.map((group) => {
-                    const isExpanded = !!expandedPolicies[group.poliza_codigo];
+                  {groupedPaymentsByPolicy
+                    .slice((pagePayments - 1) * pageSizePayments, pagePayments * pageSizePayments)
+                    .map((group) => {
+                    const groupKey = group.poliza_id || group.poliza_codigo;
+                    const isExpanded = !!expandedPolicies[groupKey];
                     const progressPercent = group.totalCuotas > 0 ? Math.round((group.cuotasPagadas / group.totalCuotas) * 100) : 0;
 
                     return (
                       <div
-                        key={group.poliza_codigo}
+                        key={groupKey}
                         style={{
                           background: '#ffffff',
                           border: group.cuotasEnRevision > 0 ? '2px solid #f59e0b' : '1px solid var(--border)',
@@ -978,108 +1275,137 @@ export default function AsesorDashboard() {
                             cursor: 'pointer',
                             borderBottom: isExpanded ? '1px solid var(--border)' : 'none'
                           }}
-                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [group.poliza_codigo]: !prev[group.poliza_codigo] }))}
+                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [groupKey]: !prev[groupKey] }))}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
-                              🛡️ {group.poliza_codigo}
-                            </span>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
-                              {group.cliente_nombre}
-                            </span>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                              ({group.compania_nombre} {group.plan ? `- Plan ${group.plan}` : ''})
-                            </span>
-                            <span style={{ fontSize: '0.75rem', background: '#e2e8f0', color: '#475569', padding: '0.2rem 0.5rem', borderRadius: '4px', textTransform: 'capitalize', fontWeight: 600 }}>
-                              Frecuencia: {group.frecuencia}
-                            </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '8px',
+                              background: group.cuotasEnRevision > 0 ? '#fef3c7' : '#e0f2fe',
+                              color: group.cuotasEnRevision > 0 ? '#d97706' : '#0284c7',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.2rem',
+                              fontWeight: 'bold'
+                            }}>
+                              🛡️
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <strong style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>{group.poliza_codigo}</strong>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>• {group.cliente_nombre}</span>
+                              </div>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                                <strong>{group.compania_nombre}</strong> {group.plan ? `- Plan ${group.plan}` : ''} | Frecuencia: <span style={{ textTransform: 'capitalize' }}>{group.frecuencia}</span>
+                              </div>
+                            </div>
                           </div>
 
+                          {/* Estadísticas de Cobro */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                            {/* Progreso de Cobro */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>
-                                  {group.cuotasPagadas}/{group.totalCuotas} Cuotas Pagadas ({progressPercent}%)
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                  Recaudado: <strong>${group.montoTotalCobrado.toFixed(2)}</strong> de ${group.montoTotalCuotas.toFixed(2)}
-                                </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: group.cuotasPagadas === group.totalCuotas && group.totalCuotas > 0 ? '#16a34a' : 'inherit' }}>
+                                {group.cuotasPagadas}/{group.totalCuotas} Cuotas Pagadas ({progressPercent}%)
                               </div>
-                              <div style={{ width: '80px', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{ width: `${progressPercent}%`, height: '100%', background: progressPercent === 100 ? '#16a34a' : '#2563eb' }} />
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                Recaudado: ${group.montoTotalCobrado.toFixed(2)} de ${group.montoTotalCuotas.toFixed(2)}
                               </div>
                             </div>
 
-                            {/* Alerta de Cuotas en Revisión */}
+                            {/* Badges de Alerta */}
                             {group.cuotasEnRevision > 0 && (
-                              <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: 800, fontSize: '0.75rem', padding: '0.3rem 0.6rem', borderRadius: '20px' }}>
-                                🟡 {group.cuotasEnRevision} en revisión
+                              <span style={{ background: '#f59e0b', color: '#fff', fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.6rem', borderRadius: '20px' }}>
+                                🟡 {group.cuotasEnRevision} por Verificar
+                              </span>
+                            )}
+
+                            {group.cuotasPendientes > 0 && (
+                              <span style={{ background: '#e2e8f0', color: '#475569', fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.6rem', borderRadius: '20px' }}>
+                                ⚪ {group.cuotasPendientes} Pendientes
+                              </span>
+                            )}
+
+                            {group.cuotasRechazadas > 0 && (
+                              <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.6rem', borderRadius: '20px' }}>
+                                🔴 {group.cuotasRechazadas} Rechazadas
                               </span>
                             )}
 
                             <button
                               type="button"
                               className="btn btn-secondary"
-                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', pointerEvents: 'none' }}
+                              style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                             >
-                              {isExpanded ? 'Ocultar Cuotas 🔼' : 'Ver Cuotas (' + group.totalCuotas + ') 🔽'}
+                              {isExpanded ? 'Ocultar Cuotas 🔼' : `Ver Cuotas (${group.cuotas.length}) 🔽`}
                             </button>
                           </div>
                         </div>
 
-                        {/* Desglose de Cuotas */}
+                        {/* Desglose de Cuotas Expandible */}
                         {isExpanded && (
-                          <div style={{ padding: '0.5rem 1rem 1rem 1rem', background: '#ffffff' }}>
+                          <div style={{ padding: '1rem', background: '#fafafa' }}>
                             <table className="table" style={{ margin: 0, fontSize: '0.85rem' }}>
                               <thead>
-                                <tr style={{ background: '#f1f5f9' }}>
-                                  <th style={{ width: '80px' }}>Cuota</th>
+                                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                                  <th>Cuota</th>
                                   <th>Monto Cuota ($)</th>
                                   <th>Pago Reportado</th>
                                   <th>Referencia Bancaria</th>
                                   <th>Vencimiento</th>
                                   <th>Estado</th>
-                                  <th style={{ textAlign: 'center', width: '180px' }}>Acción</th>
+                                  <th style={{ textAlign: 'center' }}>Acción</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {group.cuotas.map((pa, cIdx) => (
-                                  <tr key={pa.id} style={{ background: pa.estado_pago === 'en_revision' ? '#fffbeb' : pa.estado_pago === 'pagado' ? '#f0fdf4' : 'transparent' }}>
+                                {group.cuotas.map((pa) => (
+                                  <tr key={pa.id} style={{ background: pa.estado_pago === 'en_revision' ? '#fffbeb' : 'transparent' }}>
                                     <td>
-                                      <strong>#{pa.cuota_numero || (cIdx + 1)}</strong>
-                                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/{group.totalCuotas}</span>
+                                      <strong>#{pa.cuota_numero || 1}/{pa.cuota_total || group.totalCuotas || 1}</strong>
                                     </td>
-                                    <td style={{ fontWeight: 700 }}>
-                                      ${parseFloat(pa.monto).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    <td>
+                                      <strong>${parseFloat(pa.monto).toFixed(2)}</strong>
                                     </td>
                                     <td>
                                       {pa.monto_reportado ? (
-                                        <span style={{ fontWeight: 700, color: pa.moneda_pago === 'VES' ? '#2563eb' : '#16a34a' }}>
-                                          {pa.moneda_pago === 'VES' ? 'Bs.' : '$'} {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                                        </span>
+                                        <div>
+                                          <strong style={{ color: '#0284c7' }}>Bs. {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong>
+                                          {pa.moneda_pago && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.2rem' }}>({pa.moneda_pago})</span>}
+                                        </div>
                                       ) : (
                                         <span style={{ color: 'var(--text-muted)' }}>—</span>
                                       )}
                                     </td>
                                     <td>
                                       {pa.referencia ? (
-                                        <code style={{ fontWeight: 700, background: '#f1f5f9', padding: '0.15rem 0.35rem', borderRadius: '3px' }}>
+                                        <code style={{ fontWeight: 700, background: '#f1f5f9', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>
                                           {pa.referencia}
                                         </code>
                                       ) : (
                                         <span style={{ color: 'var(--text-muted)' }}>Sin Ref</span>
                                       )}
                                     </td>
-                                    <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
+                                    <td>
+                                      {pa.fecha_vencimiento ? (
+                                        <span style={{
+                                          color: new Date(pa.fecha_vencimiento) < new Date() && pa.estado_pago !== 'pagado' ? '#dc2626' : 'inherit',
+                                          fontWeight: new Date(pa.fecha_vencimiento) < new Date() && pa.estado_pago !== 'pagado' ? 700 : 'normal'
+                                        }}>
+                                          {pa.fecha_vencimiento}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: 'var(--text-muted)' }}>Inmediato</span>
+                                      )}
+                                    </td>
                                     <td>
                                       {pa.estado_pago === 'pagado' && (
-                                        <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                        <span style={{ background: '#dcfce7', color: '#16a34a', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
                                           🟢 Verificado y Pagado
                                         </span>
                                       )}
                                       {pa.estado_pago === 'en_revision' && (
-                                        <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                                        <span style={{ background: '#fef3c7', color: '#d97706', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
                                           🟡 En Revisión Admin
                                         </span>
                                       )}
@@ -1128,6 +1454,13 @@ export default function AsesorDashboard() {
                   })}
                 </div>
               )}
+              <PaginationControls
+                currentPage={pagePayments}
+                totalItems={groupedPaymentsByPolicy.length}
+                pageSize={pageSizePayments}
+                onPageChange={setPagePayments}
+                onPageSizeChange={setPageSizePayments}
+              />
             </div>
           )}
 
@@ -1165,7 +1498,9 @@ export default function AsesorDashboard() {
                     {filteredPolicies.length === 0 ? (
                       <tr><td colSpan="9" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
-                      filteredPolicies.map((p) => {
+                      filteredPolicies
+                        .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
+                        .map((p) => {
                         const isModified = !!modifiedPolicies[p.id];
                         return (
                           <tr key={p.id} style={{ background: isModified ? '#fffaf0' : 'transparent' }}>
@@ -1256,6 +1591,13 @@ export default function AsesorDashboard() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={pagePolicies}
+                totalItems={filteredPolicies.length}
+                pageSize={pageSizePolicies}
+                onPageChange={setPagePolicies}
+                onPageSizeChange={setPageSizePolicies}
+              />
 
               {/* Barra Flotante de Guardado en Lote para Pólizas */}
               {Object.keys(modifiedPolicies).length > 0 && (
@@ -1285,136 +1627,183 @@ export default function AsesorDashboard() {
           )}
 
           {/* TAB: SOLICITAR EMISIÓN PÓLIZA */}
-          {activeTab === 'solicitar-poliza' && (
-            <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-              <h3 className="card-title" style={{ marginBottom: '1rem' }}>Solicitar Emisión de Nueva Póliza</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                Complete los detalles del seguro a emitir. La solicitud se registrará en estado de <strong>Negociación</strong> y quedará pendiente de aprobación por el Administrador.
-              </p>
+          {activeTab === 'solicitar-poliza' && (() => {
+            const selectedClientObj = clients.find(c => String(c.id) === String(policyForm.cliente_id));
+            const clientAge = policyForm.edad_calculada ?? (selectedClientObj?.fecha_nacimiento ? calculateAge(selectedClientObj.fecha_nacimiento) : null);
 
-              <form onSubmit={handleRequestPolicy}>
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Seleccionar Asegurado *</label>
-                  <select
-                    className="form-input"
-                    value={policyForm.cliente_id}
-                    onChange={e => setPolicyForm({...policyForm, cliente_id: e.target.value})}
-                    required
-                  >
-                    <option value="">-- Elija un cliente asignado --</option>
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>{c.nombre} ({c.nro_documento})</option>
-                    ))}
-                  </select>
+            // Filtrar planes según aseguradora seleccionada
+            const availablePlans = getAvailablePlans(policyForm.compania_id, tariffs, companies);
+
+            // Filtrar sumas aseguradas según aseguradora y plan seleccionados
+            const availableSums = getAvailableSums(policyForm.compania_id, policyForm.plan, tariffs, companies);
+
+            const activeTariff = findMatchingTariff(policyForm.compania_id, policyForm.plan, policyForm.suma_asegurada, clientAge);
+            const primaNum = parseFloat(policyForm.prima_anual || activeTariff?.prima || 0);
+
+            return (
+              <div className="card" style={{ maxWidth: '650px', margin: '0 auto', padding: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.75rem' }}>📋</span>
+                  <h3 className="card-title" style={{ margin: 0 }}>Solicitar Emisión de Nueva Póliza</h3>
                 </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.75rem' }}>
+                  Seleccione el cliente y el plan del tarifario oficial. Los montos de <strong>Suma Asegurada</strong> y <strong>Prima Anual</strong> se obtienen automáticamente del tarifario según la edad del asegurado.
+                </p>
 
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Compañía Aseguradora *</label>
-                  <select
-                    className="form-input"
-                    value={policyForm.compania_id}
-                    onChange={e => setPolicyForm({...policyForm, compania_id: e.target.value})}
-                    required
-                  >
-                    <option value="">-- Seleccione Aseguradora --</option>
-                    {companies.map(c => (
-                      <option key={c.id} value={c.id}>{c.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Plan del Tarifario *</label>
-                  <select
-                    className="form-input"
-                    value={policyForm.plan}
-                    onChange={e => setPolicyForm({...policyForm, plan: e.target.value})}
-                    required
-                  >
-                    <option value="">-- Seleccione Plan del Tarifario --</option>
-                    {String(policyForm.compania_id) === '1' && (
-                      <>
-                        <option value="ACCESS">ACCESS (Mercantil)</option>
-                        <option value="PLATINO">PLATINO (Mercantil)</option>
-                        <option value="EMERGENCIAS">EMERGENCIAS (Mercantil)</option>
-                      </>
-                    )}
-                    {String(policyForm.compania_id) === '2' && (
-                      <>
-                        <option value="SALUD EXTERIOR">SALUD EXTERIOR (Seguros Caracas)</option>
-                        <option value="SALUD INDIVIDUAL">SALUD INDIVIDUAL (Seguros Caracas)</option>
-                      </>
-                    )}
-                    {String(policyForm.compania_id) === '3' && (
-                      <>
-                        <option value="BRONCE">BRONCE (Seguros Venezuela)</option>
-                        <option value="PLATA">PLATA (Seguros Venezuela)</option>
-                        <option value="ORO">ORO (Seguros Venezuela)</option>
-                      </>
-                    )}
-                    {String(policyForm.compania_id) === '4' && (
-                      <>
-                        <option value="Incendio">Incendio / Patrimoniales (Mapfre)</option>
-                        <option value="Vehículos">Vehículos / Automóvil (Mapfre)</option>
-                        <option value="Salud Global">Salud Global (Mapfre)</option>
-                      </>
-                    )}
-                    {String(policyForm.compania_id) === '5' && (
-                      <>
-                        <option value="Cobertura Internacional">Cobertura Internacional (Internacional de Seguros)</option>
-                        <option value="Asistencia en Viajes">Asistencia en Viajes (Internacional de Seguros)</option>
-                      </>
-                    )}
-                    <option value="Plan Especial">Plan Especial / Personalizado</option>
-                  </select>
-                </div>
-
-                <div className="form-grid" style={{ marginBottom: '1.5rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Suma Asegurada ($) *</label>
-                    <input
-                      type="number"
+                <form onSubmit={handleRequestPolicy}>
+                  {/* 1. Seleccionar Cliente */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="form-label">1. Asegurado (Cliente Asignado) *</label>
+                    <select
                       className="form-input"
-                      value={policyForm.suma_asegurada}
-                      onChange={e => setPolicyForm({...policyForm, suma_asegurada: e.target.value})}
-                      min="1"
+                      value={policyForm.cliente_id}
+                      onChange={e => handlePolicyClientChange(e.target.value)}
                       required
-                    />
+                    >
+                      <option value="">-- Elija un cliente asignado --</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre} ({c.nro_documento}) {c.fecha_nacimiento ? `- ${calculateAge(c.fecha_nacimiento)} años` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedClientObj && (
+                      <span style={{ fontSize: '0.8rem', color: '#2563eb', marginTop: '0.35rem', display: 'block' }}>
+                        👤 Edad del cliente: <strong>{clientAge !== null ? `${clientAge} años` : 'No registrada'}</strong> | Tel: {selectedClientObj.telefono || selectedClientObj.numero_celular || 'N/A'}
+                      </span>
+                    )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Prima Anual ($) *</label>
-                    <input
-                      type="number"
+
+                  {/* 2. Compañía Aseguradora */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="form-label">2. Compañía Aseguradora *</label>
+                    <select
                       className="form-input"
-                      value={policyForm.prima_anual}
-                      onChange={e => setPolicyForm({...policyForm, prima_anual: e.target.value})}
-                      min="1"
+                      value={policyForm.compania_id}
+                      onChange={e => handlePolicyCompanyChange(e.target.value)}
                       required
-                    />
+                    >
+                      <option value="">-- Seleccione Aseguradora --</option>
+                      {companies.map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
                   </div>
-                </div>
 
-                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Frecuencia de Pago *</label>
-                  <select
-                    className="form-input"
-                    value={policyForm.frecuencia_pago || 'contado'}
-                    onChange={e => setPolicyForm({...policyForm, frecuencia_pago: e.target.value})}
-                    required
+                  {/* 3. Plan del Tarifario */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="form-label">3. Plan del Tarifario *</label>
+                    <select
+                      className="form-input"
+                      value={policyForm.plan}
+                      onChange={e => handlePolicyPlanChange(e.target.value)}
+                      disabled={!policyForm.compania_id}
+                      required
+                    >
+                      <option value="">
+                        {!policyForm.compania_id ? '-- Primero elija una aseguradora --' : '-- Seleccione Plan del Tarifario --'}
+                      </option>
+                      {availablePlans.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 4. Suma Asegurada (Select dinámico) */}
+                  <div className="form-grid" style={{ marginBottom: '1.25rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">4. Suma Asegurada del Tarifario *</label>
+                      <select
+                        className="form-input"
+                        value={policyForm.suma_asegurada}
+                        onChange={e => handlePolicySumChange(e.target.value)}
+                        disabled={!policyForm.plan}
+                        required
+                      >
+                        <option value="">
+                          {!policyForm.plan ? '-- Elija un plan --' : '-- Seleccione Suma Asegurada --'}
+                        </option>
+                        {availableSums.map(s => (
+                          <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 5. Prima Anual (Auto-calculada con el tarifario) */}
+                    <div className="form-group">
+                      <label className="form-label">Prima Anual ($ USD) *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        value={policyForm.prima_anual}
+                        onChange={e => setPolicyForm({...policyForm, prima_anual: e.target.value})}
+                        placeholder={activeTariff ? `$${activeTariff.prima}` : '0.00'}
+                        style={{ backgroundColor: '#f0fdf4', borderColor: '#86efac', fontWeight: 700, color: '#166534' }}
+                        required
+                      />
+                      <span style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '0.25rem', display: 'block' }}>
+                        {activeTariff ? `✓ Obtenido del tarifario (Rango: ${activeTariff.edad_min}-${activeTariff.edad_max} años)` : 'Se autocalcula según el plan y edad'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tarjeta de Resumen y Beneficios del Tarifario */}
+                  {activeTariff && (
+                    <div style={{ backgroundColor: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                          🛡️ {activeTariff.compania_nombre || 'Aseguradora'} - {activeTariff.plan}
+                        </span>
+                        <span style={{ backgroundColor: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, fontSize: '0.75rem' }}>
+                          Suma: ${parseFloat(activeTariff.suma_asegurada).toLocaleString('en-US')}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        <div>Maternidad: <strong>{activeTariff.maternidad_suma || activeTariff.maternidad_costo || 'No'}</strong></div>
+                        <div>Asist. Intl: <strong>{activeTariff.asist_intl_suma || activeTariff.asist_intl_costo || 'No'}</strong></div>
+                        <div>Funeral: <strong>{activeTariff.funeral_suma || activeTariff.funeral_costo || 'No'}</strong></div>
+                        <div>Forma Pago: <strong>{activeTariff.pago || 'Varios'}</strong></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 6. Frecuencia de Pago */}
+                  <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                    <label className="form-label">5. Frecuencia de Pago *</label>
+                    <select
+                      className="form-input"
+                      value={policyForm.frecuencia_pago || 'contado'}
+                      onChange={e => setPolicyForm({...policyForm, frecuencia_pago: e.target.value})}
+                      required
+                    >
+                      <option value="contado">
+                        Pago Anual / Contado (1 cuota de ${primaNum > 0 ? primaNum.toFixed(2) : '0.00'})
+                      </option>
+                      <option value="semestral">
+                        Pago Semestral (2 cuotas de ${primaNum > 0 ? (primaNum / 2).toFixed(2) : '0.00'})
+                      </option>
+                      <option value="trimestral">
+                        Pago Trimestral (4 cuotas de ${primaNum > 0 ? (primaNum / 4).toFixed(2) : '0.00'})
+                      </option>
+                      <option value="mensual">
+                        Pago Mensual (12 cuotas de ${primaNum > 0 ? (primaNum / 12).toFixed(2) : '0.00'})
+                      </option>
+                    </select>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary" 
+                    style={{ width: '100%', padding: '0.85rem', fontWeight: 700, fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} 
+                    disabled={loading}
                   >
-                    <option value="contado">Pago Anual / Contado (1 cuota)</option>
-                    <option value="semestral">Pago Semestral (2 cuotas)</option>
-                    <option value="trimestral">Pago Trimestral (4 cuotas)</option>
-                    <option value="mensual">Pago Mensual (12 cuotas)</option>
-                  </select>
-                </div>
-
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
-                  {loading ? 'Procesando...' : 'Enviar Solicitud al Administrador'}
-                </button>
-              </form>
-            </div>
-          )}
+                    {loading ? 'Procesando...' : '🚀 Enviar Solicitud de Póliza al Administrador'}
+                  </button>
+                </form>
+              </div>
+            );
+          })()}
 
           {/* TAB: E-LEARNING / CAPACITACIÓN */}
           {activeTab === 'elearning' && (
@@ -1937,13 +2326,19 @@ export default function AsesorDashboard() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Número de Referencia Bancaria *</label>
+                      <label className="form-label">Referencia (últimos 6)</label>
                       <input 
                         type="text" 
+                        inputMode="numeric"
+                        maxLength={6}
+                        pattern="\d{6}"
                         className="form-input" 
-                        placeholder="Ej: 9876543210"
+                        placeholder="123456"
                         value={reportPayForm.referencia} 
-                        onChange={e => setReportPayForm({ ...reportPayForm, referencia: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setReportPayForm({ ...reportPayForm, referencia: val });
+                        }}
                         required 
                       />
                     </div>

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PaginationControls from '../../components/PaginationControls';
 
 // Normaliza la URL base: si NEXT_PUBLIC_API_URL viene sin el sufijo /api
 // (mala configuración en Vercel), lo agregamos igual para no romper todas las requests.
@@ -30,6 +31,25 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState([]);
   const [modifiedRows, setModifiedRows] = useState({});
   const [modifiedPolicies, setModifiedPolicies] = useState({});
+
+  // --- PAGINACIÓN ---
+  const [pagePolicies, setPagePolicies] = useState(1);
+  const [pageSizePolicies, setPageSizePolicies] = useState(10);
+
+  const [pagePayments, setPagePayments] = useState(1);
+  const [pageSizePayments, setPageSizePayments] = useState(10);
+
+  const [pageUsers, setPageUsers] = useState(1);
+  const [pageSizeUsers, setPageSizeUsers] = useState(10);
+
+  const [pageAdvisors, setPageAdvisors] = useState(1);
+  const [pageSizeAdvisors, setPageSizeAdvisors] = useState(10);
+
+  const [pageAttempts, setPageAttempts] = useState(1);
+  const [pageSizeAttempts, setPageSizeAttempts] = useState(10);
+
+  const [pageLogs, setPageLogs] = useState(1);
+  const [pageSizeLogs, setPageSizeLogs] = useState(10);
   
   // --- ESTADOS DE E-LEARNING (ADMIN) ---
   const [courses, setCourses] = useState([]);
@@ -60,6 +80,7 @@ export default function AdminDashboard() {
 
   // --- ESTADOS INTERNOS ---
   const [loading, setLoading] = useState(true);
+  const [clearingData, setClearingData] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen'); // 'resumen', 'polizas', 'pagos', 'roles', 'tarifas', 'trazabilidad'
   const [fileToUpload, setFileToUpload] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -605,6 +626,32 @@ export default function AdminDashboard() {
     }
   };
 
+  // Limpiar datos de prueba (cotizaciones, pólizas, pagos y comisiones) conservando usuarios
+  const handleClearTestData = async () => {
+    const confirmMsg = '⚠️ ¿Está seguro de que desea limpiar todos los datos de prueba?\\n\\nEsta acción eliminará todas las cotizaciones compartidas, pólizas, pagos y registros de comisiones generados durante las pruebas.\\n\\nLos usuarios, clientes, asesores y tarifas permanecerán INTACTOS.';
+    if (!window.confirm(confirmMsg)) return;
+
+    setClearingData(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/clear-test-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al limpiar datos de prueba.');
+
+      showToast(data.message || '¡Datos de prueba eliminados correctamente!');
+      loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setClearingData(false);
+    }
+  };
+
   // Cambiar rol de usuario
   const handleUpdateUserRole = async (userId, newRole) => {
     try {
@@ -987,6 +1034,18 @@ export default function AdminDashboard() {
     log.descripcion?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredAdvisors = advisors.filter(a => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      a.nombre?.toLowerCase().includes(q) ||
+      a.codigo_asesor?.toLowerCase().includes(q) ||
+      a.cedula?.toLowerCase().includes(q) ||
+      a.correo?.toLowerCase().includes(q) ||
+      a.banco?.toLowerCase().includes(q)
+    );
+  });
+
   // Sumas aseguradas disponibles (extraídas dinámicamente o del catálogo base)
   const SUMA_ASEGURADA_OPTIONS = (() => {
     const fromTariffs = [...new Set(tariffs.map(t => parseFloat(t.suma_asegurada)).filter(Boolean))];
@@ -1101,7 +1160,26 @@ export default function AdminDashboard() {
           <h2 style={{ color: 'var(--primary)', fontWeight: 800 }}>Panel Administrativo Principal</h2>
           <p style={{ color: 'var(--text-muted)' }}>Métricas, pólizas, control de pagos y trazabilidad general</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button 
+            onClick={handleClearTestData} 
+            className="btn" 
+            style={{ 
+              padding: '0.5rem 1rem', 
+              backgroundColor: '#fee2e2', 
+              color: '#b91c1c', 
+              border: '1px solid #fca5a5', 
+              fontWeight: 600, 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.35rem',
+              cursor: (clearingData || loading) ? 'not-allowed' : 'pointer'
+            }}
+            title="Borra todas las cotizaciones, pólizas y pagos de prueba sin alterar los usuarios ni asesores."
+            disabled={clearingData || loading}
+          >
+            {clearingData ? 'Limpiando...' : '🧹 Limpiar Datos de Prueba'}
+          </button>
           <Link href="/dashboard/admin/comisiones" className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
             💰 Comisiones
           </Link>
@@ -1454,7 +1532,9 @@ export default function AdminDashboard() {
                     {filteredPolicies.length === 0 ? (
                       <tr><td colSpan="13" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
-                      filteredPolicies.map((p) => {
+                      filteredPolicies
+                        .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
+                        .map((p) => {
                         const isModified = !!modifiedPolicies[p.id];
                         return (
                           <tr key={p.id} style={{ background: isModified ? '#fffaf0' : 'transparent' }}>
@@ -1577,6 +1657,13 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={pagePolicies}
+                totalItems={filteredPolicies.length}
+                pageSize={pageSizePolicies}
+                onPageChange={setPagePolicies}
+                onPageSizeChange={setPageSizePolicies}
+              />
 
               {/* Barra Flotante de Guardado en Lote para Pólizas */}
               {Object.keys(modifiedPolicies).length > 0 && (
@@ -1698,7 +1785,7 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => {
                       const allKeys = {};
-                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_codigo] = true; });
+                      groupedPaymentsByPolicy.forEach(g => { allKeys[g.poliza_id || g.poliza_codigo] = true; });
                       setExpandedPolicies(prev => (Object.keys(prev).length === groupedPaymentsByPolicy.length ? {} : allKeys));
                     }}
                     className="btn btn-secondary"
@@ -1716,13 +1803,16 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  {groupedPaymentsByPolicy.map((group) => {
-                    const isExpanded = !!expandedPolicies[group.poliza_codigo];
+                  {groupedPaymentsByPolicy
+                    .slice((pagePayments - 1) * pageSizePayments, pagePayments * pageSizePayments)
+                    .map((group) => {
+                    const groupKey = group.poliza_id || group.poliza_codigo;
+                    const isExpanded = !!expandedPolicies[groupKey];
                     const progressPercent = group.totalCuotas > 0 ? Math.round((group.cuotasPagadas / group.totalCuotas) * 100) : 0;
 
                     return (
                       <div
-                        key={group.poliza_codigo}
+                        key={groupKey}
                         style={{
                           background: '#ffffff',
                           border: group.cuotasEnRevision > 0 ? '2px solid #f59e0b' : '1px solid var(--border)',
@@ -1744,7 +1834,7 @@ export default function AdminDashboard() {
                             cursor: 'pointer',
                             borderBottom: isExpanded ? '1px solid var(--border)' : 'none'
                           }}
-                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [group.poliza_codigo]: !prev[group.poliza_codigo] }))}
+                          onClick={() => setExpandedPolicies(prev => ({ ...prev, [groupKey]: !prev[groupKey] }))}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
@@ -1907,6 +1997,13 @@ export default function AdminDashboard() {
                   })}
                 </div>
               )}
+              <PaginationControls
+                currentPage={pagePayments}
+                totalItems={groupedPaymentsByPolicy.length}
+                pageSize={pageSizePayments}
+                onPageChange={setPagePayments}
+                onPageSizeChange={setPageSizePayments}
+              />
             </div>
           )}
 
@@ -1938,7 +2035,9 @@ export default function AdminDashboard() {
                     {filteredUsers.length === 0 ? (
                       <tr><td colSpan="4" className="text-center">No hay usuarios que coincidan con la búsqueda.</td></tr>
                     ) : (
-                      filteredUsers.map((u) => (
+                      filteredUsers
+                        .slice((pageUsers - 1) * pageSizeUsers, pageUsers * pageSizeUsers)
+                        .map((u) => (
                         <tr key={u.id}>
                           <td>{u.id}</td>
                           <td>{u.correo}</td>
@@ -1964,6 +2063,13 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={pageUsers}
+                totalItems={filteredUsers.length}
+                pageSize={pageSizeUsers}
+                onPageChange={setPageUsers}
+                onPageSizeChange={setPageSizeUsers}
+              />
             </div>
           )}
 
@@ -2133,30 +2239,12 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {advisors.filter(a => {
-                      if (!searchQuery) return true;
-                      const q = searchQuery.toLowerCase();
-                      return (
-                        a.nombre?.toLowerCase().includes(q) ||
-                        a.codigo_asesor?.toLowerCase().includes(q) ||
-                        a.cedula?.toLowerCase().includes(q) ||
-                        a.correo?.toLowerCase().includes(q) ||
-                        a.banco?.toLowerCase().includes(q)
-                      );
-                    }).length === 0 ? (
+                    {filteredAdvisors.length === 0 ? (
                       <tr><td colSpan="11" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>No se encontraron asesores.</td></tr>
                     ) : (
-                      advisors.filter(a => {
-                        if (!searchQuery) return true;
-                        const q = searchQuery.toLowerCase();
-                        return (
-                          a.nombre?.toLowerCase().includes(q) ||
-                          a.codigo_asesor?.toLowerCase().includes(q) ||
-                          a.cedula?.toLowerCase().includes(q) ||
-                          a.correo?.toLowerCase().includes(q) ||
-                          a.banco?.toLowerCase().includes(q)
-                        );
-                      }).map((a) => (
+                      filteredAdvisors
+                        .slice((pageAdvisors - 1) * pageSizeAdvisors, pageAdvisors * pageSizeAdvisors)
+                        .map((a) => (
                         <tr key={a.id_asesor}>
                           <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{a.codigo_asesor}</td>
                           <td>{a.nombre}</td>
@@ -2223,6 +2311,13 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={pageAdvisors}
+                totalItems={filteredAdvisors.length}
+                pageSize={pageSizeAdvisors}
+                onPageChange={setPageAdvisors}
+                onPageSizeChange={setPageSizeAdvisors}
+              />
             </div>
           )}
 
@@ -2775,7 +2870,9 @@ export default function AdminDashboard() {
                   <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No hay logs que coincidan con la búsqueda.</div>
                 ) : (
                   <div style={{ padding: '0.5rem' }}>
-                    {filteredLogs.map((log) => (
+                    {filteredLogs
+                      .slice((pageLogs - 1) * pageSizeLogs, pageLogs * pageSizeLogs)
+                      .map((log) => (
                       <div 
                         key={log.id} 
                         style={{ 
@@ -2810,6 +2907,13 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+              <PaginationControls
+                currentPage={pageLogs}
+                totalItems={filteredLogs.length}
+                pageSize={pageSizeLogs}
+                onPageChange={setPageLogs}
+                onPageSizeChange={setPageSizeLogs}
+              />
             </div>
           )}
 
@@ -2877,7 +2981,9 @@ export default function AdminDashboard() {
                         {attempts.length === 0 ? (
                           <tr><td colSpan="8" className="text-center" style={{ padding: '2rem' }}>Aún no se registran intentos de evaluación en el sistema.</td></tr>
                         ) : (
-                          attempts.map((att) => (
+                          attempts
+                            .slice((pageAttempts - 1) * pageSizeAttempts, pageAttempts * pageSizeAttempts)
+                            .map((att) => (
                             <tr key={att.id}>
                               <td>
                                 <strong>{att.nombre}</strong>
@@ -2917,6 +3023,13 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
+                  <PaginationControls
+                    currentPage={pageAttempts}
+                    totalItems={attempts.length}
+                    pageSize={pageSizeAttempts}
+                    onPageChange={setPageAttempts}
+                    onPageSizeChange={setPageSizeAttempts}
+                  />
                 </div>
               )}
 

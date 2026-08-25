@@ -1631,4 +1631,35 @@ router.get('/commissions/export-txt', authenticateToken, async (req, res) => {
   }
 });
 
+// Endpoint exclusivo de pruebas: Limpiar cotizaciones, pólizas, pagos y comisiones sin borrar usuarios
+router.post('/clear-test-data', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin') {
+    return res.status(403).json({ error: 'Acceso no autorizado. Se requiere rol de Administrador.' });
+  }
+
+  try {
+    await db.query('DELETE FROM historico_comisiones');
+    await db.query('DELETE FROM corridas_comisiones');
+    await db.query('DELETE FROM pagos');
+    await db.query('DELETE FROM polizas');
+    await db.query('DELETE FROM cotizaciones');
+
+    // Registrar acción en bitácora / auditoría
+    await registrarAccion(
+      req.user.id,
+      req.user.correo,
+      'LIMPIEZA_DATA_PRUEBA',
+      'El Administrador ejecutó la limpieza de datos de prueba (cotizaciones, pólizas, pagos y comisiones). Usuarios, clientes y asesores conservados.'
+    );
+
+    res.json({
+      status: 'ok',
+      message: 'Todos los datos de prueba (cotizaciones, pólizas, pagos y comisiones) han sido eliminados correctamente. Los usuarios, clientes y asesores se mantienen intactos.'
+    });
+  } catch (err) {
+    console.error('Error al limpiar datos de prueba:', err);
+    res.status(500).json({ error: 'Error al limpiar los datos de prueba: ' + err.message });
+  }
+});
+
 export default router;

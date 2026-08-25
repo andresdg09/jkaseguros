@@ -13,13 +13,28 @@ router.get('/client', authenticateToken, async (req, res) => {
     if (cliRes.rows.length === 0) return res.json([]);
 
     // Obtener pólizas de este cliente
-    const polRes = await db.query('SELECT id FROM polizas WHERE cliente_id = $1', [cliRes.rows[0].id]);
+    const polRes = await db.query('SELECT * FROM polizas WHERE cliente_id = $1', [cliRes.rows[0].id]);
     const polIds = polRes.rows.map(p => p.id);
 
     if (polIds.length === 0) return res.json([]);
 
-    const payRes = await db.query('SELECT * FROM pagos');
-    const matchedPayments = payRes.rows.filter(pa => polIds.includes(pa.poliza_id));
+    const payRes = await db.query('SELECT * FROM pagos ORDER BY cuota_numero ASC, id ASC');
+    const compRes = await db.query('SELECT * FROM companias_seguros');
+
+    const matchedPayments = payRes.rows
+      .filter(pa => polIds.includes(pa.poliza_id))
+      .map(pa => {
+        const pol = polRes.rows.find(p => p.id === pa.poliza_id);
+        const comp = pol ? compRes.rows.find(c => c.id === pol.compania_id) : null;
+        return {
+          ...pa,
+          poliza_codigo: pol ? pol.codigo_poliza : `POL-${pa.poliza_id}`,
+          poliza_plan: pol ? pol.plan : '',
+          poliza_frecuencia: pol ? pol.frecuencia_pago : 'contado',
+          poliza_prima: pol ? pol.prima_anual : 0,
+          compania_nombre: comp ? comp.nombre : 'Seguros'
+        };
+      });
 
     res.json(matchedPayments);
   } catch (err) {
@@ -44,20 +59,21 @@ router.get('/admin', authenticateToken, async (req, res) => {
     const aseRes = await db.query('SELECT * FROM asesores');
 
     rows = rows.map(pa => {
-      const pol = polRes.rows.find(p => p.id === pa.poliza_id);
-      const cli = pol ? cliRes.rows.find(c => c.id === pol.cliente_id) : null;
-      const compania = pol ? compRes.rows.find(c => c.id === pol.compania_id) : null;
-      const asesor = pol ? aseRes.rows.find(a => a.id === pol.asesor_id) : null;
+      const pol = polRes.rows.find(p => String(p.id) === String(pa.poliza_id));
+      const cli = pol ? cliRes.rows.find(c => String(c.id) === String(pol.cliente_id)) : null;
+      const compania = pol ? compRes.rows.find(c => String(c.id) === String(pol.compania_id)) : null;
+      const asesor = pol ? aseRes.rows.find(a => String(a.id) === String(pol.asesor_id)) : null;
       
       return {
         ...pa,
-        poliza_codigo: pol ? pol.codigo_poliza : '',
-        poliza_plan: pol ? pol.plan : '',
-        poliza_frecuencia: pol ? pol.frecuencia_pago : 'contado',
-        poliza_prima: pol ? pol.prima_anual : 0,
-        compania_nombre: compania ? compania.nombre : 'Seguros',
-        cliente_nombre: cli ? `${cli.primer_nombre} ${cli.primer_apellido}` : 'Asociado',
-        asesor_nombre: asesor ? asesor.nombre : 'Sin Asesor'
+        asesor_id: pol ? pol.asesor_id : (pa.asesor_id || null),
+        poliza_codigo: pol ? pol.codigo_poliza : (pa.poliza_codigo || ''),
+        poliza_plan: pol ? pol.plan : (pa.poliza_plan || ''),
+        poliza_frecuencia: pol ? pol.frecuencia_pago : (pa.poliza_frecuencia || 'contado'),
+        poliza_prima: pol ? pol.prima_anual : (pa.poliza_prima || 0),
+        compania_nombre: compania ? compania.nombre : (pa.compania_nombre || 'Seguros'),
+        cliente_nombre: cli ? `${cli.primer_nombre} ${cli.primer_apellido}` : (pa.cliente_nombre || 'Asociado'),
+        asesor_nombre: asesor ? asesor.nombre : (pa.asesor_nombre || 'Sin Asesor')
       };
     });
 
@@ -106,9 +122,9 @@ router.post('/report', authenticateToken, async (req, res) => {
       const fData = db.getFallbackData();
       let existingPay = null;
       if (payId) {
-        existingPay = fData.pagos.find(p => p.id === payId);
+        existingPay = fData.pagos.find(p => parseInt(p.id) === payId);
       } else if (polId) {
-        existingPay = fData.pagos.find(p => p.poliza_id === polId && (p.estado_pago === 'pendiente' || p.estado_pago === 'en_revision'));
+        existingPay = fData.pagos.find(p => parseInt(p.poliza_id) === polId && (p.estado_pago === 'pendiente' || p.estado_pago === 'en_revision'));
       }
       
       if (existingPay) {
@@ -145,7 +161,7 @@ router.post('/report', authenticateToken, async (req, res) => {
 
       // Actualizar estado de la póliza
       const targetPolId = payRecord.poliza_id;
-      const polIdx = fData.polizas.findIndex(p => p.id === targetPolId);
+      const polIdx = fData.polizas.findIndex(p => parseInt(p.id) === parseInt(targetPolId));
       if (polIdx !== -1) fData.polizas[polIdx].pago_estado = 'en_revision';
       db.saveFallback();
 
