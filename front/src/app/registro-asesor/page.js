@@ -349,20 +349,48 @@ export default function RegistroAsesorPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (form.numero_cuenta.length !== 20) {
-      return showToast('El número de cuenta bancaria debe tener exactamente 20 dígitos.', 'error');
+    if (!form.nombre?.trim()) {
+      return showToast('Por favor ingrese su nombre completo.', 'error');
+    }
+    if (!form.cedula?.trim()) {
+      return showToast('Por favor ingrese su número de cédula.', 'error');
+    }
+    if (!form.correo?.trim()) {
+      return showToast('Por favor ingrese su correo electrónico.', 'error');
+    }
+    if (!form.contrasena?.trim()) {
+      return showToast('Por favor ingrese una contraseña para su cuenta.', 'error');
+    }
+    if (!form.telefono?.trim()) {
+      return showToast('Por favor ingrese su número de teléfono celular.', 'error');
+    }
+    if (!form.banco?.trim()) {
+      return showToast('Por favor seleccione su entidad bancaria.', 'error');
+    }
+    if (!form.fecha_nacimiento) {
+      return showToast('Por favor ingrese su fecha de nacimiento.', 'error');
+    }
+
+    const cleanCuenta = (form.numero_cuenta || '').replace(/\D/g, '');
+    if (cleanCuenta.length !== 20) {
+      return showToast(`El número de cuenta bancaria debe tener exactamente 20 dígitos (actualmente tiene ${cleanCuenta.length}).`, 'error');
     }
 
     setLoading(true);
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
       
+      const payload = {
+        ...form,
+        numero_cuenta: cleanCuenta
+      };
+
       const res = await fetch(`${API_URL}/auth/register-asesor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       
@@ -707,7 +735,7 @@ export default function RegistroAsesorPage() {
                 type="submit" 
                 className="btn btn-primary" 
                 style={{ flex: 2 }}
-                disabled={loading || form.numero_cuenta.length !== 20}
+                disabled={loading}
               >
                 {loading ? 'Registrando...' : 'Finalizar Registro'}
               </button>

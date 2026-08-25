@@ -1050,8 +1050,8 @@ function fallbackQuery(text, params = []) {
   }
 
   // 3. SELECT * FROM usuarios
-  if (cleanSql === 'SELECT * FROM usuarios' || cleanSql === 'SELECT * FROM usuarios ORDER BY id ASC') {
-    return { rows: fallbackData.usuarios };
+  if (cleanSql.includes('FROM usuarios') && !cleanSql.includes('WHERE') && !cleanSql.startsWith('INSERT') && !cleanSql.startsWith('UPDATE') && !cleanSql.startsWith('DELETE')) {
+    return { rows: [...fallbackData.usuarios] };
   }
 
   // 4. INSERT INTO usuarios (correo, contrasena, rango) VALUES ($1, $2, $3) RETURNING *
@@ -1060,14 +1060,14 @@ function fallbackQuery(text, params = []) {
     const newId = fallbackData.usuarios.length ? Math.max(...fallbackData.usuarios.map(u => u.id)) + 1 : 1;
     const newUser = {
       id: newId,
-      correo,
+      correo: correo ? correo.toLowerCase() : '',
       contrasena,
       rango: rango || 'cliente',
       created_at: new Date().toISOString()
     };
     fallbackData.usuarios.push(newUser);
     saveFallback();
-    return { rows: [newUser] };
+    return { rows: [newUser], rowCount: 1 };
   }
 
   // 5. UPDATE usuarios SET rango = $1 WHERE id = $2
@@ -1101,6 +1101,11 @@ function fallbackQuery(text, params = []) {
     const aseId = parseInt(params[0]);
     const details = fallbackData.datos_personales.filter(d => d.asesor_id === aseId);
     return { rows: details };
+  }
+
+  // 6d. SELECT * FROM datos_personales (todos)
+  if (cleanSql.includes('FROM datos_personales') && !cleanSql.startsWith('INSERT') && !cleanSql.startsWith('UPDATE') && !cleanSql.startsWith('DELETE')) {
+    return { rows: [...fallbackData.datos_personales] };
   }
 
   // 7. INSERT INTO datos_personales (columnas leídas dinámicamente del SQL para soportar distintos llamadores)
@@ -1224,6 +1229,11 @@ function fallbackQuery(text, params = []) {
   }
 
   // 12. SELECT * FROM polizas
+  if (cleanSql.includes('DISTINCT cliente_id') && cleanSql.includes('asesor_id = $1')) {
+    const aseId = parseInt(params[0]);
+    const matched = fallbackData.polizas.filter(p => p.asesor_id === aseId).map(p => ({ cliente_id: p.cliente_id }));
+    return { rows: matched };
+  }
   if (cleanSql.startsWith('SELECT * FROM polizas') || cleanSql.includes('FROM polizas')) {
     let result = [...fallbackData.polizas];
     

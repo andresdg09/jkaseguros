@@ -1170,25 +1170,6 @@ export default function AdminDashboard() {
           <p style={{ color: 'var(--text-muted)' }}>Métricas, pólizas, control de pagos y trazabilidad general</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button 
-            onClick={handleClearTestData} 
-            className="btn" 
-            style={{ 
-              padding: '0.5rem 1rem', 
-              backgroundColor: '#fee2e2', 
-              color: '#b91c1c', 
-              border: '1px solid #fca5a5', 
-              fontWeight: 600, 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '0.35rem',
-              cursor: (clearingData || loading) ? 'not-allowed' : 'pointer'
-            }}
-            title="Borra todas las cotizaciones, pólizas y pagos de prueba sin alterar los usuarios ni asesores."
-            disabled={clearingData || loading}
-          >
-            {clearingData ? 'Limpiando...' : '🧹 Limpiar Datos de Prueba'}
-          </button>
           <Link href="/dashboard/admin/comisiones" className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
             💰 Comisiones
           </Link>
@@ -2703,7 +2684,7 @@ export default function AdminDashboard() {
                           Exám. Lab/Imag
                           <div className={`resize-handle ${resizingCol === 'examenes_lab_imagenologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'examenes_lab_imagenologia')} />
                         </th>
-                        <th style={{ position: 'relative' }}>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
                           Ambulancia
                           <div className={`resize-handle ${resizingCol === 'ambulancia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ambulancia')} />
                         </th>
@@ -2901,7 +2882,17 @@ export default function AdminDashboard() {
                               </td>
 
                               <td>{textInput('examenes_lab_imagenologia')}</td>
-                              <td>{textInput('ambulancia')}</td>
+
+                              {/* Ambulancia */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'ambulancia', e.target.checked ? 'INCL' : '')}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Ambulancia"
+                                />
+                              </td>
 
                               {/* Acciones */}
                               <td style={{ textAlign: 'center', padding: '0.2rem' }}>
