@@ -995,110 +995,96 @@ export default function Home() {
           <div className="results-grid">
             {((activeResultTab === 'suma2' && quotingResults.comparativa_2) ? quotingResults.comparativa_2 : quotingResults.comparativa).map((comp) => {
               const isBest = comp.recomendada;
+              const parseExtraCost = (costStr) => {
+                if (!costStr) return 0;
+                const num = parseFloat(String(costStr).replace(/[^0-9.]/g, ''));
+                return isNaN(num) ? 0 : num;
+              };
+              const costoMat = parseExtraCost(comp.maternidad_costo);
+              const costoAsist = parseExtraCost(comp.asist_intl_costo);
+              const costoFuneral = parseExtraCost(comp.funeral_costo);
+              const totalExtras = costoMat + costoAsist + costoFuneral;
+              const primaBase = parseFloat(comp.prima || 0);
+              const primaConExtras = primaBase + totalExtras;
+
               return (
                 <div 
                   key={comp.id} 
                   className={`result-card ${isBest ? 'result-card-best' : ''}`}
                   style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                 >
-                  {/* Insignia comentada por requerimiento institucional
-                  {isBest && (
-                    <div className="result-badge">
-                      MEJOR RELACIÓN COSTO / CALIDAD
+                  <div className="result-header">
+                    <h4 className="result-title">{comp.nombre}</h4>
+                    <span className="result-plan-tag">PLAN: {comp.plan || 'N/D'}</span>
+                  </div>
+
+                  {/* Caja de Precio Dual */}
+                  <div className="result-price-box" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--secondary)' }}>
+                    <span className="result-price-label" style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700 }}>PRIMA BASE (SIN EXTRAS)</span>
+                    <span className="result-price-val" style={{ fontSize: '1.4rem' }}>
+                      ${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="result-price-period" style={{ fontSize: '0.7rem' }}>por año</span>
+
+                    <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.35rem', marginTop: '0.35rem' }}>
+                      {totalExtras > 0 ? (
+                        <>
+                          <span style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Total con Extras</span>
+                          <span style={{ fontSize: '1.15rem', color: '#15803d', fontWeight: 800 }}>${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span style={{ fontSize: '0.68rem', color: '#b45309', display: 'block' }}>(+${totalExtras.toFixed(2)} en extras)</span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: '0.7rem', color: '#15803d', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Plan Completo</span>
+                          <span style={{ fontSize: '1rem', color: '#15803d', fontWeight: 800 }}>${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>(sin costos extras)</span>
+                        </>
+                      )}
                     </div>
-                  )}
-                  */}
+                  </div>
 
-                  {(() => {
-                    const parseExtraCost = (costStr) => {
-                      if (!costStr) return 0;
-                      const num = parseFloat(String(costStr).replace(/[^0-9.]/g, ''));
-                      return isNaN(num) ? 0 : num;
-                    };
-                    const costoMat = parseExtraCost(comp.maternidad_costo);
-                    const costoAsist = parseExtraCost(comp.asist_intl_costo);
-                    const costoFuneral = parseExtraCost(comp.funeral_costo);
-                    const totalExtras = costoMat + costoAsist + costoFuneral;
-                    const primaBase = parseFloat(comp.prima || 0);
-                    const primaConExtras = primaBase + totalExtras;
+                  <div className="result-features">
+                    {/* SECCIÓN 1: INCLUIDO EN PLAN BASE */}
+                    <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                        ✓ INCLUIDO EN PLAN BASE:
+                      </span>
+                      <div className="result-feature" style={{ backgroundColor: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                        <span className="result-feature-label" style={{ fontWeight: 700 }}>Deducible:</span>
+                        <span className="result-feature-value" style={{ fontWeight: 800, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>
+                          {(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}
+                        </span>
+                      </div>
+                      <div className="result-feature">
+                        <span className="result-feature-label">Condición Pago:</span>
+                        <span className="result-feature-value">{comp.pago || 'Consultar'}</span>
+                      </div>
+                    </div>
 
-                    return (
-                      <>
-                        <div className="result-header">
-                          <h4 className="result-title">{comp.nombre}</h4>
-                          <span className="result-plan-tag">PLAN: {comp.plan || 'N/D'}</span>
-                        </div>
-
-                        {/* Caja de Precio Dual */}
-                        <div className="result-price-box" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--secondary)' }}>
-                          <span className="result-price-label" style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700 }}>PRIMA BASE (SIN EXTRAS)</span>
-                          <span className="result-price-val" style={{ fontSize: '1.4rem' }}>
-                            ${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                          <span className="result-price-period" style={{ fontSize: '0.7rem' }}>por año</span>
-
-                          <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.35rem', marginTop: '0.35rem' }}>
-                            {totalExtras > 0 ? (
-                              <>
-                                <span style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Total con Extras</span>
-                                <span style={{ fontSize: '1.15rem', color: '#15803d', fontWeight: 800 }}>${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                <span style={{ fontSize: '0.68rem', color: '#b45309', display: 'block' }}>(+${totalExtras.toFixed(2)} en extras)</span>
-                              </>
-                            ) : (
-                              <>
-                                <span style={{ fontSize: '0.7rem', color: '#15803d', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Plan Completo</span>
-                                <span style={{ fontSize: '1rem', color: '#15803d', fontWeight: 800 }}>${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>(sin costos extras)</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="result-features">
-                          {/* SECCIÓN 1: INCLUIDO EN PLAN BASE */}
-                          <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
-                              ✓ INCLUIDO EN PLAN BASE:
-                            </span>
-                            <div className="result-feature" style={{ backgroundColor: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
-                              <span className="result-feature-label" style={{ fontWeight: 700 }}>Deducible:</span>
-                              <span className="result-feature-value" style={{ fontWeight: 800, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>
-                                {(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}
-                              </span>
-                            </div>
-                            <div className="result-feature">
-                              <span className="result-feature-label">Condición Pago:</span>
-                              <span className="result-feature-value">{comp.pago || 'Consultar'}</span>
-                            </div>
-                          </div>
-
-                          {/* SECCIÓN 2: EXTRAS OPCIONALES CON COSTO */}
-                          <div style={{ background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: totalExtras > 0 ? '#b45309' : 'var(--primary)', display: 'block', marginBottom: '0.25rem' }}>
-                              {totalExtras > 0 ? '➕ EXTRAS OPCIONALES (CON COSTO):' : '➕ COBERTURAS DEL PLAN:'}
-                            </span>
-                            <div className="result-feature" style={{ padding: '0.15rem 0' }}>
-                              <span className="result-feature-label">Maternidad:</span>
-                              <span className="result-feature-value">
-                                {comp.maternidad_suma ? `${comp.maternidad_suma}${costoMat > 0 ? ` (+${costoMat.toFixed(2)}/año)` : ''}` : 'No incluida'}
-                              </span>
-                            </div>
-                            <div className="result-feature" style={{ padding: '0.15rem 0' }}>
-                              <span className="result-feature-label">Asist. Internacional:</span>
-                              <span className="result-feature-value">
-                                {comp.asist_intl_suma ? `${comp.asist_intl_suma}${costoAsist > 0 ? ` (+${costoAsist.toFixed(2)}/año)` : ''}` : 'No incluida'}
-                              </span>
-                            </div>
-                            <div className="result-feature" style={{ padding: '0.15rem 0' }}>
-                              <span className="result-feature-label">Servicio Funeral:</span>
-                              <span className="result-feature-value">
-                                {comp.funeral_suma ? `${comp.funeral_suma}${costoFuneral > 0 ? ` (+${costoFuneral.toFixed(2)}/año)` : ''}` : 'No incluido'}
-                              </span>
-                            </div>
-                          </div>
-                      </>
-                    );
-                  })()}
+                    {/* SECCIÓN 2: EXTRAS OPCIONALES CON COSTO */}
+                    <div style={{ background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: totalExtras > 0 ? '#b45309' : 'var(--primary)', display: 'block', marginBottom: '0.25rem' }}>
+                        {totalExtras > 0 ? '➕ EXTRAS OPCIONALES (CON COSTO):' : '➕ COBERTURAS DEL PLAN:'}
+                      </span>
+                      <div className="result-feature" style={{ padding: '0.15rem 0' }}>
+                        <span className="result-feature-label">Maternidad:</span>
+                        <span className="result-feature-value">
+                          {comp.maternidad_suma ? `${comp.maternidad_suma}${costoMat > 0 ? ` (+${costoMat.toFixed(2)}/año)` : ''}` : 'No incluida'}
+                        </span>
+                      </div>
+                      <div className="result-feature" style={{ padding: '0.15rem 0' }}>
+                        <span className="result-feature-label">Asist. Internacional:</span>
+                        <span className="result-feature-value">
+                          {comp.asist_intl_suma ? `${comp.asist_intl_suma}${costoAsist > 0 ? ` (+${costoAsist.toFixed(2)}/año)` : ''}` : 'No incluida'}
+                        </span>
+                      </div>
+                      <div className="result-feature" style={{ padding: '0.15rem 0' }}>
+                        <span className="result-feature-label">Servicio Funeral:</span>
+                        <span className="result-feature-value">
+                          {comp.funeral_suma ? `${comp.funeral_suma}${costoFuneral > 0 ? ` (+${costoFuneral.toFixed(2)}/año)` : ''}` : 'No incluido'}
+                        </span>
+                      </div>
+                    </div>
 
                     {/* Frecuencias de Pago disponibles según el tarifario */}
                     <div style={{ marginTop: '0.75rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border)' }}>
