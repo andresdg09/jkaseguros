@@ -20,6 +20,13 @@
       "contrasena": "a.x45e",
       "rango": "cliente",
       "created_at": "2026-08-20T14:47:41.624Z"
+    },
+    {
+      "id": 4,
+      "correo": "renovacionespolizasnacionales@gmail.com",
+      "contrasena": "PS360-8552076",
+      "rango": "cliente",
+      "created_at": "2026-08-25T12:00:00.000Z"
     }
   ],
   "asesores": [
@@ -54,49 +61,62 @@
       "estado_civil": "Soltero",
       "codigo_area": "+58412",
       "numero_celular": "2980463",
+      "asesor_id": 1,
       "created_at": "2026-08-20T14:47:41.624Z"
+    },
+    {
+      "id": 2,
+      "usuario_id": 4,
+      "primer_nombre": "CARLOS",
+      "segundo_nombre": "HERNAN",
+      "primer_apellido": "ARMADA",
+      "segundo_apellido": "MORENO",
+      "fecha_nacimiento": "1962-12-11",
+      "tipo_documento": "Venezolano",
+      "nro_documento": "8552076",
+      "genero": "Masculino",
+      "estado_civil": "Divorciado",
+      "codigo_area": "0412",
+      "numero_celular": "0000000",
+      "asesor_id": 1,
+      "created_at": "2026-08-25T12:00:00.000Z"
     }
   ],
   "companias_seguros": [
     {
       "id": 1,
       "nombre": "Mercantil Seguros",
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "comision_estandar": 0,
-      "comision_compania": 0,
-      "comision_asesor_estandar": 0
+      "comision_compania": 20,
+      "comision_asesor_estandar": 10,
+      "comision_estandar": 20
     },
     {
       "id": 2,
       "nombre": "Seguros Caracas",
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "comision_estandar": 0,
-      "comision_compania": 0,
-      "comision_asesor_estandar": 0
+      "comision_compania": 22.5,
+      "comision_asesor_estandar": 12,
+      "comision_estandar": 22.5
     },
     {
       "id": 3,
       "nombre": "Seguros Venezuela",
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "comision_estandar": 0,
-      "comision_compania": 0,
-      "comision_asesor_estandar": 0
+      "comision_compania": 22,
+      "comision_asesor_estandar": 11,
+      "comision_estandar": 22
     },
     {
       "id": 4,
       "nombre": "Mapfre Seguros",
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "comision_estandar": 0,
-      "comision_compania": 0,
-      "comision_asesor_estandar": 0
+      "comision_compania": 40,
+      "comision_asesor_estandar": 25,
+      "comision_estandar": 40
     },
     {
       "id": 5,
       "nombre": "Internacional de Seguros",
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "comision_estandar": 0,
-      "comision_compania": 0,
-      "comision_asesor_estandar": 0
+      "comision_compania": 25,
+      "comision_asesor_estandar": 12,
+      "comision_estandar": 25
     }
   ],
   "tarifas": [
@@ -108,6 +128,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 657,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -124,8 +145,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 2,
@@ -135,6 +155,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 740,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -151,8 +172,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 3,
@@ -162,6 +182,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 849,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -178,8 +199,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 4,
@@ -189,6 +209,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 994,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -205,8 +226,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 5,
@@ -216,6 +236,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 657,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -232,8 +253,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 6,
@@ -243,6 +263,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 740,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -259,8 +280,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 7,
@@ -270,6 +290,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 849,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -286,8 +307,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 8,
@@ -297,6 +317,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 994,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -313,8 +334,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 9,
@@ -324,6 +344,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 813,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -340,8 +361,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 10,
@@ -351,6 +371,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 849,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -367,8 +388,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 11,
@@ -378,6 +398,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 909,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -394,8 +415,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 12,
@@ -405,6 +425,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1222,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -421,8 +442,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 13,
@@ -432,6 +452,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 945,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -448,8 +469,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 14,
@@ -459,6 +479,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1077,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -475,8 +496,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 15,
@@ -486,6 +506,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1125,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -502,8 +523,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 16,
@@ -513,6 +533,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1486,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -529,8 +550,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 17,
@@ -540,6 +560,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 1041,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -556,8 +577,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 18,
@@ -567,6 +587,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1125,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -583,8 +604,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 19,
@@ -594,6 +614,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1389,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -610,8 +631,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 20,
@@ -621,6 +641,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1894,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -637,8 +658,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 21,
@@ -648,6 +668,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 1185,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -664,8 +685,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 22,
@@ -675,6 +695,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1341,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -691,8 +712,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 23,
@@ -702,6 +722,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1665,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -718,8 +739,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 24,
@@ -729,6 +749,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 2206,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -745,8 +766,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 25,
@@ -756,6 +776,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 1389,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -772,8 +793,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 26,
@@ -783,6 +803,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1569,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -799,8 +820,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 27,
@@ -810,6 +830,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1917,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -826,8 +847,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 28,
@@ -837,6 +857,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 2674,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -853,8 +874,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 29,
@@ -864,6 +884,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 1785,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -880,8 +901,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 30,
@@ -891,6 +911,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 2073,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -907,8 +928,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 31,
@@ -918,6 +938,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 2361,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -934,8 +955,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 32,
@@ -945,6 +965,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 3000,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -961,8 +982,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 33,
@@ -972,6 +992,7 @@
       "edad_min": 70,
       "edad_max": 74,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 2493,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -988,8 +1009,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 34,
@@ -999,6 +1019,7 @@
       "edad_min": 70,
       "edad_max": 74,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 2841,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1015,8 +1036,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 35,
@@ -1026,6 +1046,7 @@
       "edad_min": 70,
       "edad_max": 74,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 3237,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1042,8 +1063,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 36,
@@ -1053,6 +1073,7 @@
       "edad_min": 70,
       "edad_max": 74,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 4266,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1069,8 +1090,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 37,
@@ -1080,6 +1100,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -1096,8 +1117,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 38,
@@ -1107,6 +1127,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -1123,8 +1144,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 39,
@@ -1134,6 +1154,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1150,8 +1171,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 40,
@@ -1161,6 +1181,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1177,8 +1198,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 41,
@@ -1188,6 +1208,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1204,8 +1225,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 42,
@@ -1215,6 +1235,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1231,8 +1252,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 43,
@@ -1242,6 +1262,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1258,8 +1279,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 44,
@@ -1269,6 +1289,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1285,8 +1306,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 45,
@@ -1296,6 +1316,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1312,8 +1333,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 46,
@@ -1323,6 +1343,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1339,8 +1360,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 47,
@@ -1350,6 +1370,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1366,8 +1387,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 48,
@@ -1377,6 +1397,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1393,8 +1414,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 49,
@@ -1404,6 +1424,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1420,8 +1441,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 50,
@@ -1431,6 +1451,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1447,8 +1468,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 51,
@@ -1458,6 +1478,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1474,8 +1495,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 52,
@@ -1485,6 +1505,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1501,8 +1522,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 53,
@@ -1512,6 +1532,7 @@
       "edad_min": 70,
       "edad_max": 75,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 324,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1528,8 +1549,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 54,
@@ -1539,6 +1559,7 @@
       "edad_min": 70,
       "edad_max": 75,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 492,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1555,8 +1576,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 55,
@@ -1566,6 +1586,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 522,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -1582,8 +1603,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 56,
@@ -1593,6 +1613,7 @@
       "edad_min": 0,
       "edad_max": 17,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 663,
       "maternidad_suma": "",
       "maternidad_costo": "INCL",
@@ -1609,8 +1630,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 57,
@@ -1620,6 +1640,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 522,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1636,8 +1657,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 58,
@@ -1647,6 +1667,7 @@
       "edad_min": 18,
       "edad_max": 29,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 663,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1663,8 +1684,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 59,
@@ -1674,6 +1694,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 480,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1690,8 +1711,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 60,
@@ -1701,6 +1721,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 609,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1717,8 +1738,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 61,
@@ -1728,6 +1748,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 484,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1744,8 +1765,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 62,
@@ -1755,6 +1775,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 615,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1771,8 +1792,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 63,
@@ -1782,6 +1802,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 531,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1798,8 +1819,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 64,
@@ -1809,6 +1829,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 674,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1825,8 +1846,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 65,
@@ -1836,6 +1856,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 608,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1852,8 +1873,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 66,
@@ -1863,6 +1883,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 771,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1879,8 +1900,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 67,
@@ -1890,6 +1910,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 714,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1906,8 +1927,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 68,
@@ -1917,6 +1937,7 @@
       "edad_min": 60,
       "edad_max": 65,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 906,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1933,8 +1954,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 69,
@@ -1944,6 +1964,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 714,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1960,8 +1981,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 70,
@@ -1971,6 +1991,7 @@
       "edad_min": 66,
       "edad_max": 69,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 906,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -1987,8 +2008,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 71,
@@ -1998,6 +2018,7 @@
       "edad_min": 70,
       "edad_max": 74,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 850,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -2014,8 +2035,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 72,
@@ -2025,6 +2045,7 @@
       "edad_min": 70,
       "edad_max": 74,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 1079,
       "maternidad_suma": "$5,000",
       "maternidad_costo": "INCL",
@@ -2041,8 +2062,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 73,
@@ -2052,6 +2072,7 @@
       "edad_min": 75,
       "edad_max": 79,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 850,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2068,8 +2089,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 74,
@@ -2079,6 +2099,7 @@
       "edad_min": 75,
       "edad_max": 79,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 1079,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2095,8 +2116,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 75,
@@ -2106,6 +2126,7 @@
       "edad_min": 80,
       "edad_max": 84,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 1016,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2122,8 +2143,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 76,
@@ -2133,6 +2153,7 @@
       "edad_min": 80,
       "edad_max": 84,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 1289,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2149,8 +2170,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 77,
@@ -2160,6 +2180,7 @@
       "edad_min": 85,
       "edad_max": 89,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 1212,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2176,8 +2197,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 78,
@@ -2187,6 +2207,7 @@
       "edad_min": 85,
       "edad_max": 89,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 1537,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2203,8 +2224,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 79,
@@ -2214,6 +2234,7 @@
       "edad_min": 90,
       "edad_max": 94,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 1437,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2230,8 +2251,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 80,
@@ -2241,6 +2261,7 @@
       "edad_min": 90,
       "edad_max": 94,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 1823,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2257,8 +2278,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 81,
@@ -2268,6 +2288,7 @@
       "edad_min": 95,
       "edad_max": 99,
       "suma_asegurada": 5000,
+      "deducible": 0,
       "prima": 1692,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2284,8 +2305,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 82,
@@ -2295,6 +2315,7 @@
       "edad_min": 95,
       "edad_max": 99,
       "suma_asegurada": 10000,
+      "deducible": 0,
       "prima": 2147,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2311,8 +2332,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": true,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 83,
@@ -2322,6 +2342,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 561,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2338,8 +2359,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 84,
@@ -2349,6 +2369,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 612,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2365,8 +2386,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 85,
@@ -2376,6 +2396,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 662,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -2392,8 +2413,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 86,
@@ -2403,6 +2423,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 545,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2419,8 +2440,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 87,
@@ -2430,6 +2450,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 592,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2446,8 +2467,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 88,
@@ -2457,6 +2477,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 641,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2473,8 +2494,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 89,
@@ -2484,6 +2504,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 549,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2500,8 +2521,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 90,
@@ -2511,6 +2531,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 597,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2527,8 +2548,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 91,
@@ -2538,6 +2558,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 644,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2554,8 +2575,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 92,
@@ -2565,6 +2585,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 718,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2581,8 +2602,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 93,
@@ -2592,6 +2612,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 783,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2608,8 +2629,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 94,
@@ -2619,6 +2639,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 850,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2635,8 +2656,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 95,
@@ -2646,6 +2666,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 899,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2662,8 +2683,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 96,
@@ -2673,6 +2693,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 984,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2689,8 +2710,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 97,
@@ -2700,6 +2720,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1068,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2716,8 +2737,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 98,
@@ -2727,6 +2747,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1165,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2743,8 +2764,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 99,
@@ -2754,6 +2774,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1279,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2770,8 +2791,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 100,
@@ -2781,6 +2801,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1394,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2797,8 +2818,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 101,
@@ -2808,6 +2828,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1424,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2824,8 +2845,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 102,
@@ -2835,6 +2855,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1568,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2851,8 +2872,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 103,
@@ -2862,6 +2882,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1712,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2878,8 +2899,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 104,
@@ -2889,6 +2909,7 @@
       "edad_min": 60,
       "edad_max": 60,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 2480,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2905,8 +2926,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 105,
@@ -2916,6 +2936,7 @@
       "edad_min": 60,
       "edad_max": 60,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 2639,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2932,8 +2953,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 106,
@@ -2943,6 +2963,7 @@
       "edad_min": 60,
       "edad_max": 60,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 2754,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2959,8 +2980,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 107,
@@ -2970,6 +2990,7 @@
       "edad_min": 61,
       "edad_max": 64,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 3369,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -2986,8 +3007,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 108,
@@ -2997,6 +3017,7 @@
       "edad_min": 61,
       "edad_max": 64,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 3675,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3013,8 +3034,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 109,
@@ -3024,6 +3044,7 @@
       "edad_min": 61,
       "edad_max": 64,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 3980,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3040,8 +3061,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 110,
@@ -3051,6 +3071,7 @@
       "edad_min": 65,
       "edad_max": 69,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 4493,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3067,8 +3088,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 111,
@@ -3078,6 +3098,7 @@
       "edad_min": 65,
       "edad_max": 69,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 4907,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3094,8 +3115,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 112,
@@ -3105,6 +3125,7 @@
       "edad_min": 65,
       "edad_max": 69,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 5322,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3121,8 +3142,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 113,
@@ -3132,6 +3152,7 @@
       "edad_min": 70,
       "edad_max": 79,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 5026,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3148,8 +3169,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 114,
@@ -3159,6 +3179,7 @@
       "edad_min": 70,
       "edad_max": 79,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 5492,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3175,8 +3196,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 115,
@@ -3186,6 +3206,7 @@
       "edad_min": 70,
       "edad_max": 79,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 5958,
       "maternidad_suma": "$10,000",
       "maternidad_costo": "$ 845",
@@ -3202,8 +3223,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 116,
@@ -3213,6 +3233,7 @@
       "edad_min": 80,
       "edad_max": 99,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 7300,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3229,8 +3250,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 117,
@@ -3240,6 +3260,7 @@
       "edad_min": 80,
       "edad_max": 99,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 7987,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3256,8 +3277,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 118,
@@ -3267,6 +3287,7 @@
       "edad_min": 80,
       "edad_max": 99,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 8674,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3283,8 +3304,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 119,
@@ -3294,6 +3314,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 511,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3310,8 +3331,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 120,
@@ -3321,6 +3341,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 652,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3337,8 +3358,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 121,
@@ -3348,6 +3368,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 521,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3364,8 +3385,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 122,
@@ -3375,6 +3395,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 604,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3391,8 +3412,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 123,
@@ -3402,6 +3422,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 755,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3418,8 +3439,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 124,
@@ -3429,6 +3449,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 978,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3445,8 +3466,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 125,
@@ -3456,6 +3476,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 1273,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3472,8 +3493,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 126,
@@ -3483,6 +3503,7 @@
       "edad_min": 60,
       "edad_max": 60,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 2494,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3499,8 +3520,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 127,
@@ -3510,6 +3530,7 @@
       "edad_min": 61,
       "edad_max": 64,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 2494,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3526,8 +3547,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 128,
@@ -3537,6 +3557,7 @@
       "edad_min": 65,
       "edad_max": 69,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 3461,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3553,8 +3574,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 129,
@@ -3564,6 +3584,7 @@
       "edad_min": 70,
       "edad_max": 79,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 4151,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3580,8 +3601,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 130,
@@ -3591,6 +3611,7 @@
       "edad_min": 80,
       "edad_max": 99,
       "suma_asegurada": 30000,
+      "deducible": 0,
       "prima": 5000,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3607,8 +3628,7 @@
       "pago_semestral": true,
       "pago_trimestral": true,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 131,
@@ -3618,6 +3638,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 452,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3634,8 +3655,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 132,
@@ -3645,6 +3665,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 444,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3661,8 +3682,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 133,
@@ -3672,6 +3692,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 529,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3688,8 +3709,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 134,
@@ -3699,6 +3719,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 628,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3715,8 +3736,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 135,
@@ -3726,6 +3746,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 783,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3742,8 +3763,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 136,
@@ -3753,6 +3773,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 924,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3769,8 +3790,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 137,
@@ -3780,6 +3800,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1119,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3796,8 +3817,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 138,
@@ -3807,6 +3827,7 @@
       "edad_min": 60,
       "edad_max": 69,
       "suma_asegurada": 50000,
+      "deducible": 0,
       "prima": 1487,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3823,8 +3844,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 139,
@@ -3834,6 +3854,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 540,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3850,8 +3871,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 140,
@@ -3861,6 +3881,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 536,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3877,8 +3898,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 141,
@@ -3888,6 +3908,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 646,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3904,8 +3925,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 142,
@@ -3915,6 +3935,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 739,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3931,8 +3952,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 143,
@@ -3942,6 +3962,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 930,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3958,8 +3979,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 144,
@@ -3969,6 +3989,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1138,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -3985,8 +4006,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 145,
@@ -3996,6 +4016,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1388,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4012,8 +4033,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 146,
@@ -4023,6 +4043,7 @@
       "edad_min": 60,
       "edad_max": 69,
       "suma_asegurada": 100000,
+      "deducible": 0,
       "prima": 1839,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4039,8 +4060,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 147,
@@ -4050,6 +4070,7 @@
       "edad_min": 0,
       "edad_max": 9,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 644,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4066,8 +4087,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 148,
@@ -4077,6 +4097,7 @@
       "edad_min": 10,
       "edad_max": 19,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 639,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4093,8 +4114,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 149,
@@ -4104,6 +4124,7 @@
       "edad_min": 20,
       "edad_max": 29,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 754,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4120,8 +4141,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 150,
@@ -4131,6 +4151,7 @@
       "edad_min": 30,
       "edad_max": 39,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 904,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4147,8 +4168,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 151,
@@ -4158,6 +4178,7 @@
       "edad_min": 40,
       "edad_max": 49,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1127,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4174,8 +4195,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 152,
@@ -4185,6 +4205,7 @@
       "edad_min": 50,
       "edad_max": 54,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1456,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4201,8 +4222,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 153,
@@ -4212,6 +4232,7 @@
       "edad_min": 55,
       "edad_max": 59,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 1816,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4228,8 +4249,7 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
+      "created_at": "2026-08-20T14:47:41.624Z"
     },
     {
       "id": 154,
@@ -4239,6 +4259,7 @@
       "edad_min": 60,
       "edad_max": 69,
       "suma_asegurada": 200000,
+      "deducible": 0,
       "prima": 2218,
       "maternidad_suma": "",
       "maternidad_costo": "",
@@ -4255,111 +4276,6 @@
       "pago_semestral": false,
       "pago_trimestral": false,
       "pago_mensual": false,
-      "created_at": "2026-08-20T14:47:41.624Z",
-      "deducible": 0
-    }
-  ],
-  "matriz_comisiones": [
-    {
-      "id": 1,
-      "mercado": "Nacionales",
-      "compania_id": 1,
-      "ramo": "Salud",
-      "producto_modalidad": "ACCESS (Salud Cobertura Nacional)",
-      "total_comision": 20,
-      "asesor_1": 15,
-      "asesor_2": 12,
-      "asesor_3": 10,
-      "consultor_1": 15,
-      "consultor_2": 12,
-      "johans": 15,
-      "nivel_1_subagente": 10,
-      "nivel_2_agente": 8,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 2,
-      "mercado": "Nacionales",
-      "compania_id": 2,
-      "ramo": "Salud",
-      "producto_modalidad": "SALUD EXTERIOR (Salud Integral)",
-      "total_comision": 22.5,
-      "asesor_1": 17,
-      "asesor_2": 15,
-      "asesor_3": 12,
-      "consultor_1": 17,
-      "consultor_2": 15,
-      "johans": 17,
-      "nivel_1_subagente": 12,
-      "nivel_2_agente": 10,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 3,
-      "mercado": "Nacionales",
-      "compania_id": 2,
-      "ramo": "Salud",
-      "producto_modalidad": "SALUD INDIVIDUAL (Salud Integral)",
-      "total_comision": 22.5,
-      "asesor_1": 17,
-      "asesor_2": 15,
-      "asesor_3": 12,
-      "consultor_1": 17,
-      "consultor_2": 15,
-      "johans": 17,
-      "nivel_1_subagente": 12,
-      "nivel_2_agente": 10,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 4,
-      "mercado": "Nacionales",
-      "compania_id": 3,
-      "ramo": "Salud",
-      "producto_modalidad": "BRONCE / PLATA / ORO (Salud Individual)",
-      "total_comision": 22,
-      "asesor_1": 16,
-      "asesor_2": 14,
-      "asesor_3": 11,
-      "consultor_1": 16,
-      "consultor_2": 14,
-      "johans": 16,
-      "nivel_1_subagente": 11,
-      "nivel_2_agente": 9,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 5,
-      "mercado": "Nacionales",
-      "compania_id": 4,
-      "ramo": "Patrimoniales",
-      "producto_modalidad": "Incendio y Riesgos Patrimoniales",
-      "total_comision": 40,
-      "asesor_1": 30,
-      "asesor_2": 28,
-      "asesor_3": 25,
-      "consultor_1": 30,
-      "consultor_2": 28,
-      "johans": 30,
-      "nivel_1_subagente": 25,
-      "nivel_2_agente": 20,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 6,
-      "mercado": "Internacionales",
-      "compania_id": 5,
-      "ramo": "Viajes",
-      "producto_modalidad": "Cobertura Internacional / Asistencia en Viajes",
-      "total_comision": 25,
-      "asesor_1": 18,
-      "asesor_2": 15,
-      "asesor_3": 12,
-      "consultor_1": 18,
-      "consultor_2": 15,
-      "johans": 18,
-      "nivel_1_subagente": 12,
-      "nivel_2_agente": 10,
       "created_at": "2026-08-20T14:47:41.624Z"
     }
   ],
@@ -4384,6 +4300,27 @@
       "emision_online": false,
       "created_at": "2026-08-20T14:47:41.624Z",
       "comision_porcentaje": null
+    },
+    {
+      "id": 2,
+      "codigo_poliza": "150-352750",
+      "cliente_id": 2,
+      "asesor_id": 1,
+      "compania_id": 1,
+      "plan": "Seguros de Vida Mercantil",
+      "area": "Vida",
+      "suma_asegurada": 10000,
+      "deducible": 0,
+      "prima_anual": 78.24,
+      "estado": "vigente",
+      "pago_estado": "al_dia",
+      "frecuencia_pago": "trimestral",
+      "tipo_negocio": "nuevo",
+      "tipo_cobertura": "individual",
+      "bono_pronto_pago": false,
+      "emision_online": true,
+      "created_at": "2026-08-05T12:00:00.000Z",
+      "comision_porcentaje": 20
     }
   ],
   "pagos": [
@@ -4404,337 +4341,71 @@
     },
     {
       "id": 2,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": 51000,
-      "moneda_pago": "VES",
-      "fecha_pago": "2026-08-25",
-      "estado_pago": "en_revision",
-      "referencia": "457892",
-      "fecha_vencimiento": "2026-10-25",
-      "cuota_numero": 2,
-      "cuota_total": 12,
-      "observaciones": "Pago reportado en Bs. 51.000",
-      "created_at": "2026-08-20T14:47:41.624Z"
+      "poliza_id": 2,
+      "monto": 19.56,
+      "monto_reportado": 19.56,
+      "moneda_pago": "USD",
+      "fecha_pago": "2026-08-05",
+      "estado_pago": "pagado",
+      "referencia": "19125143",
+      "fecha_vencimiento": "2026-08-03",
+      "cuota_numero": 1,
+      "cuota_total": 4,
+      "observaciones": "Factura Nro: 19125143 - Recibo inicial emitido",
+      "created_at": "2026-08-05T12:00:00.000Z"
     },
     {
       "id": 3,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": 51000,
-      "moneda_pago": "VES",
-      "fecha_pago": "2026-08-25",
-      "estado_pago": "en_revision",
-      "referencia": "123456",
-      "fecha_vencimiento": "2026-11-25",
-      "cuota_numero": 3,
-      "cuota_total": 12,
-      "observaciones": "Pago reportado en Bs. 51.000",
-      "created_at": "2026-08-20T14:47:41.624Z"
+      "poliza_id": 2,
+      "monto": 19.56,
+      "monto_reportado": null,
+      "moneda_pago": "USD",
+      "fecha_pago": null,
+      "estado_pago": "pendiente",
+      "referencia": null,
+      "fecha_vencimiento": "2026-11-03",
+      "cuota_numero": 2,
+      "cuota_total": 4,
+      "observaciones": "Cuota trimestral 2 de 4",
+      "created_at": "2026-08-05T12:00:00.000Z"
     },
     {
       "id": 4,
-      "poliza_id": 1,
-      "monto": 51,
+      "poliza_id": 2,
+      "monto": 19.56,
       "monto_reportado": null,
       "moneda_pago": "USD",
       "fecha_pago": null,
       "estado_pago": "pendiente",
       "referencia": null,
-      "fecha_vencimiento": "2026-12-25",
-      "cuota_numero": 4,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
+      "fecha_vencimiento": "2027-02-03",
+      "cuota_numero": 3,
+      "cuota_total": 4,
+      "observaciones": "Cuota trimestral 3 de 4",
+      "created_at": "2026-08-05T12:00:00.000Z"
     },
     {
       "id": 5,
-      "poliza_id": 1,
-      "monto": 51,
+      "poliza_id": 2,
+      "monto": 19.56,
       "monto_reportado": null,
       "moneda_pago": "USD",
       "fecha_pago": null,
       "estado_pago": "pendiente",
       "referencia": null,
-      "fecha_vencimiento": "2027-01-25",
-      "cuota_numero": 5,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 6,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-02-25",
-      "cuota_numero": 6,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 7,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-03-25",
-      "cuota_numero": 7,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 8,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-04-25",
-      "cuota_numero": 8,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 9,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-05-25",
-      "cuota_numero": 9,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 10,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-06-25",
-      "cuota_numero": 10,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 11,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-07-25",
-      "cuota_numero": 11,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 12,
-      "poliza_id": 1,
-      "monto": 51,
-      "monto_reportado": null,
-      "moneda_pago": "USD",
-      "fecha_pago": null,
-      "estado_pago": "pendiente",
-      "referencia": null,
-      "fecha_vencimiento": "2027-08-25",
-      "cuota_numero": 12,
-      "cuota_total": 12,
-      "created_at": "2026-08-20T14:47:41.624Z"
+      "fecha_vencimiento": "2027-05-03",
+      "cuota_numero": 4,
+      "cuota_total": 4,
+      "observaciones": "Cuota trimestral 4 de 4",
+      "created_at": "2026-08-05T12:00:00.000Z"
     }
   ],
-  "historico_comisiones": [],
-  "corridas_comisiones": [],
-  "cotizaciones": [],
-  "bitacora": [],
-  "elearning_courses": [
-    {
-      "id": 1,
-      "titulo": "Curso básico de negociación",
-      "descripcion": "Aprende los fundamentos y estrategias para cerrar acuerdos exitosos.",
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 2,
-      "titulo": "Curso de seguros",
-      "descripcion": "Conceptos fundamentales de pólizas de salud, vida y automotores.",
-      "created_at": "2026-08-20T14:47:41.624Z"
-    },
-    {
-      "id": 3,
-      "titulo": "Curso de cómo se usa el sistema",
-      "descripcion": "Guía rápida para cotizar y gestionar solicitudes en la plataforma JKA Seguros.",
-      "created_at": "2026-08-20T14:47:41.624Z"
-    }
-  ],
+  "logs_actividad": [],
+  "elearning_courses": [],
   "elearning_modules": [],
   "elearning_attempts": [],
-  "logs_actividad": [
-    {
-      "id": 1,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 19.435,4 reportado con Ref: 7689543214. En revisión por Admin.",
-      "created_at": "2026-08-20T15:09:52.078Z"
-    },
-    {
-      "id": 2,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 19.250,4 reportado con Ref: 1234567899. En revisión por Admin.",
-      "created_at": "2026-08-20T15:16:07.136Z"
-    },
-    {
-      "id": 3,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 2.000.000.000 reportado con Ref: 1234355435. En revisión por Admin.",
-      "created_at": "2026-08-20T15:23:29.142Z"
-    },
-    {
-      "id": 4,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 34.235.453 reportado con Ref: 234234234. En revisión por Admin.",
-      "created_at": "2026-08-20T15:23:53.050Z"
-    },
-    {
-      "id": 5,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 23.452 reportado con Ref: 1234355435. En revisión por Admin.",
-      "created_at": "2026-08-20T15:24:39.302Z"
-    },
-    {
-      "id": 6,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 52.341 reportado con Ref: 4567891235. En revisión por Admin.",
-      "created_at": "2026-08-21T16:36:04.183Z"
-    },
-    {
-      "id": 7,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 45.756 reportado con Ref: 455645. En revisión por Admin.",
-      "created_at": "2026-08-21T16:40:00.056Z"
-    },
-    {
-      "id": 8,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 45.678 reportado con Ref: 563765. En revisión por Admin.",
-      "created_at": "2026-08-21T16:40:21.003Z"
-    },
-    {
-      "id": 9,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 7894561237. En revisión por Admin.",
-      "created_at": "2026-08-25T12:48:46.629Z"
-    },
-    {
-      "id": 10,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 457892445. En revisión por Admin.",
-      "created_at": "2026-08-25T12:57:40.761Z"
-    },
-    {
-      "id": 11,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 123456. En revisión por Admin.",
-      "created_at": "2026-08-25T12:58:23.094Z"
-    },
-    {
-      "id": 12,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 123456. En revisión por Admin.",
-      "created_at": "2026-08-25T13:01:58.197Z"
-    },
-    {
-      "id": 13,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 789461. En revisión por Admin.",
-      "created_at": "2026-08-25T13:04:44.702Z"
-    },
-    {
-      "id": 14,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 456132. En revisión por Admin.",
-      "created_at": "2026-08-25T13:05:05.786Z"
-    },
-    {
-      "id": 15,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 51.000 reportado con Ref: 456172. En revisión por Admin.",
-      "created_at": "2026-08-25T13:06:45.867Z"
-    },
-    {
-      "id": 16,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 45.000 reportado con Ref: 123456. En revisión por Admin.",
-      "created_at": "2026-08-25T13:07:31.931Z"
-    },
-    {
-      "id": 17,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 54.000 reportado con Ref: 789465. En revisión por Admin.",
-      "created_at": "2026-08-25T13:09:24.680Z"
-    },
-    {
-      "id": 18,
-      "usuario_id": 2,
-      "correo_usuario": "info@jkaconsultores.com",
-      "accion": "PAGO_REPORTADO_VES",
-      "descripcion": "Pago de Bs. 45.000 reportado con Ref: 123456. En revisión por Admin.",
-      "created_at": "2026-08-25T13:09:48.183Z"
-    }
-  ],
   "comisiones_asesores": [],
-  "tarifario_metadata": {
-    "version": "1.0.0",
-    "ultima_modificacion": "2026-08-20T15:09:52.050Z",
-    "usuario_correo": "admin@jkaseguros.com"
-  }
+  "matriz_comisiones": [],
+  "corridas_comisiones": [],
+  "historico_comisiones": []
 }

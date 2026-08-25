@@ -1473,10 +1473,27 @@ function fallbackQuery(text, params = []) {
     return { rows: [newPay], rowCount: 1 };
   }
 
-  // 17. DELETE FROM asesores WHERE usuario_id = $1
+  // 17. DELETE FROM asesores
+  if (cleanSql.startsWith('DELETE FROM asesores WHERE id =')) {
+    const aId = parseInt(params[0]);
+    fallbackData.asesores = fallbackData.asesores.filter(a => a.id !== aId);
+    (fallbackData.polizas || []).forEach(p => { if (p.asesor_id === aId) p.asesor_id = null; });
+    (fallbackData.datos_personales || []).forEach(d => { if (d.asesor_id === aId) d.asesor_id = null; });
+    (fallbackData.cotizaciones || []).forEach(c => { if (c.asesor_id === aId) c.asesor_id = null; });
+    saveFallback();
+    return { rowCount: 1 };
+  }
   if (cleanSql.startsWith('DELETE FROM asesores WHERE usuario_id =')) {
     const userId = parseInt(params[0]);
     fallbackData.asesores = fallbackData.asesores.filter(a => a.usuario_id !== userId);
+    saveFallback();
+    return { rowCount: 1 };
+  }
+
+  // 17.5 DELETE FROM usuarios WHERE id = $1
+  if (cleanSql.startsWith('DELETE FROM usuarios WHERE id =')) {
+    const uId = parseInt(params[0]);
+    fallbackData.usuarios = fallbackData.usuarios.filter(u => u.id !== uId);
     saveFallback();
     return { rowCount: 1 };
   }

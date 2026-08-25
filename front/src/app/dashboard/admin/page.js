@@ -2285,6 +2285,7 @@ export default function AdminDashboard() {
                             {a.estado === 'aprobado' && <span className="badge badge-vigente" style={{ background: '#10b981', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Aprobado</span>}
                             {a.estado === 'pendiente' && <span className="badge badge-negociacion" style={{ background: '#f59e0b', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Pendiente</span>}
                             {a.estado === 'rechazado' && <span className="badge badge-vencida" style={{ background: '#ef4444', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Rechazado</span>}
+                            {a.estado === 'inactivo' && <span className="badge" style={{ background: '#64748b', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Inactivo</span>}
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -2294,6 +2295,7 @@ export default function AdminDashboard() {
                                     onClick={() => handleUpdateAdvisorStatus(a.id_asesor, 'aprobado')} 
                                     className="btn btn-primary" 
                                     style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#10b981', margin: 0 }}
+                                    title="Aprobar asesor para que pueda operar"
                                   >
                                     ✓ Aprobar
                                   </button>
@@ -2301,17 +2303,39 @@ export default function AdminDashboard() {
                                     onClick={() => handleUpdateAdvisorStatus(a.id_asesor, 'rechazado')} 
                                     className="btn btn-accent" 
                                     style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#f59e0b', margin: 0 }}
+                                    title="Rechazar solicitud de asesor"
                                   >
                                     ✗ Rechazar
                                   </button>
                                 </>
                               )}
+                              {a.estado === 'aprobado' && (
+                                <button 
+                                  onClick={() => handleUpdateAdvisorStatus(a.id_asesor, 'inactivo')} 
+                                  className="btn" 
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', margin: 0 }}
+                                  title="Desactivar temporalmente al asesor (Borrado lógico)"
+                                >
+                                  ⏸️ Inactivar
+                                </button>
+                              )}
+                              {(a.estado === 'inactivo' || a.estado === 'rechazado') && (
+                                <button 
+                                  onClick={() => handleUpdateAdvisorStatus(a.id_asesor, 'aprobado')} 
+                                  className="btn btn-primary" 
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#10b981', margin: 0 }}
+                                  title="Reactivar asesor"
+                                >
+                                  ✓ Reactivar
+                                </button>
+                              )}
                               <button 
                                 onClick={() => handleDeleteAdvisor(a.id_asesor)} 
                                 className="btn btn-accent" 
                                 style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: '#e11d48', margin: 0 }}
+                                title="Eliminar definitivamente del sistema"
                               >
-                                Eliminar
+                                🗑️ Eliminar
                               </button>
                             </div>
                           </td>

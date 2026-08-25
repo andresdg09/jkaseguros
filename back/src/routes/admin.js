@@ -243,7 +243,7 @@ router.post('/advisors', authenticateToken, async (req, res) => {
   }
 });
 
-// Eliminar asesor y su usuario asociado
+// Eliminar asesor y su usuario asociado (Borrado físico seguro)
 router.delete('/advisors/:id', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
   const { id } = req.params;
@@ -259,9 +259,17 @@ router.delete('/advisors/:id', authenticateToken, async (req, res) => {
       if (adv) {
         name = adv.nombre;
         uId = adv.usuario_id;
+        // Desvincular referencias en polizas, clientes y cotizaciones
+        (fData.polizas || []).forEach(p => { if (p.asesor_id === aId) p.asesor_id = null; });
+        (fData.datos_personales || []).forEach(d => { if (d.asesor_id === aId) d.asesor_id = null; });
+        (fData.cotizaciones || []).forEach(c => { if (c.asesor_id === aId) c.asesor_id = null; });
+        if (fData.comisiones_asesores) {
+          fData.comisiones_asesores = fData.comisiones_asesores.filter(ca => ca.asesor_id !== aId);
+        }
         fData.asesores = fData.asesores.filter(a => a.id !== aId);
         if (uId) {
           fData.usuarios = fData.usuarios.filter(u => u.id !== uId);
+          (fData.logs_actividad || []).forEach(l => { if (l.usuario_id === uId) l.usuario_id = null; });
         }
         db.saveFallback();
       }
@@ -271,28 +279,46 @@ router.delete('/advisors/:id', authenticateToken, async (req, res) => {
         name = checkRes.rows[0].nombre;
         uId = checkRes.rows[0].usuario_id;
         
+        // 1. Desvincular claves foráneas en tablas dependientes
+        await db.query('UPDATE polizas SET asesor_id = NULL WHERE asesor_id = $1', [aId]);
+        await db.query('UPDATE datos_personales SET asesor_id = NULL WHERE asesor_id = $1', [aId]);
+        await db.query('UPDATE cotizaciones SET asesor_id = NULL WHERE asesor_id = $1', [aId]);
+        try {
+          await db.query('UPDATE historico_comisiones SET asesor_id = NULL WHERE asesor_id = $1', [aId]);
+          await db.query('DELETE FROM comisiones_asesores WHERE asesor_id = $1', [aId]);
+        } catch (eCom) {
+          console.warn('Advertencia comisiones asesor al eliminar:', eCom.message);
+        }
+
+        // 2. Eliminar de la tabla asesores
         await db.query('DELETE FROM asesores WHERE id = $1', [aId]);
+
+        // 3. Eliminar usuario asociado
         if (uId) {
+          try {
+            await db.query('UPDATE logs_actividad SET usuario_id = NULL WHERE usuario_id = $1', [uId]);
+          } catch (eLog) {}
           await db.query('DELETE FROM usuarios WHERE id = $1', [uId]);
         }
       }
     }
 
     await registrarAccion(req.user.id, req.user.correo, 'ELIMINAR_ASESOR', `Asesor ${name} (ID: ${aId}) eliminado del sistema.`);
-    res.json({ message: 'Asesor eliminado correctamente.' });
+    res.json({ message: 'Asesor y usuario asociado eliminados correctamente.' });
   } catch (err) {
     console.error('Error al eliminar asesor:', err);
     res.status(500).json({ error: 'Error del servidor al eliminar el asesor.' });
   }
 });
 
-// Actualizar el estado de aprobación de un asesor
+// Actualizar el estado de aprobación / borrado lógico de un asesor
 router.put('/advisors/:id/status', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
   const { id } = req.params;
   const { estado } = req.body;
 
-  if (!['aprobado', 'pendiente', 'rechazado'].includes(estado)) {
+  const validStatuses = ['aprobado', 'pendiente', 'rechazado', 'inactivo'];
+  if (!validStatuses.includes(estado)) {
     return res.status(400).json({ error: 'Estado de aprobación no válido.' });
   }
 
@@ -315,10 +341,10 @@ router.put('/advisors/:id/status', authenticateToken, async (req, res) => {
     }
 
     await registrarAccion(req.user.id, req.user.correo, 'APROBACION_ASESOR', `Estado de asesor ${name} (ID: ${aId}) cambiado a ${estado}.`);
-    res.json({ message: `Estado de aprobación del asesor cambiado a ${estado}.`, estado });
+    res.json({ message: `Estado del asesor cambiado a ${estado}.`, estado });
   } catch (err) {
     console.error('Error al actualizar estado del asesor:', err);
-    res.status(500).json({ error: 'Error del servidor al actualizar estado del asesor.' });
+    res.status(500).json({ error: 'Error del servidor al actualizar estado.' });
   }
 });
 
