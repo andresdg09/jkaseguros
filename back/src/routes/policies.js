@@ -12,8 +12,8 @@ export async function generarPagosFraccionados(polizaId, primaAnual, frecuenciaP
   await db.query('DELETE FROM pagos WHERE poliza_id = $1', [pid]);
 
   const freq = frecuenciaPago || 'contado';
-  const numCuotas = freq === 'contado' ? 1 : freq === 'semestral' ? 2 : freq === 'trimestral' ? 4 : 12;
-  const mesesIntervalo = freq === 'contado' ? 0 : freq === 'semestral' ? 6 : freq === 'trimestral' ? 3 : 1;
+  const numCuotas = freq === 'contado' ? 1 : freq === 'semestral' ? 2 : freq === 'cuatrimestral' ? 3 : freq === 'trimestral' ? 4 : 12;
+  const mesesIntervalo = freq === 'contado' ? 0 : freq === 'semestral' ? 6 : freq === 'cuatrimestral' ? 4 : freq === 'trimestral' ? 3 : 1;
   const montoBase = parseFloat((primaAnual / numCuotas).toFixed(2));
   
   for (let i = 1; i <= numCuotas; i++) {

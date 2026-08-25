@@ -111,27 +111,38 @@ export default function AdminDashboard() {
   const [tariffView, setTariffView] = useState('comparativa'); // 'comparativa' o 'excel'
   const [resizingCol, setResizingCol] = useState(null);
   const [detailedColWidths, setDetailedColWidths] = useState({
-    compania_id: 150,
-    plan: 110,
-    ramo: 100,
-    pago: 130,
-    edad_min: 80,
-    edad_max: 80,
-    suma_asegurada: 120,
-    deducible: 100,
-    prima: 95,
-    maternidad_suma: 110,
-    maternidad_costo: 110,
-    asist_intl_suma: 110,
-    asist_intl_costo: 110,
-    funeral_suma: 110,
-    funeral_costo: 110,
-    atencion_medica_primaria: 110,
-    medicinas: 100,
-    consultas_medicas: 110,
-    examenes_lab_imagenologia: 130,
-    ambulancia: 110,
-    acciones: 110
+    compania_id: 140,
+    plan: 100,
+    ramo: 90,
+    pago_contado: 75,
+    pago_semestral: 75,
+    pago_cuatrimestral: 85,
+    pago_trimestral: 75,
+    pago_mensual: 75,
+    edad_min: 70,
+    edad_max: 70,
+    suma_asegurada: 110,
+    deducible: 90,
+    prima: 90,
+    rehabilitacion: 95,
+    atencion_medica_primaria: 105,
+    medicinas: 95,
+    consultas_medicas: 95,
+    protesis: 80,
+    muleta_silla_ruedas: 115,
+    examenes_lab_imagenologia: 90,
+    consultas: 80,
+    maternidad: 85,
+    oftalmologia: 95,
+    odontologia: 95,
+    ambulancia: 90,
+    maternidad_suma: 100,
+    maternidad_costo: 100,
+    asist_intl_suma: 100,
+    asist_intl_costo: 100,
+    funeral_suma: 100,
+    funeral_costo: 100,
+    acciones: 90
   });
   const [comparativeColWidths, setComparativeColWidths] = useState({});
 
@@ -771,6 +782,7 @@ export default function AdminDashboard() {
           ramo: tariff.ramo || 'Salud',
           pago_contado: !!tariff.pago_contado,
           pago_semestral: !!tariff.pago_semestral,
+          pago_cuatrimestral: !!tariff.pago_cuatrimestral,
           pago_trimestral: !!tariff.pago_trimestral,
           pago_mensual: !!tariff.pago_mensual,
           maternidad_suma: tariff.maternidad_suma || '',
@@ -783,7 +795,14 @@ export default function AdminDashboard() {
           atencion_medica_primaria: !!(tariff.atencion_medica_primaria || tariff.at_situ_medicamentos === 'INCL'),
           medicinas: !!(tariff.medicinas === true || tariff.medicinas === 'true' || tariff.medicinas === 'INCL'),
           consultas_medicas: !!(tariff.consultas_medicas === true || tariff.consultas_medicas === 'true' || tariff.consultas_medicas === 'INCL' || (typeof tariff.consultas_medicas === 'string' && tariff.consultas_medicas.length > 0 && tariff.consultas_medicas !== 'NO')),
+          rehabilitacion: !!(tariff.rehabilitacion === true || tariff.rehabilitacion === 'true' || tariff.rehabilitacion === 'INCL'),
+          protesis: !!(tariff.protesis === true || tariff.protesis === 'true' || tariff.protesis === 'INCL'),
+          muleta_silla_ruedas: !!(tariff.muleta_silla_ruedas === true || tariff.muleta_silla_ruedas === 'true' || tariff.muleta_silla_ruedas === 'INCL'),
           examenes_lab_imagenologia: tariff.examenes_lab_imagenologia || '',
+          consultas: !!(tariff.consultas === true || tariff.consultas === 'true' || tariff.consultas === 'INCL'),
+          maternidad: !!(tariff.maternidad === true || tariff.maternidad === 'true' || tariff.maternidad === 'INCL' || !!tariff.maternidad_suma),
+          oftalmologia: !!(tariff.oftalmologia === true || tariff.oftalmologia === 'true' || tariff.oftalmologia === 'INCL'),
+          odontologia: !!(tariff.odontologia === true || tariff.odontologia === 'true' || tariff.odontologia === 'INCL'),
           ambulancia: tariff.ambulancia || ''
         })
       });
@@ -840,6 +859,7 @@ export default function AdminDashboard() {
       plan: '',
       pago_contado: true,
       pago_semestral: false,
+      pago_cuatrimestral: false,
       pago_trimestral: false,
       pago_mensual: false,
       ramo: 'Salud',
@@ -858,7 +878,14 @@ export default function AdminDashboard() {
       atencion_medica_primaria: true,
       medicinas: false,
       consultas_medicas: true,
+      rehabilitacion: false,
+      protesis: false,
+      muleta_silla_ruedas: false,
       examenes_lab_imagenologia: '',
+      consultas: false,
+      maternidad: false,
+      oftalmologia: false,
+      odontologia: false,
       ambulancia: ''
     };
     setTariffs(prev => [...prev, newRow]);
@@ -1718,6 +1745,7 @@ export default function AdminDashboard() {
                           >
                             <option value="contado">Contado (1 cuota)</option>
                             <option value="semestral">Semestral (2 cuotas)</option>
+                            <option value="cuatrimestral">Cuatrimestral (3 cuotas)</option>
                             <option value="trimestral">Trimestral (4 cuotas)</option>
                             <option value="mensual">Mensual (12 cuotas)</option>
                           </select>
@@ -1868,6 +1896,7 @@ export default function AdminDashboard() {
                               >
                                 <option value="contado">Contado</option>
                                 <option value="semestral">Semestral</option>
+                                <option value="cuatrimestral">Cuatrimestral</option>
                                 <option value="trimestral">Trimestral</option>
                                 <option value="mensual">Mensual</option>
                               </select>
@@ -2880,26 +2909,34 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.compania_id}px` }} />
                       <col style={{ width: `${detailedColWidths.plan}px` }} />
                       <col style={{ width: `${detailedColWidths.ramo}px` }} />
-                      <col style={{ width: '80px' }} />
-                      <col style={{ width: '80px' }} />
-                      <col style={{ width: '80px' }} />
-                      <col style={{ width: '80px' }} />
+                      <col style={{ width: `${detailedColWidths.pago_contado}px` }} />
+                      <col style={{ width: `${detailedColWidths.pago_semestral}px` }} />
+                      <col style={{ width: `${detailedColWidths.pago_cuatrimestral}px` }} />
+                      <col style={{ width: `${detailedColWidths.pago_trimestral}px` }} />
+                      <col style={{ width: `${detailedColWidths.pago_mensual}px` }} />
                       <col style={{ width: `${detailedColWidths.edad_min}px` }} />
                       <col style={{ width: `${detailedColWidths.edad_max}px` }} />
                       <col style={{ width: `${detailedColWidths.suma_asegurada}px` }} />
                       <col style={{ width: `${detailedColWidths.deducible}px` }} />
                       <col style={{ width: `${detailedColWidths.prima}px` }} />
+                      <col style={{ width: `${detailedColWidths.rehabilitacion}px` }} />
+                      <col style={{ width: `${detailedColWidths.atencion_medica_primaria}px` }} />
+                      <col style={{ width: `${detailedColWidths.medicinas}px` }} />
+                      <col style={{ width: `${detailedColWidths.consultas_medicas}px` }} />
+                      <col style={{ width: `${detailedColWidths.protesis}px` }} />
+                      <col style={{ width: `${detailedColWidths.muleta_silla_ruedas}px` }} />
+                      <col style={{ width: `${detailedColWidths.examenes_lab_imagenologia}px` }} />
+                      <col style={{ width: `${detailedColWidths.consultas}px` }} />
+                      <col style={{ width: `${detailedColWidths.maternidad}px` }} />
+                      <col style={{ width: `${detailedColWidths.oftalmologia}px` }} />
+                      <col style={{ width: `${detailedColWidths.odontologia}px` }} />
+                      <col style={{ width: `${detailedColWidths.ambulancia}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.asist_intl_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.asist_intl_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.funeral_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.funeral_costo}px` }} />
-                      <col style={{ width: `${detailedColWidths.atencion_medica_primaria}px` }} />
-                      <col style={{ width: `${detailedColWidths.medicinas}px` }} />
-                      <col style={{ width: `${detailedColWidths.consultas_medicas}px` }} />
-                      <col style={{ width: `${detailedColWidths.examenes_lab_imagenologia}px` }} />
-                      <col style={{ width: `${detailedColWidths.ambulancia}px` }} />
                       <col style={{ width: `${detailedColWidths.acciones}px` }} />
                     </colgroup>
                     <thead>
@@ -2916,10 +2953,26 @@ export default function AdminDashboard() {
                           Ramo / Tipo
                           <div className={`resize-handle ${resizingCol === 'ramo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ramo')} />
                         </th>
-                        <th style={{ textAlign: 'center' }}>Contado</th>
-                        <th style={{ textAlign: 'center' }}>Semestral</th>
-                        <th style={{ textAlign: 'center' }}>Trimestral</th>
-                        <th style={{ textAlign: 'center' }}>Mensual</th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Contado
+                          <div className={`resize-handle ${resizingCol === 'pago_contado' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_contado')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Semestral
+                          <div className={`resize-handle ${resizingCol === 'pago_semestral' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_semestral')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Cuatrimestral
+                          <div className={`resize-handle ${resizingCol === 'pago_cuatrimestral' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_cuatrimestral')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Trimestral
+                          <div className={`resize-handle ${resizingCol === 'pago_trimestral' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_trimestral')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Mensual
+                          <div className={`resize-handle ${resizingCol === 'pago_mensual' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_mensual')} />
+                        </th>
                         <th style={{ position: 'relative' }}>
                           Edad Mín
                           <div className={`resize-handle ${resizingCol === 'edad_min' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'edad_min')} />
@@ -2939,6 +2992,54 @@ export default function AdminDashboard() {
                         <th style={{ position: 'relative' }}>
                           Prima ($)
                           <div className={`resize-handle ${resizingCol === 'prima' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'prima')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Rehabilitación
+                          <div className={`resize-handle ${resizingCol === 'rehabilitacion' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'rehabilitacion')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Atención Médica Primaria
+                          <div className={`resize-handle ${resizingCol === 'atencion_medica_primaria' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'atencion_medica_primaria')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Medicamentos prescritos
+                          <div className={`resize-handle ${resizingCol === 'medicinas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'medicinas')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Cons médicas
+                          <div className={`resize-handle ${resizingCol === 'consultas_medicas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas_medicas')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Prótesis
+                          <div className={`resize-handle ${resizingCol === 'protesis' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'protesis')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Muleta + Silla de ruedas
+                          <div className={`resize-handle ${resizingCol === 'muleta_silla_ruedas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'muleta_silla_ruedas')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Exámenes
+                          <div className={`resize-handle ${resizingCol === 'examenes_lab_imagenologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'examenes_lab_imagenologia')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Consultas
+                          <div className={`resize-handle ${resizingCol === 'consultas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Maternidad
+                          <div className={`resize-handle ${resizingCol === 'maternidad' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'maternidad')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Oftalmología
+                          <div className={`resize-handle ${resizingCol === 'oftalmologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'oftalmologia')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Odontología
+                          <div className={`resize-handle ${resizingCol === 'odontologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'odontologia')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Ambulancia
+                          <div className={`resize-handle ${resizingCol === 'ambulancia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ambulancia')} />
                         </th>
                         <th style={{ position: 'relative' }}>
                           Maternidad Suma
@@ -2964,26 +3065,6 @@ export default function AdminDashboard() {
                           Funerario Costo
                           <div className={`resize-handle ${resizingCol === 'funeral_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'funeral_costo')} />
                         </th>
-                        <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Atención Médica Primaria
-                          <div className={`resize-handle ${resizingCol === 'atencion_medica_primaria' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'atencion_medica_primaria')} />
-                        </th>
-                        <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Medicinas
-                          <div className={`resize-handle ${resizingCol === 'medicinas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'medicinas')} />
-                        </th>
-                        <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Cons Médicas
-                          <div className={`resize-handle ${resizingCol === 'consultas_medicas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas_medicas')} />
-                        </th>
-                        <th style={{ position: 'relative' }}>
-                          Exám. Lab/Imag
-                          <div className={`resize-handle ${resizingCol === 'examenes_lab_imagenologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'examenes_lab_imagenologia')} />
-                        </th>
-                        <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Ambulancia
-                          <div className={`resize-handle ${resizingCol === 'ambulancia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ambulancia')} />
-                        </th>
                         <th style={{ position: 'relative' }}>
                           Acciones
                           <div className={`resize-handle ${resizingCol === 'acciones' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'acciones')} />
@@ -2993,7 +3074,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredTariffs.length === 0 ? (
                         <tr>
-                          <td colSpan="24" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan="32" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas registradas en la planilla.
                           </td>
                         </tr>
@@ -3054,6 +3135,15 @@ export default function AdminDashboard() {
                                   onChange={(e) => handleCellChange(t.id, 'pago_semestral', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
                                   title="Semestral"
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_cuatrimestral}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_cuatrimestral', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Cuatrimestral"
                                 />
                               </td>
                               <td style={{ textAlign: 'center' }}>
@@ -3134,12 +3224,16 @@ export default function AdminDashboard() {
                                 />
                               </td>
 
-                              <td>{textInput('maternidad_suma')}</td>
-                              <td>{textInput('maternidad_costo')}</td>
-                              <td>{textInput('asist_intl_suma')}</td>
-                              <td>{textInput('asist_intl_costo')}</td>
-                              <td>{textInput('funeral_suma')}</td>
-                              <td>{textInput('funeral_costo')}</td>
+                              {/* Rehabilitación */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'rehabilitacion', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Rehabilitación"
+                                />
+                              </td>
 
                               {/* Atención Médica Primaria */}
                               <td style={{ textAlign: 'center' }}>
@@ -3155,14 +3249,14 @@ export default function AdminDashboard() {
                                 />
                               </td>
 
-                              {/* Medicinas */}
+                              {/* Medicamentos prescritos */}
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
                                   checked={!!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL')}
                                   onChange={(e) => handleCellChange(t.id, 'medicinas', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
-                                  title="Medicinas"
+                                  title="Medicamentos prescritos"
                                 />
                               </td>
 
@@ -3173,11 +3267,86 @@ export default function AdminDashboard() {
                                   checked={!!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))}
                                   onChange={(e) => handleCellChange(t.id, 'consultas_medicas', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
-                                  title="Consultas Médicas"
+                                  title="Cons médicas"
                                 />
                               </td>
 
-                              <td>{textInput('examenes_lab_imagenologia')}</td>
+                              {/* Prótesis */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'protesis', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Prótesis"
+                                />
+                              </td>
+
+                              {/* Muleta + Silla de ruedas */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'muleta_silla_ruedas', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Muleta + Silla de ruedas"
+                                />
+                              </td>
+
+                              {/* Exámenes */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO'))}
+                                  onChange={(e) => handleCellChange(t.id, 'examenes_lab_imagenologia', e.target.checked ? 'INCL' : '')}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Exámenes"
+                                />
+                              </td>
+
+                              {/* Consultas */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'consultas', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Consultas"
+                                />
+                              </td>
+
+                              {/* Maternidad */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL' || !!t.maternidad_suma)}
+                                  onChange={(e) => handleCellChange(t.id, 'maternidad', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Maternidad"
+                                />
+                              </td>
+
+                              {/* Oftalmología */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'oftalmologia', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Oftalmología"
+                                />
+                              </td>
+
+                              {/* Odontología */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'odontologia', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Odontología"
+                                />
+                              </td>
 
                               {/* Ambulancia */}
                               <td style={{ textAlign: 'center' }}>
@@ -3189,6 +3358,13 @@ export default function AdminDashboard() {
                                   title="Ambulancia"
                                 />
                               </td>
+
+                              <td>{textInput('maternidad_suma')}</td>
+                              <td>{textInput('maternidad_costo')}</td>
+                              <td>{textInput('asist_intl_suma')}</td>
+                              <td>{textInput('asist_intl_costo')}</td>
+                              <td>{textInput('funeral_suma')}</td>
+                              <td>{textInput('funeral_costo')}</td>
 
                               {/* Acciones */}
                               <td style={{ textAlign: 'center', padding: '0.2rem' }}>

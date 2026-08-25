@@ -1060,9 +1060,10 @@ export default function Home() {
                       <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                         {comp.pago_contado && <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Contado (1)</span>}
                         {comp.pago_semestral && <span style={{ fontSize: '0.7rem', background: '#fef3c7', color: '#b45309', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Semestral (2)</span>}
+                        {comp.pago_cuatrimestral && <span style={{ fontSize: '0.7rem', background: '#ffedd5', color: '#c2410c', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Cuatrimestral (3)</span>}
                         {comp.pago_trimestral && <span style={{ fontSize: '0.7rem', background: '#f3e8ff', color: '#7e22ce', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Trimestral (4)</span>}
                         {comp.pago_mensual && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Mensual (12)</span>}
-                        {!comp.pago_contado && !comp.pago_semestral && !comp.pago_trimestral && !comp.pago_mensual && (
+                        {!comp.pago_contado && !comp.pago_semestral && !comp.pago_cuatrimestral && !comp.pago_trimestral && !comp.pago_mensual && (
                           <span style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>Contado</span>
                         )}
                       </div>

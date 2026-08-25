@@ -14,6 +14,7 @@ const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://local
 const FREQ_OPTIONS = [
   { key: 'contado', label: 'Contado (1 pago)', cuotas: 1 },
   { key: 'semestral', label: 'Semestral (2 cuotas)', cuotas: 2 },
+  { key: 'cuatrimestral', label: 'Cuatrimestral (3 cuotas)', cuotas: 3 },
   { key: 'trimestral', label: 'Trimestral (4 cuotas)', cuotas: 4 },
   { key: 'mensual', label: 'Mensual (12 cuotas)', cuotas: 12 },
 ];
@@ -48,6 +49,7 @@ export default function CotizacionPublicaPage() {
         const key = `${comp.id}_${comp.plan}_${sumVal}`;
         if (comp.pago_contado) initialFreqs[key] = 'contado';
         else if (comp.pago_semestral) initialFreqs[key] = 'semestral';
+        else if (comp.pago_cuatrimestral) initialFreqs[key] = 'cuatrimestral';
         else if (comp.pago_trimestral) initialFreqs[key] = 'trimestral';
         else if (comp.pago_mensual) initialFreqs[key] = 'mensual';
         else initialFreqs[key] = 'contado';
@@ -71,8 +73,9 @@ export default function CotizacionPublicaPage() {
     const available = [];
     if (comp.pago_contado) available.push(FREQ_OPTIONS[0]);
     if (comp.pago_semestral) available.push(FREQ_OPTIONS[1]);
-    if (comp.pago_trimestral) available.push(FREQ_OPTIONS[2]);
-    if (comp.pago_mensual) available.push(FREQ_OPTIONS[3]);
+    if (comp.pago_cuatrimestral) available.push(FREQ_OPTIONS[2]);
+    if (comp.pago_trimestral) available.push(FREQ_OPTIONS[3]);
+    if (comp.pago_mensual) available.push(FREQ_OPTIONS[4]);
     
     // Si ninguna está marcada o solo 1, ofrecer todas las opciones estándar para que el cliente tenga flexibilidad
     if (available.length <= 1) {

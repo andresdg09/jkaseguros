@@ -627,7 +627,7 @@ export default function AsesorDashboard() {
       plan: firstPlan,
       suma_asegurada: firstSum ? String(firstSum) : '',
       prima_anual: match ? String(match.prima) : prev.prima_anual,
-      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual'))
+      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_cuatrimestral ? 'cuatrimestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual')))
     }));
   };
 
@@ -641,7 +641,7 @@ export default function AsesorDashboard() {
       plan: planName,
       suma_asegurada: firstSum ? String(firstSum) : '',
       prima_anual: match ? String(match.prima) : prev.prima_anual,
-      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual'))
+      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_cuatrimestral ? 'cuatrimestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual')))
     }));
   };
 
@@ -652,7 +652,7 @@ export default function AsesorDashboard() {
       ...prev,
       suma_asegurada: sumVal,
       prima_anual: match ? String(match.prima) : prev.prima_anual,
-      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual'))
+      frecuencia_pago: match?.pago_contado ? 'contado' : (match?.pago_semestral ? 'semestral' : (match?.pago_cuatrimestral ? 'cuatrimestral' : (match?.pago_trimestral ? 'trimestral' : 'mensual')))
     }));
   };
 
@@ -1604,6 +1604,7 @@ export default function AsesorDashboard() {
                               >
                                 <option value="contado">Contado</option>
                                 <option value="semestral">Semestral</option>
+                                <option value="cuatrimestral">Cuatrimestral</option>
                                 <option value="trimestral">Trimestral</option>
                                 <option value="mensual">Mensual</option>
                               </select>
@@ -1848,6 +1849,9 @@ export default function AsesorDashboard() {
                       </option>
                       <option value="semestral">
                         Pago Semestral (2 cuotas de ${primaNum > 0 ? (primaNum / 2).toFixed(2) : '0.00'})
+                      </option>
+                      <option value="cuatrimestral">
+                        Pago Cuatrimestral (3 cuotas de ${primaNum > 0 ? (primaNum / 3).toFixed(2) : '0.00'})
                       </option>
                       <option value="trimestral">
                         Pago Trimestral (4 cuotas de ${primaNum > 0 ? (primaNum / 4).toFixed(2) : '0.00'})

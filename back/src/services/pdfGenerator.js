@@ -66,15 +66,8 @@ function getLogoPath() {
 function dibujarHeader(doc, logoPath, tituloPagina = '') {
   doc.rect(0, 0, PAGE_W, 65).fill('#ffffff');
 
-  if (logoPath) {
-    try {
-      doc.image(logoPath, 40, 12, { fit: [160, 42] });
-    } catch (e) {
-      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(16).text('PROTECCIÓN & SEGUROS 360', 40, 22);
-    }
-  } else {
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(16).text('PROTECCIÓN & SEGUROS 360', 40, 22);
-  }
+  // Encabezado institucional: Protección & Seguros360
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(14).text('Protección & Seguros360', 40, 20);
 
   doc.fillColor(COLORS.primary).fontSize(8.5).font('Helvetica-Bold');
   doc.text((tituloPagina || 'COTIZACIÓN DE SEGUROS DE SALUD').toUpperCase(), 250, 16, { align: 'right', width: 305, lineBreak: false });
@@ -143,29 +136,29 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   const priceBoxW = 120;
   const leftW = width - priceBoxW - 30;
   const padX = x + 14;
-  let topY = y + 12;
-
-  /* Insignia comentada por requerimiento institucional
-  if (isBest) {
-    doc.roundedRect(x + 12, y - 8, 165, 16, 8).fill(COLORS.success);
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(6.5).text('RECOMENDACIÓN', x + 12, y - 4, { width: 165, align: 'center', lineBreak: false });
-    topY += 6;
-  }
-  */
+  let topY = y + 10;
 
   // Nombre y plan
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11).text(comp.nombre, padX, topY, { width: leftW, lineBreak: false });
-  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5).text(`PLAN: ${(comp.plan || 'N/A').toUpperCase()}`, padX, topY + 15, { width: leftW, lineBreak: false });
+  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5).text(`PLAN: ${(comp.plan || 'N/A').toUpperCase()}`, padX, topY + 14, { width: leftW, lineBreak: false });
 
   const deducibleVal = comp.deducible !== undefined && comp.deducible !== null && parseFloat(comp.deducible) > 0 
     ? `$${Number(comp.deducible).toLocaleString('en-US')}` 
     : '$0 (Sin deducible)';
 
+  const metodosPago = [];
+  if (comp.pago_contado) metodosPago.push('Contado');
+  if (comp.pago_semestral) metodosPago.push('Semestral');
+  if (comp.pago_cuatrimestral) metodosPago.push('Cuatrimestral');
+  if (comp.pago_trimestral) metodosPago.push('Trimestral');
+  if (comp.pago_mensual) metodosPago.push('Mensual');
+  const formaPagoVal = metodosPago.length > 0 ? metodosPago.join(', ') : (comp.pago || 'Consultar con asesor');
+
   // Grid de beneficios (3 columnas x 2 filas)
   const beneficios = [
     ['DEDUCIBLE', deducibleVal],
-    ['FORMA DE PAGO', comp.pago || 'Consultar con asesor'],
-    ['MATERNIDAD', comp.maternidad_suma ? `${comp.maternidad_suma}${comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : ''}` : 'No incluida'],
+    ['FORMA DE PAGO', formaPagoVal],
+    ['MATERNIDAD', comp.maternidad_suma ? `${comp.maternidad_suma}${comp.maternidad_costo ? ' (+' + comp.maternidad_costo + ')' : ''}` : (comp.maternidad ? 'Incluida' : 'No incluida')],
     ['ASIST. INTERNACIONAL', comp.asist_intl_suma ? `${comp.asist_intl_suma}${comp.asist_intl_costo ? ' (+' + comp.asist_intl_costo + ')' : ''}` : 'No incluida'],
     ['FUNERAL', comp.funeral_suma ? `${comp.funeral_suma}${comp.funeral_costo ? ' (+' + comp.funeral_costo + ')' : ''}` : 'No incluido'],
     ['SUMA ASEGURADA', comp.suma_asegurada ? `$${Number(comp.suma_asegurada).toLocaleString('en-US')}` : 'Según cotización']
@@ -173,32 +166,45 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
 
   const colsCount = 3;
   const colW = leftW / colsCount;
-  const gridY = topY + 30;
+  const gridY = topY + 28;
   beneficios.forEach(([label, val], i) => {
     const colX = padX + (i % colsCount) * colW;
-    const rowY = gridY + Math.floor(i / colsCount) * 24;
+    const rowY = gridY + Math.floor(i / colsCount) * 22;
     doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(6).text(label, colX, rowY, { width: colW - 6, lineBreak: false });
     const isDed = label === 'DEDUCIBLE';
     const valColor = isDed ? (parseFloat(comp.deducible || 0) > 0 ? '#b45309' : COLORS.success) : COLORS.dark;
-    doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(7).text(val, colX, rowY + 8, { width: colW - 6, height: 13, lineBreak: false });
+    doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(7).text(val, colX, rowY + 8, { width: colW - 6, height: 12, lineBreak: false });
   });
 
-  // Servicios incluidos (fila de indicadores)
+  // Servicios incluidos (2 filas de 6 columnas para mostrar los 12 servicios)
   const servicios = [
     ['At. Primaria', comp.atencion_medica_primaria !== undefined ? comp.atencion_medica_primaria : comp.at_situ_medicamentos],
-    ['Medicinas', comp.medicinas],
-    ['Consultas', comp.consultas_medicas],
+    ['Medicamentos', comp.medicinas],
+    ['Cons. Médicas', comp.consultas_medicas],
     ['Exámenes', comp.examenes_lab_imagenologia],
-    ['Ambulancia', comp.ambulancia]
+    ['Ambulancia', comp.ambulancia],
+    ['Rehabilitación', comp.rehabilitacion],
+    ['Prótesis', comp.protesis],
+    ['Muleta + Silla', comp.muleta_silla_ruedas],
+    ['Consultas', comp.consultas],
+    ['Maternidad', comp.maternidad || comp.maternidad_suma],
+    ['Oftalmología', comp.oftalmologia],
+    ['Odontología', comp.odontologia]
   ];
-  const servY = gridY + 2 * 26 + 4;
-  let sx = padX;
-  const servW = leftW / servicios.length;
-  servicios.forEach(([label, val]) => {
+
+  const servCols = 6;
+  const servW = leftW / servCols;
+  const servStartY = gridY + 48;
+
+  servicios.forEach(([label, val], idx) => {
+    const col = idx % servCols;
+    const row = Math.floor(idx / servCols);
+    const itemX = padX + col * servW;
+    const itemY = servStartY + row * 12;
+
     const incluido = val === true || (val && String(val).trim() !== '' && String(val).toUpperCase() !== 'NO' && String(val).toUpperCase() !== 'FALSE');
-    doc.circle(sx + 3, servY + 4, 2.7).fill(incluido ? COLORS.success : '#cbd5e1');
-    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font('Helvetica').fontSize(5.5).text(label, sx + 8, servY, { width: servW - 8, lineBreak: false });
-    sx += servW;
+    doc.circle(itemX + 3, itemY + 3.5, 2.2).fill(incluido ? COLORS.success : '#cbd5e1');
+    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font(incluido ? 'Helvetica-Bold' : 'Helvetica').fontSize(5.1).text(label, itemX + 7, itemY, { width: servW - 8, lineBreak: false });
   });
 
   // Caja de prima anual
