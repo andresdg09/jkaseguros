@@ -22,6 +22,16 @@ const COLORS = {
   amber: '#f59e0b'
 };
 
+/**
+ * Extrae el valor numérico de un costo que puede venir como string
+ * ('$200', '$200/año', '200/año', 200, etc.)
+ */
+function parsearCosto(valor) {
+  if (valor === null || valor === undefined || valor === '') return 0;
+  const match = String(valor).replace(/,/g, '').match(/[\d.]+/);
+  return match ? parseFloat(match[0]) : 0;
+}
+
 // Datos del corredor de seguros, mostrados en el encabezado (bajo el título de
 // cada página) y en el pie de página de todas las páginas del PDF.
 const BROKER_INFO_LINES = [
