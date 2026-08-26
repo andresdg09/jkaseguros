@@ -39,10 +39,14 @@ let fallbackData = {
 
 const fallbackFilePath = path.join(__dirname, '../../data/fallback_db.json');
 
-// Crear la carpeta data si no existe
+// Crear la carpeta data si no existe (con manejo seguro para entornos serverless de solo lectura)
 const dataDir = path.join(__dirname, '../../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+try {
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+} catch (e) {
+  // Ignorar en sistemas de archivos de solo lectura como Vercel Serverless
 }
 
 // Inicializar el Fallback (JSON)
@@ -738,9 +742,15 @@ try {
   // Sin esto, una base de datos nueva (ej. Neon recién creada) no tiene ninguna tabla todavía
   // y las migraciones de abajo fallan con "relation ... does not exist".
   const schemaPath = path.join(__dirname, 'schema.sql');
-  const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-  await client.query(schemaSql);
-  console.log('📋 Esquema base verificado/creado.');
+  try {
+    if (fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+      await client.query(schemaSql);
+      console.log('📋 Esquema base verificado/creado.');
+    }
+  } catch (schemaErr) {
+    console.warn('⚠️ No se pudo cargar schema.sql, continuando con migraciones:', schemaErr.message);
+  }
 
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL;');
   await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS numero_hijos INT DEFAULT 0;');

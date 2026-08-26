@@ -3685,7 +3685,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredPivotRows.length === 0 ? (
                         <tr>
-                          <td colSpan={2 + Math.max(visibleCompanies.length, 1) * 4} className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan={visibleCompanies.length > 0 ? (2 + visibleCompanies.length * 4) : 2} className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas que coincidan con los filtros aplicados.
                           </td>
                         </tr>
