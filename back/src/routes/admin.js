@@ -43,11 +43,8 @@ function getPagoBooleans(body) {
 async function actualizarTarifarioMetadata(usuarioCorreo) {
   const now = new Date().toISOString();
   if (db.isFallback()) {
-    const fallbackFilePath = './data/fallback_db.json';
     try {
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
-      
+      const fData = db.getFallbackData();
       const oldMeta = fData.tarifario_metadata || { version: '1.0.0' };
       const parts = oldMeta.version.split('.');
       const nextPatch = parseInt(parts[2] || 0) + 1;
@@ -58,7 +55,7 @@ async function actualizarTarifarioMetadata(usuarioCorreo) {
         ultima_modificacion: now,
         usuario_correo: usuarioCorreo
       };
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } catch (e) {
       console.error('Error al actualizar metadatos en fallback:', e);
     }
@@ -490,10 +487,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
     if (db.isFallback()) {
       const compMap = {};
       const compIdSet = new Set();
-      const fallbackFilePath = './data/fallback_db.json';
-
-      const fallbackFileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fallbackFileContent);
+      const fData = db.getFallbackData();
 
       fData.companias_seguros.forEach(c => {
         compMap[c.nombre.toLowerCase().trim()] = c.id;
@@ -592,7 +586,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
       });
 
       fData.tarifas = nuevasTarifas;
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } else {
       await db.query('DELETE FROM tarifas');
       const comps = await db.query('SELECT id, nombre FROM companias_seguros');
@@ -1228,10 +1222,8 @@ router.get('/tarifario-metadata', authenticateToken, async (req, res) => {
   try {
     let result;
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
       try {
-        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-        const fData = JSON.parse(fileContent);
+        const fData = db.getFallbackData();
         result = { rows: [fData.tarifario_metadata || { version: '1.0.0', ultima_modificacion: new Date().toISOString(), usuario_correo: 'admin@jkaseguros.com' }] };
       } catch (e) {
         result = { rows: [] };
