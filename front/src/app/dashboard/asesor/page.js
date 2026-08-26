@@ -218,8 +218,8 @@ export default function AsesorDashboard() {
       return showToast('Por favor ingrese el monto en Bolívares y la referencia (últimos 6 dígitos).', 'error');
     }
 
-    if (!/^\d{6}$/.test(reportPayForm.referencia.trim())) {
-      return showToast('La referencia debe contener exactamente 6 dígitos numéricos.', 'error');
+    if (reportPayForm.referencia.trim().length !== 6) {
+      return showToast('Por favor ingrese exactamente los últimos 6 dígitos de la referencia.', 'error');
     }
 
     // Normalizar formato numérico venezolano (ej. 1.500,50 o 1500,50 o 1500.50)
@@ -274,8 +274,12 @@ export default function AsesorDashboard() {
         return p;
       }));
 
+      // Mantener la póliza expandida para ver el pago reportado en revisión de inmediato
+      if (reportPayForm.poliza_id) {
+        setExpandedPolicies(prev => ({ ...prev, [String(reportPayForm.poliza_id)]: true }));
+      }
+
       setReportPayModal(null);
-      setActiveTab('clientes');
       await loadData();
     } catch (err) {
       showToast(err.message, 'error');
@@ -1426,7 +1430,10 @@ export default function AsesorDashboard() {
                                     <td>
                                       {pa.monto_reportado ? (
                                         <div>
-                                          <strong style={{ color: '#0284c7' }}>Bs. {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</strong>
+                                          <strong style={{ color: '#0284c7' }}>
+                                            {pa.moneda_pago === 'USD' ? '$' : 'Bs. '}
+                                            {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                          </strong>
                                           {pa.moneda_pago && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.2rem' }}>({pa.moneda_pago})</span>}
                                         </div>
                                       ) : (
@@ -1443,16 +1450,23 @@ export default function AsesorDashboard() {
                                       )}
                                     </td>
                                     <td>
-                                      {pa.fecha_vencimiento ? (
-                                        <span style={{
-                                          color: new Date(pa.fecha_vencimiento) < new Date() && pa.estado_pago !== 'pagado' ? '#dc2626' : 'inherit',
-                                          fontWeight: new Date(pa.fecha_vencimiento) < new Date() && pa.estado_pago !== 'pagado' ? 700 : 'normal'
-                                        }}>
-                                          {pa.fecha_vencimiento}
-                                        </span>
-                                      ) : (
-                                        <span style={{ color: 'var(--text-muted)' }}>Inmediato</span>
-                                      )}
+                                       {pa.fecha_vencimiento ? (() => {
+                                         const vDateStr = typeof pa.fecha_vencimiento === 'string' ? pa.fecha_vencimiento.split('T')[0] : new Date(pa.fecha_vencimiento).toISOString().split('T')[0];
+                                         const vDate2pm = new Date(`${vDateStr}T14:00:00-04:00`);
+                                         const isVencido = vDate2pm < new Date() && pa.estado_pago !== 'pagado';
+
+                                         return (
+                                           <span style={{
+                                             color: isVencido ? '#dc2626' : 'inherit',
+                                             fontWeight: isVencido ? 700 : 'normal'
+                                           }}>
+                                             {vDateStr}
+                                             {isVencido && <span style={{ fontSize: '0.72rem', color: '#dc2626', display: 'block', fontWeight: 800 }}>Vencida (2:00 PM)</span>}
+                                           </span>
+                                         );
+                                       })() : (
+                                         <span style={{ color: 'var(--text-muted)' }}>Inmediato</span>
+                                       )}
                                     </td>
                                     <td>
                                       {pa.estado_pago === 'pagado' && (
@@ -2396,12 +2410,11 @@ export default function AsesorDashboard() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Referencia (últimos 6)</label>
+                      <label className="form-label">Referencia * (últimos 6)</label>
                       <input 
                         type="text" 
                         inputMode="numeric"
                         maxLength={6}
-                        pattern="\d{6}"
                         className="form-input" 
                         placeholder="123456"
                         value={reportPayForm.referencia} 

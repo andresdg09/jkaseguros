@@ -125,8 +125,8 @@ export default function ClienteDashboard() {
       return showToast('Por favor, introduzca una referencia válida y el monto en Bolívares.', 'error');
     }
 
-    if (!/^\d{6}$/.test(payForm.referencia.trim())) {
-      return showToast('La referencia debe contener exactamente 6 dígitos numéricos.', 'error');
+    if (payForm.referencia.trim().length !== 6) {
+      return showToast('Por favor ingrese exactamente los últimos 6 dígitos de la referencia.', 'error');
     }
 
     // Normalizar formato numérico venezolano (ej. 1.500,50 o 1500,50 o 1500.50)
@@ -782,12 +782,11 @@ export default function ClienteDashboard() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Referencia (últimos 6)</label>
+                      <label className="form-label">Referencia * (últimos 6)</label>
                       <input 
                         type="text" 
                         inputMode="numeric"
                         maxLength={6}
-                        pattern="\d{6}"
                         className="form-input" 
                         placeholder="123456"
                         value={payForm.referencia} 

@@ -88,12 +88,14 @@ CREATE TABLE IF NOT EXISTS pagos (
     id SERIAL PRIMARY KEY,
     poliza_id INT REFERENCES polizas(id) ON DELETE CASCADE,
     monto NUMERIC NOT NULL,
-    fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
-    estado_pago VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado_pago IN ('pagado', 'pendiente', 'vencido')),
+    fecha_pago DATE,
+    estado_pago VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado_pago IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado')),
     referencia VARCHAR(100),
     fecha_vencimiento DATE,
     cuota_numero INT,
     cuota_total INT,
+    recordatorio_2d BOOLEAN DEFAULT FALSE,
+    recordatorio_vencido BOOLEAN DEFAULT FALSE,
     observaciones TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

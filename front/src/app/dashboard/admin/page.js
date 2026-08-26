@@ -690,12 +690,23 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al verificar el pago');
 
+      setPayments(prev => prev.map(p => {
+        if (p.id === paymentId) {
+          return {
+            ...p,
+            estado_pago: accion === 'aprobar' ? 'pagado' : 'rechazado',
+            motivo_rechazo: accion === 'rechazar' ? motivo : p.motivo_rechazo
+          };
+        }
+        return p;
+      }));
+
       if (accion === 'aprobar') {
         showToast('¡Pago verificado y aprobado con éxito! La comisión fue registrada para la corrida del BNC.');
       } else {
         showToast('El pago ha sido marcado como rechazado.', 'info');
       }
-      loadData();
+      await loadData();
     } catch (err) {
       showToast(err.message, 'error');
     }
@@ -1379,7 +1390,7 @@ export default function AdminDashboard() {
               transition: 'var(--transition)'
             }}
           >
-            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'asesores' ? 'Asesores' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'asesores' ? 'Asesores' : tab === 'pagos' ? `Pagos ${payments.filter(p => p.estado_pago === 'en_revision').length > 0 ? `(${payments.filter(p => p.estado_pago === 'en_revision').length}) 🟡` : ''}` : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -1391,6 +1402,41 @@ export default function AdminDashboard() {
           {/* --- RESUMEN DE CLIENTES --- */}
           {activeTab === 'resumen' && (
             <div>
+              {/* Alerta de pagos por verificar en el Resumen */}
+              {payments.some(p => p.estado_pago === 'en_revision') && (
+                <div style={{ 
+                  marginBottom: '1.5rem', 
+                  padding: '1rem 1.5rem', 
+                  backgroundColor: '#fffbeb', 
+                  border: '2px solid #f59e0b', 
+                  borderRadius: '10px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '1.75rem' }}>🔔</span>
+                    <div>
+                      <h4 style={{ margin: 0, color: '#b45309', fontWeight: 800, fontSize: '1.05rem' }}>
+                        ¡Hay {payments.filter(p => p.estado_pago === 'en_revision').length} pago(s) reportado(s) pendiente(s) de verificación!
+                      </h4>
+                      <span style={{ fontSize: '0.85rem', color: '#92400e' }}>
+                        Revisa los comprobantes bancarios para aprobarlos y liquidar las comisiones.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('pagos')}
+                    className="btn btn-primary"
+                    style={{ background: '#d97706', borderColor: '#d97706', padding: '0.5rem 1rem', fontSize: '0.85rem', fontWeight: 700 }}
+                  >
+                    💳 Ir a Verificar Pagos →
+                  </button>
+                </div>
+              )}
+
               {/* --- PANEL DE INDICADORES (KPIs) --- */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem', marginBottom: '2rem' }}>
                 
@@ -2252,7 +2298,23 @@ export default function AdminDashboard() {
                                         <span style={{ color: 'var(--text-muted)' }}>Sin Ref</span>
                                       )}
                                     </td>
-                                    <td>{pa.fecha_vencimiento ? pa.fecha_vencimiento.split('T')[0] : 'N/A'}</td>
+                                    <td>
+                                      {pa.fecha_vencimiento ? (() => {
+                                        const vDateStr = typeof pa.fecha_vencimiento === 'string' ? pa.fecha_vencimiento.split('T')[0] : new Date(pa.fecha_vencimiento).toISOString().split('T')[0];
+                                        const vDate2pm = new Date(`${vDateStr}T14:00:00-04:00`);
+                                        const isVencido = vDate2pm < new Date() && pa.estado_pago !== 'pagado';
+
+                                        return (
+                                          <span style={{
+                                            color: isVencido ? '#dc2626' : 'inherit',
+                                            fontWeight: isVencido ? 700 : 'normal'
+                                          }}>
+                                            {vDateStr}
+                                            {isVencido && <span style={{ fontSize: '0.7rem', color: '#dc2626', display: 'block', fontWeight: 800 }}>Vencida (2:00 PM)</span>}
+                                          </span>
+                                        );
+                                      })() : 'N/A'}
+                                    </td>
                                     <td>
                                       {pa.estado_pago === 'pagado' && (
                                         <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>

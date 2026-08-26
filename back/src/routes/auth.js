@@ -234,8 +234,16 @@ router.post('/login', async (req, res) => {
 
     const user = userRes.rows[0];
 
-    // Verificar contraseña
-    const isMatch = await bcrypt.compare(contrasena, user.contrasena);
+    // Verificar contraseña (soporta hash bcrypt y texto plano)
+    let isMatch = user.contrasena === contrasena;
+    if (!isMatch && user.contrasena) {
+      try {
+        isMatch = await bcrypt.compare(contrasena, user.contrasena);
+      } catch (e) {
+        isMatch = false;
+      }
+    }
+
     if (!isMatch) {
       return res.status(400).json({ error: 'Credenciales inválidas (contraseña incorrecta).' });
     }

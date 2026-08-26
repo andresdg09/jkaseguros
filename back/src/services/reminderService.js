@@ -310,7 +310,198 @@ export async function procesarRecordatoriosPolizas() {
         }
       }
     }
+
+    // Procesar también recordatorios de cuotas y pagos
+    await procesarRecordatoriosPagos();
   } catch (err) {
     console.error('Error en procesarRecordatoriosPolizas:', err);
+  }
+}
+
+/**
+ * Procesa recordatorios de cuotas y pagos vencidos / próximos a vencer:
+ * - 2 días antes del vencimiento a las 2:00 PM de Venezuela (14:00 VET).
+ * - El día del vencimiento a las 2:00 PM de Venezuela (14:00 VET) -> marca como 'vencido' y notifica a cliente y asesor.
+ */
+export async function procesarRecordatoriosPagos() {
+  console.log('⏰ Ejecutando cron de cobranza y recordatorios de pagos (2:00 PM VET)...');
+  try {
+    let pagos = [];
+
+    if (db.isFallback()) {
+      const fallbackFilePath = './data/fallback_db.json';
+      try {
+        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+        const fData = JSON.parse(fileContent);
+        pagos = fData.pagos
+          .filter(pa => pa.estado_pago === 'pendiente' || pa.estado_pago === 'vencido')
+          .map(pa => {
+            const pol = fData.polizas.find(p => p.id === pa.poliza_id);
+            const cliente = pol ? fData.datos_personales.find(d => d.id === pol.cliente_id) : null;
+            const asesor = pol ? fData.asesores.find(a => a.id === pol.asesor_id) : null;
+            const compania = pol ? fData.companias_seguros.find(c => c.id === pol.compania_id) : null;
+            const clientUser = fData.usuarios.find(u => u.id === (cliente ? cliente.usuario_id : null));
+            const advisorUser = fData.usuarios.find(u => u.id === (asesor ? asesor.usuario_id : null));
+
+            return {
+              ...pa,
+              poliza_codigo: pol ? pol.codigo_poliza : `POL-${pa.poliza_id}`,
+              poliza_plan: pol ? pol.plan : 'Seguro',
+              cliente_nombre: cliente ? `${cliente.primer_nombre} ${cliente.primer_apellido}` : 'Cliente',
+              cliente_correo: clientUser ? clientUser.correo : null,
+              cliente_telefono: cliente ? `${cliente.codigo_area}${cliente.numero_celular}` : '',
+              asesor_nombre: asesor ? asesor.nombre : 'Asesor Comercial',
+              asesor_correo: advisorUser ? advisorUser.correo : 'contacto@jkaseguros.com',
+              asesor_telefono: asesor ? asesor.telefono : '',
+              compania_nombre: compania ? compania.nombre : 'Aseguradora'
+            };
+          });
+      } catch (e) {
+        console.error('Error leyendo fallback en recordatorios de pagos:', e);
+      }
+    } else {
+      const q = `
+        SELECT pa.*,
+               p.codigo_poliza,
+               p.plan AS poliza_plan,
+               (c.primer_nombre || ' ' || c.primer_apellido) AS cliente_nombre,
+               u_cli.correo AS cliente_correo,
+               (c.codigo_area || c.numero_celular) AS cliente_telefono,
+               a.nombre AS asesor_nombre,
+               u_ase.correo AS asesor_correo,
+               a.telefono AS asesor_telefono,
+               comp.nombre AS compania_nombre
+        FROM pagos pa
+        JOIN polizas p ON pa.poliza_id = p.id
+        LEFT JOIN datos_personales c ON p.cliente_id = c.id
+        LEFT JOIN usuarios u_cli ON c.usuario_id = u_cli.id
+        LEFT JOIN asesores a ON p.asesor_id = a.id
+        LEFT JOIN usuarios u_ase ON a.usuario_id = u_ase.id
+        LEFT JOIN companias_seguros comp ON p.compania_id = comp.id
+        WHERE pa.estado_pago IN ('pendiente', 'vencido')
+      `;
+      const res = await db.query(q);
+      pagos = res.rows;
+    }
+
+    const ahora = new Date();
+
+    for (const pa of pagos) {
+      if (!pa.fecha_vencimiento) continue;
+
+      const vDateStr = typeof pa.fecha_vencimiento === 'string' ? pa.fecha_vencimiento.split('T')[0] : new Date(pa.fecha_vencimiento).toISOString().split('T')[0];
+      // Vencimiento a las 2:00 PM de Venezuela (14:00 VET = UTC-4)
+      const fechaVencimiento2pm = new Date(`${vDateStr}T14:00:00-04:00`);
+      // 2 días antes a las 2:00 PM (48h antes)
+      const fecha2diasAntes2pm = new Date(fechaVencimiento2pm.getTime() - 48 * 60 * 60 * 1000);
+
+      const cuotaLabel = pa.cuota_numero && pa.cuota_total ? `Cuota #${pa.cuota_numero} de ${pa.cuota_total}` : 'Cuota de Seguro';
+      const montoFmt = `$${parseFloat(pa.monto).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+      // --- CASO 1: RECORDATORIO 2 DÍAS ANTES (48 horas antes a las 2:00 PM VET) ---
+      if (ahora >= fecha2diasAntes2pm && ahora < fechaVencimiento2pm && !pa.recordatorio_2d) {
+        console.log(`✉️ Enviando recordatorio preventivo de 2 días para ${cuotaLabel} de la póliza ${pa.codigo_poliza}.`);
+
+        if (db.isFallback()) {
+          const fallbackFilePath = './data/fallback_db.json';
+          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+          const fData = JSON.parse(fileContent);
+          const idx = fData.pagos.findIndex(p => p.id === pa.id);
+          if (idx !== -1) {
+            fData.pagos[idx].recordatorio_2d = true;
+            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+          }
+        } else {
+          await db.query('UPDATE pagos SET recordatorio_2d = true WHERE id = $1', [pa.id]);
+        }
+
+        await registrarAccion(null, 'sistema', 'RECORDATORIO_PAGO_2D', `Recordatorio de pago 2 días antes enviado para ${cuotaLabel} de póliza ${pa.codigo_poliza}.`);
+
+        // Correo al Cliente
+        if (pa.cliente_correo) {
+          const clientePayHtml = `
+            <div style="background-color: #eff6ff; border: 1.5px solid #2563eb; border-radius: 8px; padding: 20px; font-family: sans-serif; text-align: left;">
+              <h3 style="color: #1e3a8a; margin-top: 0;">📅 Recordatorio Preventivo de Pago</h3>
+              <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                Estimado(a) <strong>${pa.cliente_nombre}</strong>, te recordamos que tu <strong>${cuotaLabel}</strong> por un monto de <strong>${montoFmt}</strong> correspondiente a tu póliza <strong>${pa.codigo_poliza}</strong> (${pa.compania_nombre}) vence en 2 días: <strong>${vDateStr} a las 2:00 PM</strong>.
+              </p>
+              <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                Puedes ingresar a tu panel de cliente para reportar tu pago en Bolívares (VES) a la tasa oficial BCV y mantener tu cobertura médica activa sin interrupciones.
+              </p>
+            </div>
+          `;
+          await enviarCorreoEmailJS(pa.cliente_correo, pa.cliente_nombre, `Recordatorio: ${cuotaLabel} por ${montoFmt} vence en 2 días (${pa.codigo_poliza})`, clientePayHtml);
+        }
+
+        // Alerta al Asesor
+        if (pa.asesor_correo) {
+          const asesorPayHtml = `
+            <div style="background-color: #f8fafc; border: 1.5px solid #64748b; border-radius: 8px; padding: 20px; font-family: sans-serif; text-align: left;">
+              <h3 style="color: #1e293b; margin-top: 0;">📋 Control de Cobranza: Cuota próxima a vencer (2 días)</h3>
+              <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                La <strong>${cuotaLabel}</strong> de tu cliente <strong>${pa.cliente_nombre}</strong> (${pa.codigo_poliza} - ${pa.compania_nombre}) por <strong>${montoFmt}</strong> vence el <strong>${vDateStr} a las 2:00 PM</strong>.
+              </p>
+            </div>
+          `;
+          await enviarCorreoEmailJS(pa.asesor_correo, pa.asesor_nombre, `Cobranza Preventiva: ${pa.cliente_nombre} - ${cuotaLabel} (${pa.codigo_poliza})`, asesorPayHtml);
+        }
+      }
+
+      // --- CASO 2: VENCIMIENTO DEL PAGO (A partir de las 2:00 PM VET del día de vencimiento) ---
+      if (ahora >= fechaVencimiento2pm && pa.estado_pago === 'pendiente') {
+        console.log(`⚠️ Marcando cuota ${cuotaLabel} de la póliza ${pa.codigo_poliza} como VENCIDA (2:00 PM VET superada).`);
+
+        // Actualizar a estado 'vencido'
+        if (db.isFallback()) {
+          const fallbackFilePath = './data/fallback_db.json';
+          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+          const fData = JSON.parse(fileContent);
+          const idx = fData.pagos.findIndex(p => p.id === pa.id);
+          if (idx !== -1) {
+            fData.pagos[idx].estado_pago = 'vencido';
+            fData.pagos[idx].recordatorio_vencido = true;
+            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+          }
+        } else {
+          await db.query("UPDATE pagos SET estado_pago = 'vencido', recordatorio_vencido = true WHERE id = $1", [pa.id]);
+        }
+
+        await registrarAccion(null, 'sistema', 'CUOTA_VENCIDA', `La ${cuotaLabel} de la póliza ${pa.codigo_poliza} ha vencido hoy a las 2:00 PM.`);
+
+        // Enviar notificación de cuota vencida
+        if (!pa.recordatorio_vencido) {
+          // Cliente
+          if (pa.cliente_correo) {
+            const clienteVencidoHtml = `
+              <div style="background-color: #fef2f2; border: 1.5px solid #ef4444; border-radius: 8px; padding: 20px; font-family: sans-serif; text-align: left;">
+                <h3 style="color: #b91c1c; margin-top: 0;">⚠️ Notificación de Cuota Vencida</h3>
+                <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                  Estimado(a) <strong>${pa.cliente_nombre}</strong>, te informamos que tu <strong>${cuotaLabel}</strong> por <strong>${montoFmt}</strong> correspondiente a la póliza <strong>${pa.codigo_poliza}</strong> (${pa.compania_nombre}) ha <strong>vencido hoy a las 2:00 PM</strong>.
+                </p>
+                <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                  Por favor realiza y reporta tu pago a la brevedad posible para evitar la suspensión temporal de los servicios y coberturas de tu seguro médico.
+                </p>
+              </div>
+            `;
+            await enviarCorreoEmailJS(pa.cliente_correo, pa.cliente_nombre, `⚠️ Urgente: ${cuotaLabel} Vencida (${pa.codigo_poliza})`, clienteVencidoHtml);
+          }
+
+          // Asesor
+          if (pa.asesor_correo) {
+            const asesorVencidoHtml = `
+              <div style="background-color: #fee2e2; border: 1.5px solid #ef4444; border-radius: 8px; padding: 20px; font-family: sans-serif; text-align: left;">
+                <h3 style="color: #991b1b; margin-top: 0;">⚠️ Alerta de Morosidad: Cuota Vencida</h3>
+                <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                  La <strong>${cuotaLabel}</strong> del cliente <strong>${pa.cliente_nombre}</strong> (${pa.codigo_poliza} - ${pa.compania_nombre}) por <strong>${montoFmt}</strong> ha vencido hoy a las 2:00 PM sin registrar pago.
+                </p>
+              </div>
+            `;
+            await enviarCorreoEmailJS(pa.asesor_correo, pa.asesor_nombre, `⚠️ Cuota Vencida: ${pa.cliente_nombre} - ${cuotaLabel} (${pa.codigo_poliza})`, asesorVencidoHtml);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error en procesarRecordatoriosPagos:', err);
   }
 }

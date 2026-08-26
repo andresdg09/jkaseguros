@@ -851,10 +851,13 @@ try {
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS bono_pronto_pago BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_numero INT;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_total INT;');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS recordatorio_2d BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS recordatorio_vencido BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS monto_reportado NUMERIC;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS moneda_pago VARCHAR(10) DEFAULT \'VES\';');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS observaciones TEXT;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
+  await client.query('ALTER TABLE pagos ALTER COLUMN fecha_pago DROP NOT NULL;');
   await client.query('ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_pago_check;');
   await client.query("ALTER TABLE pagos ADD CONSTRAINT pagos_estado_pago_check CHECK (estado_pago IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado'));");
 
@@ -1041,8 +1044,21 @@ try {
 }
 }
 
+function syncFallbackFromDisk() {
+  if (fs.existsSync(fallbackFilePath)) {
+    try {
+      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const parsed = JSON.parse(fileContent);
+      if (parsed && typeof parsed === 'object') {
+        fallbackData = parsed;
+      }
+    } catch (e) {}
+  }
+}
+
 // Emulación de consultas SQL simples sobre JSON
 function fallbackQuery(text, params = []) {
+  syncFallbackFromDisk();
   const cleanSql = text.replace(/\s+/g, ' ').trim();
   
   // 1. SELECT * FROM usuarios WHERE correo = $1
@@ -1554,49 +1570,32 @@ function fallbackQuery(text, params = []) {
     if (targetId) {
       const idx = fallbackData.pagos.findIndex(pa => parseInt(pa.id) === targetId);
       if (idx !== -1) {
-        const setMatch = cleanSql.match(/UPDATE pagos SET\s+([\s\S]+?)\s+WHERE/i);
-        if (setMatch) {
-          const assignments = setMatch[1].split(',').map(a => a.trim());
-          assignments.forEach(assign => {
-            const parts = assign.split('=').map(p => p.trim());
-            if (parts.length === 2) {
-              const col = parts[0];
-              const expr = parts[1];
-              const phMatch = expr.match(/\$(\d+)/);
-              let val;
-              if (phMatch) {
-                val = params[parseInt(phMatch[1]) - 1];
-              } else if (/^'.*'$/.test(expr)) {
-                val = expr.slice(1, -1);
-              } else if (!isNaN(parseFloat(expr))) {
-                val = parseFloat(expr);
-              } else {
-                val = expr;
-              }
-
-              if (col.includes('monto') && !col.includes('monto_reportado')) {
-                if (val !== undefined && val !== null && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
-                  fallbackData.pagos[idx].monto = parseFloat(val);
-                }
-              } else if (col === 'monto_reportado') {
-                fallbackData.pagos[idx].monto_reportado = val ? parseFloat(val) : fallbackData.pagos[idx].monto_reportado;
-              } else if (col === 'moneda_pago') {
-                fallbackData.pagos[idx].moneda_pago = val || fallbackData.pagos[idx].moneda_pago;
-              } else if (col === 'tasa_bcv') {
-                fallbackData.pagos[idx].tasa_bcv = val ? parseFloat(val) : null;
-              } else if (col === 'referencia') {
-                fallbackData.pagos[idx].referencia = val;
-              } else if (col === 'fecha_pago') {
-                fallbackData.pagos[idx].fecha_pago = val;
-              } else if (col === 'estado_pago') {
-                fallbackData.pagos[idx].estado_pago = val;
-              } else if (col === 'observaciones') {
-                fallbackData.pagos[idx].observaciones = val;
-              } else if (col === 'motivo_rechazo') {
-                fallbackData.pagos[idx].motivo_rechazo = val;
-              }
-            }
-          });
+        // Caso específico: Reporte de pago (UPDATE pagos SET monto = ..., monto_reportado = $2, moneda_pago = 'VES', referencia = $3, fecha_pago = $4, estado_pago = 'en_revision', observaciones = $5 WHERE id = $6)
+        if (cleanSql.includes("estado_pago = 'en_revision'") || cleanSql.includes("moneda_pago = 'VES'")) {
+          const [montoUSD, montoVES, ref, fecha, obs] = params;
+          if (montoUSD && parseFloat(montoUSD) > 0) fallbackData.pagos[idx].monto = parseFloat(montoUSD);
+          if (montoVES) fallbackData.pagos[idx].monto_reportado = parseFloat(montoVES);
+          fallbackData.pagos[idx].moneda_pago = 'VES';
+          if (ref) fallbackData.pagos[idx].referencia = ref;
+          if (fecha) fallbackData.pagos[idx].fecha_pago = fecha;
+          fallbackData.pagos[idx].estado_pago = 'en_revision';
+          if (obs) fallbackData.pagos[idx].observaciones = obs;
+        } else if (cleanSql.includes("estado_pago = 'pagado'")) {
+          fallbackData.pagos[idx].estado_pago = 'pagado';
+        } else if (cleanSql.includes("estado_pago = 'vencido'")) {
+          fallbackData.pagos[idx].estado_pago = 'vencido';
+          if (cleanSql.includes("recordatorio_vencido = true")) {
+            fallbackData.pagos[idx].recordatorio_vencido = true;
+          }
+        } else if (cleanSql.includes("estado_pago = 'rechazado'")) {
+          fallbackData.pagos[idx].estado_pago = 'rechazado';
+          if (params[0]) fallbackData.pagos[idx].motivo_rechazo = params[0];
+        } else if (cleanSql.includes("recordatorio_2d = true")) {
+          fallbackData.pagos[idx].recordatorio_2d = true;
+        } else {
+          // Fallback parsing
+          if (cleanSql.includes('estado_pago = $1')) fallbackData.pagos[idx].estado_pago = params[0];
+          if (cleanSql.includes('referencia = $2')) fallbackData.pagos[idx].referencia = params[1];
         }
         saveFallback();
         return { rows: [fallbackData.pagos[idx]], rowCount: 1 };
@@ -1937,7 +1936,10 @@ function fallbackQuery(text, params = []) {
 // Exportar interfaz de consultas
 export const db = {
   isFallback: () => isFallback,
-  getFallbackData: () => fallbackData,
+  getFallbackData: () => {
+    syncFallbackFromDisk();
+    return fallbackData;
+  },
   saveFallback: () => saveFallback(),
   query: async (text, params) => {
     if (isFallback || !pool) {

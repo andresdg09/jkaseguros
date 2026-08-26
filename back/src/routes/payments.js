@@ -114,6 +114,7 @@ router.get('/admin', authenticateToken, async (req, res) => {
       };
     });
 
+    console.log(`📡 [GET /payments/admin] Enviando ${rows.length} pagos globales al cliente (rango: ${req.user.rango})`);
     res.json(rows);
   } catch (err) {
     console.error('Error al cargar pagos globales:', err);
@@ -240,6 +241,7 @@ router.post('/report', authenticateToken, async (req, res) => {
       }
     }
 
+    console.log('💳 [POST /payments/report] Pago reportado con éxito:', payRecord);
     await registrarAccion(req.user.id, req.user.correo, 'PAGO_REPORTADO_VES', `Pago de Bs. ${montoVES.toLocaleString('es-VE')} reportado con Ref: ${referencia}. En revisión por Admin.`);
 
     res.json({ message: 'Pago en Bolívares reportado con éxito. Se encuentra En Revisión por el Administrador.', pago: payRecord });
