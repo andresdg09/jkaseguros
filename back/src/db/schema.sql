@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS polizas (
     comision_porcentaje NUMERIC,
     estado VARCHAR(50) NOT NULL DEFAULT 'negociacion' CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada')),
     pago_estado VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (pago_estado IN ('pendiente', 'pagado', 'parcial')),
-    frecuencia_pago VARCHAR(50) DEFAULT 'contado' CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'mensual')),
+    frecuencia_pago VARCHAR(50) DEFAULT 'contado' CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual')),
     tipo_negocio VARCHAR(50) DEFAULT 'nuevo' CHECK (tipo_negocio IN ('nuevo', 'renovacion')),
     tipo_cobertura VARCHAR(50) DEFAULT 'individual' CHECK (tipo_cobertura IN ('individual', 'colectivo')),
     bono_pronto_pago BOOLEAN DEFAULT FALSE,

@@ -155,6 +155,8 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   if (comp.pago_semestral) metodosPago.push('Semestral');
   if (comp.pago_cuatrimestral) metodosPago.push('Cuatrimestral');
   if (comp.pago_trimestral) metodosPago.push('Trimestral');
+  if (comp.pago_bimestral) metodosPago.push('Bimestral');
+  if (comp.pago_4_cuotas) metodosPago.push('4 Cuotas');
   if (comp.pago_mensual) metodosPago.push('Mensual');
   const formaPagoVal = metodosPago.length > 0 ? metodosPago.join(', ') : (comp.pago || 'Consultar con asesor');
 
@@ -162,7 +164,9 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   const costoMat = parseExtraCost(comp.maternidad_costo);
   const costoAsist = parseExtraCost(comp.asist_intl_costo);
   const costoFuneral = parseExtraCost(comp.funeral_costo);
-  const totalExtras = costoMat + costoAsist + costoFuneral;
+  const costoMuerteAcc = parseExtraCost(comp.muerte_accidental_costo);
+  const costoInvalidez = parseExtraCost(comp.invalidez_permanente_costo);
+  const totalExtras = costoMat + costoAsist + costoFuneral + costoMuerteAcc + costoInvalidez;
   const primaBase = parseFloat(comp.prima || 0);
   const primaConExtras = primaBase + totalExtras;
 
@@ -186,7 +190,7 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
     doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(6.8).text(val, colX, rowY + 7, { width: colW3 - 6, height: 10, lineBreak: false });
   });
 
-  // Servicios incluidos base (2 filas de 6 columnas)
+  // Servicios incluidos base (2 filas de 7 columnas)
   const servicios = [
     ['At. Primaria', comp.atencion_medica_primaria !== undefined ? comp.atencion_medica_primaria : comp.at_situ_medicamentos],
     ['Medicamentos', comp.medicinas],
@@ -199,10 +203,12 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
     ['Consultas', comp.consultas],
     ['Maternidad', (comp.maternidad || comp.maternidad_suma) && costoMat === 0],
     ['Oftalmología', comp.oftalmologia],
-    ['Odontología', comp.odontologia]
+    ['Odontología', comp.odontologia],
+    ['Muerte Acc.', (comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0],
+    ['Invalidez Perm.', (comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0]
   ];
 
-  const servCols = 6;
+  const servCols = 7;
   const servW = leftW / servCols;
   const servStartY = incStartY + 27;
 
@@ -212,9 +218,9 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
     const itemX = padX + col * servW;
     const itemY = servStartY + row * 10.5;
 
-    const incluido = val === true || (val && String(val).trim() !== '' && String(val).toUpperCase() !== 'NO' && String(val).toUpperCase() !== 'FALSE');
+    const incluido = val === true || (val && String(val).trim() !== '' && String(val).toUpperCase() !== 'NO' && String(val).toUpperCase() !== 'FALSE' && String(val).toUpperCase() !== '0');
     doc.circle(itemX + 2.5, itemY + 3, 2).fill(incluido ? COLORS.success : '#cbd5e1');
-    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font(incluido ? 'Helvetica-Bold' : 'Helvetica').fontSize(5.1).text(label, itemX + 6, itemY, { width: servW - 7, lineBreak: false });
+    doc.fillColor(incluido ? COLORS.dark : '#94a3b8').font(incluido ? 'Helvetica-Bold' : 'Helvetica').fontSize(4.9).text(label, itemX + 6, itemY, { width: servW - 7, lineBreak: false });
   });
 
   // --- SECCIÓN 2 (ABAJO): COBERTURAS Y BENEFICIOS EXTRAS (OPCIONALES) ---
@@ -231,6 +237,20 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
       nombre: 'Maternidad',
       suma: comp.maternidad_suma || 'Cubierta',
       costo: costoMat > 0 ? `+ $${costoMat.toFixed(2)}/año` : 'Incluida en base'
+    });
+  }
+  if (comp.muerte_accidental_suma || costoMuerteAcc > 0) {
+    extrasList.push({
+      nombre: 'Muerte Accidental',
+      suma: comp.muerte_accidental_suma || 'Cubierta',
+      costo: costoMuerteAcc > 0 ? `+ $${costoMuerteAcc.toFixed(2)}/año` : 'Incluida en base'
+    });
+  }
+  if (comp.invalidez_permanente_suma || costoInvalidez > 0) {
+    extrasList.push({
+      nombre: 'Invalidez Permanente',
+      suma: comp.invalidez_permanente_suma || 'Cubierta',
+      costo: costoInvalidez > 0 ? `+ $${costoInvalidez.toFixed(2)}/año` : 'Incluida en base'
     });
   }
   if (comp.asist_intl_suma || costoAsist > 0) {
@@ -254,13 +274,14 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   );
 
   if (extrasList.length > 0) {
-    const extColW = (extraBoxW - 12) / 3;
-    extrasList.forEach((ext, idx) => {
+    const extCols = Math.min(extrasList.length, 4);
+    const extColW = (extraBoxW - 12) / extCols;
+    extrasList.slice(0, 4).forEach((ext, idx) => {
       const extX = padX + 6 + idx * extColW;
       const extY = extraStartY + 14;
-      doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(5.8).text(ext.nombre, extX, extY, { width: extColW - 4, lineBreak: false });
-      doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.3).text(`${ext.suma} | `, extX, extY + 7, { continued: true });
-      doc.fillColor(ext.costo.includes('+') ? '#b45309' : COLORS.success).font('Helvetica-Bold').fontSize(5.3).text(ext.costo, { lineBreak: false });
+      doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(5.6).text(ext.nombre, extX, extY, { width: extColW - 4, lineBreak: false });
+      doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.1).text(`${ext.suma} | `, extX, extY + 7, { continued: true });
+      doc.fillColor(ext.costo.includes('+') ? '#b45309' : COLORS.success).font('Helvetica-Bold').fontSize(5.1).text(ext.costo, { lineBreak: false });
     });
   } else {
     doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.8).text('✓ Este plan no requiere contratación de extras (cobertura integral en plan base).', padX + 6, extraStartY + 16, { lineBreak: false });

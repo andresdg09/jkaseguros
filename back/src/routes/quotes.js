@@ -23,15 +23,17 @@ function calcularEdad(fechaNacimiento) {
 // Beneficios considerados para calcular el score de cobertura. Un campo vacío
 // o con valor "NO" / false se entiende como beneficio no incluido en ese plan.
 const BENEFIT_FIELDS = [
-  'maternidad_suma', 'asist_intl_suma', 'funeral_suma',
-  'at_situ_medicamentos', 'atencion_medica_primaria', 'medicinas', 'consultas_medicas', 'examenes_lab_imagenologia', 'ambulancia'
+  'atencion_medica_primaria', 'at_situ_medicamentos', 'medicinas', 'consultas_medicas', 'examenes_lab_imagenologia', 'ambulancia',
+  'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'consultas', 'maternidad', 'maternidad_suma',
+  'oftalmologia', 'odontologia', 'muerte_accidental', 'muerte_accidental_suma', 'invalidez_permanente', 'invalidez_permanente_suma',
+  'asist_intl_suma', 'funeral_suma'
 ];
 
 function tieneBeneficio(valor) {
-  if (valor === true) return true;
-  if (valor === false || valor === null || valor === undefined) return false;
+  if (valor === true || valor === 1) return true;
+  if (valor === false || valor === null || valor === undefined || valor === 0) return false;
   const v = String(valor).trim().toUpperCase();
-  return v !== '' && v !== 'NO' && v !== 'FALSE';
+  return v !== '' && v !== 'NO' && v !== 'FALSE' && v !== '0';
 }
 
 // Helper: Puntuación de calidad de cobertura según cantidad de beneficios incluidos en el plan
@@ -122,30 +124,38 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       suma_asegurada: parseFloat(t.suma_asegurada),
       deducible: parseFloat(t.deducible || 0),
       prima,
-      pago_contado: !!t.pago_contado,
-      pago_semestral: !!t.pago_semestral,
-      pago_cuatrimestral: !!t.pago_cuatrimestral,
-      pago_trimestral: !!t.pago_trimestral,
-      pago_mensual: !!t.pago_mensual,
-      maternidad_suma: t.maternidad_suma,
-      maternidad_costo: t.maternidad_costo,
-      asist_intl_suma: t.asist_intl_suma,
-      asist_intl_costo: t.asist_intl_costo,
-      funeral_suma: t.funeral_suma,
-      funeral_costo: t.funeral_costo,
-      at_situ_medicamentos: t.at_situ_medicamentos,
-      atencion_medica_primaria: t.atencion_medica_primaria !== undefined ? !!t.atencion_medica_primaria : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos),
-      medicinas: !!t.medicinas,
-      consultas_medicas: t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false,
+      pago_contado: !!(t.pago_contado === true || t.pago_contado === 'true' || t.pago_contado === 1),
+      pago_semestral: !!(t.pago_semestral === true || t.pago_semestral === 'true' || t.pago_semestral === 1),
+      pago_cuatrimestral: !!(t.pago_cuatrimestral === true || t.pago_cuatrimestral === 'true' || t.pago_cuatrimestral === 1),
+      pago_trimestral: !!(t.pago_trimestral === true || t.pago_trimestral === 'true' || t.pago_trimestral === 1),
+      pago_bimestral: !!(t.pago_bimestral === true || t.pago_bimestral === 'true' || t.pago_bimestral === 1),
+      pago_4_cuotas: !!(t.pago_4_cuotas === true || t.pago_4_cuotas === 'true' || t.pago_4_cuotas === 1),
+      pago_mensual: !!(t.pago_mensual === true || t.pago_mensual === 'true' || t.pago_mensual === 1),
+      maternidad_suma: t.maternidad_suma || '',
+      maternidad_costo: t.maternidad_costo || '',
+      asist_intl_suma: t.asist_intl_suma || '',
+      asist_intl_costo: t.asist_intl_costo || '',
+      funeral_suma: t.funeral_suma || '',
+      funeral_costo: t.funeral_costo || '',
+      at_situ_medicamentos: t.at_situ_medicamentos || '',
+      atencion_medica_primaria: !!(t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL' || t.at_situ_medicamentos === 'INCL'),
+      medicinas: !!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL'),
+      consultas_medicas: t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false'))) : false,
       rehabilitacion: !!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL'),
       protesis: !!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL'),
       muleta_silla_ruedas: !!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL'),
-      examenes_lab_imagenologia: t.examenes_lab_imagenologia,
+      examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
       consultas: !!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL'),
       maternidad: !!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL'),
       oftalmologia: !!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL'),
       odontologia: !!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL'),
-      ambulancia: t.ambulancia,
+      muerte_accidental: !!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL'),
+      muerte_accidental_suma: t.muerte_accidental_suma || '',
+      muerte_accidental_costo: t.muerte_accidental_costo || '',
+      invalidez_permanente: !!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL'),
+      invalidez_permanente_suma: t.invalidez_permanente_suma || '',
+      invalidez_permanente_costo: t.invalidez_permanente_costo || '',
+      ambulancia: t.ambulancia || '',
       calidadScore,
       relacion_calidad_precio,
       recomendada: false,
@@ -332,7 +342,9 @@ router.post('/email', async (req, res) => {
       const costoMat = parseExtraCost(comp.maternidad_costo);
       const costoAsist = parseExtraCost(comp.asist_intl_costo);
       const costoFuneral = parseExtraCost(comp.funeral_costo);
-      const totalExtras = costoMat + costoAsist + costoFuneral;
+      const costoMuerteAcc = parseExtraCost(comp.muerte_accidental_costo);
+      const costoInvalidez = parseExtraCost(comp.invalidez_permanente_costo);
+      const totalExtras = costoMat + costoAsist + costoFuneral + costoMuerteAcc + costoInvalidez;
       const primaBase = parseFloat(comp.prima || 0);
       const primaConExtras = primaBase + totalExtras;
 
@@ -342,6 +354,8 @@ router.post('/email', async (req, res) => {
       if (comp.pago_semestral) metodosPago.push('Semestral');
       if (comp.pago_cuatrimestral) metodosPago.push('Cuatrimestral');
       if (comp.pago_trimestral) metodosPago.push('Trimestral');
+      if (comp.pago_bimestral) metodosPago.push('Bimestral');
+      if (comp.pago_4_cuotas) metodosPago.push('4 Cuotas');
       if (comp.pago_mensual) metodosPago.push('Mensual');
       const formaPagoVal = metodosPago.length > 0 ? metodosPago.join(', ') : (comp.pago || 'Consultar');
 
@@ -349,6 +363,12 @@ router.post('/email', async (req, res) => {
       const extrasList = [];
       if (comp.maternidad_suma || costoMat > 0) {
         extrasList.push(`<strong>Maternidad:</strong> ${comp.maternidad_suma || 'Cubierta'} <span style="color: ${costoMat > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoMat > 0 ? '+ $' + costoMat.toFixed(2) + '/año' : 'Incluida en base'})</span>`);
+      }
+      if (comp.muerte_accidental_suma || costoMuerteAcc > 0) {
+        extrasList.push(`<strong>Muerte Accidental:</strong> ${comp.muerte_accidental_suma || 'Cubierta'} <span style="color: ${costoMuerteAcc > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoMuerteAcc > 0 ? '+ $' + costoMuerteAcc.toFixed(2) + '/año' : 'Incluida en base'})</span>`);
+      }
+      if (comp.invalidez_permanente_suma || costoInvalidez > 0) {
+        extrasList.push(`<strong>Invalidez Permanente:</strong> ${comp.invalidez_permanente_suma || 'Cubierta'} <span style="color: ${costoInvalidez > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoInvalidez > 0 ? '+ $' + costoInvalidez.toFixed(2) + '/año' : 'Incluida en base'})</span>`);
       }
       if (comp.asist_intl_suma || costoAsist > 0) {
         extrasList.push(`<strong>Asist. Internacional:</strong> ${comp.asist_intl_suma || 'Cubierta'} <span style="color: ${costoAsist > 0 ? '#b45309' : '#15803d'}; font-weight: bold;">(${costoAsist > 0 ? '+ $' + costoAsist.toFixed(2) + '/año' : 'Incluida en base'})</span>`);
@@ -370,7 +390,9 @@ router.post('/email', async (req, res) => {
         { name: 'Consultas', active: !!comp.consultas },
         { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
         { name: 'Oftalmología', active: !!comp.oftalmologia },
-        { name: 'Odontología', active: !!comp.odontologia }
+        { name: 'Odontología', active: !!comp.odontologia },
+        { name: 'Muerte Acc. base', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
+        { name: 'Invalidez Perm. base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) }
       ];
 
       planCardsHtml += `

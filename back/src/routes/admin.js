@@ -709,7 +709,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
 
         await db.query(q, [
           cId, edadMin, edadMax, sumaAsegurada, deducibleVal, primaVal,
-          t.plan || '', t.pago || '',
+          t.plan || '', t.pago || buildPagoString(metodos),
           metodos.pago_contado, metodos.pago_semestral, metodos.pago_cuatrimestral, metodos.pago_trimestral, metodos.pago_bimestral, metodos.pago_4_cuotas, metodos.pago_mensual,
           t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
           t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
@@ -758,6 +758,18 @@ router.get('/tariffs', authenticateToken, async (req, res) => {
   }
 });
 
+function buildPagoString(metodos) {
+  const parts = [];
+  if (metodos.pago_contado) parts.push('CONT');
+  if (metodos.pago_semestral) parts.push('SEM');
+  if (metodos.pago_cuatrimestral) parts.push('CUATRI');
+  if (metodos.pago_trimestral) parts.push('TRIM');
+  if (metodos.pago_bimestral) parts.push('BIM');
+  if (metodos.pago_4_cuotas) parts.push('4 CUOTAS');
+  if (metodos.pago_mensual) parts.push('MENS');
+  return parts.length > 0 ? parts.join(' / ') : 'CONT';
+}
+
 // Campos de beneficios de una tarifa (texto libre o flags: montos, "INCL", "NO", frecuencias, etc.)
 const TARIFF_BENEFIT_FIELDS = [
   'plan', 'pago', 'maternidad_suma', 'maternidad_costo', 'asist_intl_suma', 'asist_intl_costo',
@@ -765,7 +777,9 @@ const TARIFF_BENEFIT_FIELDS = [
   'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'examenes_lab_imagenologia', 'consultas', 'maternidad',
   'oftalmologia', 'odontologia', 'ambulancia',
   'muerte_accidental', 'muerte_accidental_suma', 'muerte_accidental_costo',
-  'invalidez_permanente', 'invalidez_permanente_suma', 'invalidez_permanente_costo'
+  'invalidez_permanente', 'invalidez_permanente_suma', 'invalidez_permanente_costo',
+  'pago_contado', 'pago_semestral', 'pago_cuatrimestral', 'pago_trimestral', 'pago_bimestral', 'pago_4_cuotas', 'pago_mensual',
+  'ramo'
 ];
 
 // 8. Crear una tarifa individual
@@ -792,6 +806,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
     const muerteAcc = req.body.muerte_accidental !== undefined ? (req.body.muerte_accidental === true || req.body.muerte_accidental === 'true' || req.body.muerte_accidental === 'INCL') : false;
     const invalidezPerm = req.body.invalidez_permanente !== undefined ? (req.body.invalidez_permanente === true || req.body.invalidez_permanente === 'true' || req.body.invalidez_permanente === 'INCL') : false;
 
+    const pagoStr = req.body.pago || buildPagoString(metodos);
     let createdTariff = null;
 
     if (db.isFallback()) {
@@ -805,6 +820,8 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         suma_asegurada: parseFloat(suma_asegurada),
         deducible: parseFloat(deducible || 0),
         prima: parseFloat(prima),
+        plan: req.body.plan || '',
+        pago: pagoStr,
         pago_contado: metodos.pago_contado,
         pago_semestral: metodos.pago_semestral,
         pago_cuatrimestral: metodos.pago_cuatrimestral,
@@ -820,6 +837,12 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         muleta_silla_ruedas: muletaSilla,
         consultas: consult,
         maternidad: mat,
+        maternidad_suma: req.body.maternidad_suma || '',
+        maternidad_costo: req.body.maternidad_costo || '',
+        asist_intl_suma: req.body.asist_intl_suma || '',
+        asist_intl_costo: req.body.asist_intl_costo || '',
+        funeral_suma: req.body.funeral_suma || '',
+        funeral_costo: req.body.funeral_costo || '',
         oftalmologia: oftalmo,
         odontologia: odonto,
         muerte_accidental: muerteAcc,
@@ -828,14 +851,12 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         invalidez_permanente: invalidezPerm,
         invalidez_permanente_suma: req.body.invalidez_permanente_suma || '',
         invalidez_permanente_costo: req.body.invalidez_permanente_costo || '',
+        examenes_lab_imagenologia: req.body.examenes_lab_imagenologia || '',
+        ambulancia: req.body.ambulancia || '',
+        at_situ_medicamentos: req.body.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
         ramo: req.body.ramo || 'Salud',
         created_at: new Date().toISOString()
       };
-      TARIFF_BENEFIT_FIELDS.forEach(f => {
-        if (createdTariff[f] === undefined) {
-          createdTariff[f] = req.body[f] || '';
-        }
-      });
       fData.tarifas.push(createdTariff);
       db.saveFallback();
     } else {
@@ -857,7 +878,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
       `;
       const insRes = await db.query(q, [
         parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
-        req.body.plan || '', req.body.pago || '',
+        req.body.plan || '', pagoStr,
         metodos.pago_contado, metodos.pago_semestral, metodos.pago_cuatrimestral, metodos.pago_trimestral, metodos.pago_bimestral, metodos.pago_4_cuotas, metodos.pago_mensual,
         req.body.maternidad_suma || '', req.body.maternidad_costo || '', req.body.asist_intl_suma || '', req.body.asist_intl_costo || '',
         req.body.funeral_suma || '', req.body.funeral_costo || '', req.body.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
@@ -896,9 +917,10 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
 
   try {
     const metodos = getPagoBooleans(req.body);
+    const pagoStr = req.body.pago || buildPagoString(metodos);
     const atMedPrim = req.body.atencion_medica_primaria !== undefined ? (req.body.atencion_medica_primaria === true || req.body.atencion_medica_primaria === 'true' || req.body.atencion_medica_primaria === 'INCL') : (req.body.at_situ_medicamentos === 'INCL' || !!req.body.at_situ_medicamentos);
     const meds = req.body.medicinas !== undefined ? (req.body.medicinas === true || req.body.medicinas === 'true' || req.body.medicinas === 'INCL') : false;
-    const consMed = req.body.consultas_medicas !== undefined ? (typeof req.body.consultas_medicas === 'boolean' ? req.body.consultas_medicas : (req.body.consultas_medicas === 'INCL' || req.body.consultas_medicas === '2/AÑO' || (typeof req.body.consultas_medicas === 'string' && req.body.consultas_medicas.length > 0 && req.body.consultas_medicas !== 'NO'))) : false;
+    const consMed = req.body.consultas_medicas !== undefined ? (typeof req.body.consultas_medicas === 'boolean' ? req.body.consultas_medicas : (req.body.consultas_medicas === 'INCL' || req.body.consultas_medicas === '2/AÑO' || (typeof req.body.consultas_medicas === 'string' && req.body.consultas_medicas.length > 0 && req.body.consultas_medicas !== 'NO' && req.body.consultas_medicas !== 'false'))) : false;
     const rehab = req.body.rehabilitacion !== undefined ? (req.body.rehabilitacion === true || req.body.rehabilitacion === 'true' || req.body.rehabilitacion === 'INCL') : false;
     const prot = req.body.protesis !== undefined ? (req.body.protesis === true || req.body.protesis === 'true' || req.body.protesis === 'INCL') : false;
     const muletaSilla = req.body.muleta_silla_ruedas !== undefined ? (req.body.muleta_silla_ruedas === true || req.body.muleta_silla_ruedas === 'true' || req.body.muleta_silla_ruedas === 'INCL') : false;
@@ -924,6 +946,8 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         suma_asegurada: parseFloat(suma_asegurada),
         deducible: deducible !== undefined ? parseFloat(deducible) : (fData.tarifas[idx].deducible || 0),
         prima: parseFloat(prima),
+        plan: req.body.plan !== undefined ? req.body.plan : (fData.tarifas[idx].plan || ''),
+        pago: pagoStr,
         pago_contado: metodos.pago_contado,
         pago_semestral: metodos.pago_semestral,
         pago_cuatrimestral: metodos.pago_cuatrimestral,
@@ -939,21 +963,25 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         muleta_silla_ruedas: muletaSilla,
         consultas: consult,
         maternidad: mat,
+        maternidad_suma: req.body.maternidad_suma !== undefined ? req.body.maternidad_suma : (fData.tarifas[idx].maternidad_suma || ''),
+        maternidad_costo: req.body.maternidad_costo !== undefined ? req.body.maternidad_costo : (fData.tarifas[idx].maternidad_costo || ''),
+        asist_intl_suma: req.body.asist_intl_suma !== undefined ? req.body.asist_intl_suma : (fData.tarifas[idx].asist_intl_suma || ''),
+        asist_intl_costo: req.body.asist_intl_costo !== undefined ? req.body.asist_intl_costo : (fData.tarifas[idx].asist_intl_costo || ''),
+        funeral_suma: req.body.funeral_suma !== undefined ? req.body.funeral_suma : (fData.tarifas[idx].funeral_suma || ''),
+        funeral_costo: req.body.funeral_costo !== undefined ? req.body.funeral_costo : (fData.tarifas[idx].funeral_costo || ''),
         oftalmologia: oftalmo,
         odontologia: odonto,
         muerte_accidental: muerteAcc,
-        muerte_accidental_suma: req.body.muerte_accidental_suma ?? (fData.tarifas[idx].muerte_accidental_suma || ''),
-        muerte_accidental_costo: req.body.muerte_accidental_costo ?? (fData.tarifas[idx].muerte_accidental_costo || ''),
+        muerte_accidental_suma: req.body.muerte_accidental_suma !== undefined ? req.body.muerte_accidental_suma : (fData.tarifas[idx].muerte_accidental_suma || ''),
+        muerte_accidental_costo: req.body.muerte_accidental_costo !== undefined ? req.body.muerte_accidental_costo : (fData.tarifas[idx].muerte_accidental_costo || ''),
         invalidez_permanente: invalidezPerm,
-        invalidez_permanente_suma: req.body.invalidez_permanente_suma ?? (fData.tarifas[idx].invalidez_permanente_suma || ''),
-        invalidez_permanente_costo: req.body.invalidez_permanente_costo ?? (fData.tarifas[idx].invalidez_permanente_costo || ''),
+        invalidez_permanente_suma: req.body.invalidez_permanente_suma !== undefined ? req.body.invalidez_permanente_suma : (fData.tarifas[idx].invalidez_permanente_suma || ''),
+        invalidez_permanente_costo: req.body.invalidez_permanente_costo !== undefined ? req.body.invalidez_permanente_costo : (fData.tarifas[idx].invalidez_permanente_costo || ''),
+        examenes_lab_imagenologia: req.body.examenes_lab_imagenologia !== undefined ? req.body.examenes_lab_imagenologia : (fData.tarifas[idx].examenes_lab_imagenologia || ''),
+        ambulancia: req.body.ambulancia !== undefined ? req.body.ambulancia : (fData.tarifas[idx].ambulancia || ''),
+        at_situ_medicamentos: req.body.at_situ_medicamentos !== undefined ? req.body.at_situ_medicamentos : (atMedPrim ? 'INCL' : ''),
         ramo: req.body.ramo || fData.tarifas[idx].ramo || 'Salud'
       };
-      TARIFF_BENEFIT_FIELDS.forEach(f => {
-        if (!['atencion_medica_primaria', 'medicinas', 'consultas_medicas', 'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'consultas', 'maternidad', 'oftalmologia', 'odontologia', 'muerte_accidental', 'invalidez_permanente'].includes(f)) {
-          updatedTariff[f] = req.body[f] ?? updatedTariff[f] ?? '';
-        }
-      });
       fData.tarifas[idx] = updatedTariff;
       db.saveFallback();
     } else {
@@ -972,7 +1000,7 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
       `;
       const resUp = await db.query(q, [
         parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
-        req.body.plan || '', req.body.pago || '',
+        req.body.plan || '', pagoStr,
         metodos.pago_contado, metodos.pago_semestral, metodos.pago_cuatrimestral, metodos.pago_trimestral, metodos.pago_bimestral, metodos.pago_4_cuotas, metodos.pago_mensual,
         req.body.maternidad_suma || '', req.body.maternidad_costo || '', req.body.asist_intl_suma || '', req.body.asist_intl_costo || '',
         req.body.funeral_suma || '', req.body.funeral_costo || '', req.body.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
@@ -1022,9 +1050,10 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
         }
 
         const metodos = getPagoBooleans(t);
+        const pagoStr = t.pago || buildPagoString(metodos);
         const atMedPrim = t.atencion_medica_primaria !== undefined ? (t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL') : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos);
         const meds = t.medicinas !== undefined ? (t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL') : false;
-        const consMed = t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false;
+        const consMed = t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false'))) : false;
         const rehab = t.rehabilitacion !== undefined ? (t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL') : false;
         const prot = t.protesis !== undefined ? (t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL') : false;
         const muletaSilla = t.muleta_silla_ruedas !== undefined ? (t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL') : false;
@@ -1046,6 +1075,8 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             suma_asegurada: parseFloat(suma_asegurada),
             deducible: parseFloat(deducible || 0),
             prima: parseFloat(prima),
+            plan: t.plan || '',
+            pago: pagoStr,
             pago_contado: metodos.pago_contado,
             pago_semestral: metodos.pago_semestral,
             pago_cuatrimestral: metodos.pago_cuatrimestral,
@@ -1061,6 +1092,12 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             muleta_silla_ruedas: muletaSilla,
             consultas: consult,
             maternidad: mat,
+            maternidad_suma: t.maternidad_suma || '',
+            maternidad_costo: t.maternidad_costo || '',
+            asist_intl_suma: t.asist_intl_suma || '',
+            asist_intl_costo: t.asist_intl_costo || '',
+            funeral_suma: t.funeral_suma || '',
+            funeral_costo: t.funeral_costo || '',
             oftalmologia: oftalmo,
             odontologia: odonto,
             muerte_accidental: muerteAcc,
@@ -1069,14 +1106,12 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             invalidez_permanente: invalidezPerm,
             invalidez_permanente_suma: t.invalidez_permanente_suma || '',
             invalidez_permanente_costo: t.invalidez_permanente_costo || '',
+            examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
+            ambulancia: t.ambulancia || '',
+            at_situ_medicamentos: t.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
             ramo: t.ramo || 'Salud',
             created_at: new Date().toISOString()
           };
-          TARIFF_BENEFIT_FIELDS.forEach(f => {
-            if (row[f] === undefined) {
-              row[f] = t[f] || '';
-            }
-          });
           fData.tarifas.push(row);
           savedCount++;
         } else {
@@ -1090,6 +1125,8 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               suma_asegurada: parseFloat(suma_asegurada),
               deducible: deducible !== undefined ? parseFloat(deducible) : (fData.tarifas[idx].deducible || 0),
               prima: parseFloat(prima),
+              plan: t.plan !== undefined ? t.plan : (fData.tarifas[idx].plan || ''),
+              pago: pagoStr,
               pago_contado: metodos.pago_contado,
               pago_semestral: metodos.pago_semestral,
               pago_cuatrimestral: metodos.pago_cuatrimestral,
@@ -1105,21 +1142,25 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               muleta_silla_ruedas: muletaSilla,
               consultas: consult,
               maternidad: mat,
+              maternidad_suma: t.maternidad_suma !== undefined ? t.maternidad_suma : (fData.tarifas[idx].maternidad_suma || ''),
+              maternidad_costo: t.maternidad_costo !== undefined ? t.maternidad_costo : (fData.tarifas[idx].maternidad_costo || ''),
+              asist_intl_suma: t.asist_intl_suma !== undefined ? t.asist_intl_suma : (fData.tarifas[idx].asist_intl_suma || ''),
+              asist_intl_costo: t.asist_intl_costo !== undefined ? t.asist_intl_costo : (fData.tarifas[idx].asist_intl_costo || ''),
+              funeral_suma: t.funeral_suma !== undefined ? t.funeral_suma : (fData.tarifas[idx].funeral_suma || ''),
+              funeral_costo: t.funeral_costo !== undefined ? t.funeral_costo : (fData.tarifas[idx].funeral_costo || ''),
               oftalmologia: oftalmo,
               odontologia: odonto,
               muerte_accidental: muerteAcc,
-              muerte_accidental_suma: t.muerte_accidental_suma ?? (fData.tarifas[idx].muerte_accidental_suma || ''),
-              muerte_accidental_costo: t.muerte_accidental_costo ?? (fData.tarifas[idx].muerte_accidental_costo || ''),
+              muerte_accidental_suma: t.muerte_accidental_suma !== undefined ? t.muerte_accidental_suma : (fData.tarifas[idx].muerte_accidental_suma || ''),
+              muerte_accidental_costo: t.muerte_accidental_costo !== undefined ? t.muerte_accidental_costo : (fData.tarifas[idx].muerte_accidental_costo || ''),
               invalidez_permanente: invalidezPerm,
-              invalidez_permanente_suma: t.invalidez_permanente_suma ?? (fData.tarifas[idx].invalidez_permanente_suma || ''),
-              invalidez_permanente_costo: t.invalidez_permanente_costo ?? (fData.tarifas[idx].invalidez_permanente_costo || ''),
+              invalidez_permanente_suma: t.invalidez_permanente_suma !== undefined ? t.invalidez_permanente_suma : (fData.tarifas[idx].invalidez_permanente_suma || ''),
+              invalidez_permanente_costo: t.invalidez_permanente_costo !== undefined ? t.invalidez_permanente_costo : (fData.tarifas[idx].invalidez_permanente_costo || ''),
+              examenes_lab_imagenologia: t.examenes_lab_imagenologia !== undefined ? t.examenes_lab_imagenologia : (fData.tarifas[idx].examenes_lab_imagenologia || ''),
+              ambulancia: t.ambulancia !== undefined ? t.ambulancia : (fData.tarifas[idx].ambulancia || ''),
+              at_situ_medicamentos: t.at_situ_medicamentos !== undefined ? t.at_situ_medicamentos : (atMedPrim ? 'INCL' : ''),
               ramo: t.ramo || fData.tarifas[idx].ramo || 'Salud'
             };
-            TARIFF_BENEFIT_FIELDS.forEach(f => {
-              if (!['atencion_medica_primaria', 'medicinas', 'consultas_medicas', 'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'consultas', 'maternidad', 'oftalmologia', 'odontologia', 'muerte_accidental', 'invalidez_permanente'].includes(f)) {
-                updated[f] = t[f] ?? updated[f] ?? '';
-              }
-            });
             fData.tarifas[idx] = updated;
             savedCount++;
           }
@@ -1134,9 +1175,10 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
         }
 
         const metodos = getPagoBooleans(t);
+        const pagoStr = t.pago || buildPagoString(metodos);
         const atMedPrim = t.atencion_medica_primaria !== undefined ? (t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL') : (t.at_situ_medicamentos === 'INCL' || !!t.at_situ_medicamentos);
         const meds = t.medicinas !== undefined ? (t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL') : false;
-        const consMed = t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))) : false;
+        const consMed = t.consultas_medicas !== undefined ? (typeof t.consultas_medicas === 'boolean' ? t.consultas_medicas : (t.consultas_medicas === 'INCL' || t.consultas_medicas === '2/AÑO' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false'))) : false;
         const rehab = t.rehabilitacion !== undefined ? (t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL') : false;
         const prot = t.protesis !== undefined ? (t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL') : false;
         const muletaSilla = t.muleta_silla_ruedas !== undefined ? (t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL') : false;
@@ -1166,7 +1208,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
           `;
           await db.query(q, [
             parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
-            t.plan || '', t.pago || '',
+            t.plan || '', pagoStr,
             metodos.pago_contado, metodos.pago_semestral, metodos.pago_cuatrimestral, metodos.pago_trimestral, metodos.pago_bimestral, metodos.pago_4_cuotas, metodos.pago_mensual,
             t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
             t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
@@ -1197,7 +1239,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
           `;
           await db.query(q, [
             parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
-            t.plan || '', t.pago || '',
+            t.plan || '', pagoStr,
             metodos.pago_contado, metodos.pago_semestral, metodos.pago_cuatrimestral, metodos.pago_trimestral, metodos.pago_bimestral, metodos.pago_4_cuotas, metodos.pago_mensual,
             t.maternidad_suma || '', t.maternidad_costo || '', t.asist_intl_suma || '', t.asist_intl_costo || '',
             t.funeral_suma || '', t.funeral_costo || '', t.at_situ_medicamentos || (atMedPrim ? 'INCL' : ''),
@@ -1220,7 +1262,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
 
     await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'EDICION_MASIVA_TARIFAS', `Se actualizaron/crearon ${savedCount} tarifas en lote.`);
-    res.json({ message: `Se guardaron ${savedCount} tarifas correctamente.` });
+    res.json({ message: `Se guardaron ${savedCount} tarifas correctamente.`, count: savedCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al guardar tarifas en lote.' });

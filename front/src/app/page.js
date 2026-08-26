@@ -1051,51 +1051,86 @@ export default function Home() {
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
                         ✓ INCLUIDO EN PLAN BASE:
                       </span>
-                      <div className="result-feature" style={{ backgroundColor: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                      <div className="result-feature" style={{ backgroundColor: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)', marginBottom: '0.4rem' }}>
                         <span className="result-feature-label" style={{ fontWeight: 700 }}>Deducible:</span>
                         <span className="result-feature-value" style={{ fontWeight: 800, color: (comp.deducible && parseFloat(comp.deducible) > 0) ? '#b45309' : '#15803d' }}>
                           {(comp.deducible && parseFloat(comp.deducible) > 0) ? `$${Number(comp.deducible).toLocaleString('en-US')}` : '$0 (Sin deducible)'}
                         </span>
                       </div>
-                      <div className="result-feature">
-                        <span className="result-feature-label">Condición Pago:</span>
-                        <span className="result-feature-value">{comp.pago || 'Consultar'}</span>
+                      
+                      {/* Grid de servicios base incluidos */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.25rem 0.5rem', margin: '0.4rem 0' }}>
+                        {[
+                          { name: 'At. Primaria (AMP)', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
+                          { name: 'Medicamentos', active: !!comp.medicinas },
+                          { name: 'Cons. Médicas', active: !!comp.consultas_medicas },
+                          { name: 'Exámenes Lab/Img', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' && comp.examenes_lab_imagenologia !== 'false') },
+                          { name: 'Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO' && comp.ambulancia !== 'false') },
+                          { name: 'Rehabilitación', active: !!comp.rehabilitacion },
+                          { name: 'Prótesis', active: !!comp.protesis },
+                          { name: 'Muleta + Silla', active: !!comp.muleta_silla_ruedas },
+                          { name: 'Consultas Espec.', active: !!comp.consultas },
+                          { name: 'Oftalmología', active: !!comp.oftalmologia },
+                          { name: 'Odontología', active: !!comp.odontologia },
+                          { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
+                          { name: 'Muerte Acc. base', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
+                          { name: 'Invalidez base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) }
+                        ].map((serv, sIdx) => (
+                          <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem' }}>
+                            <span style={{ color: serv.active ? '#15803d' : '#cbd5e1', fontWeight: 800 }}>
+                              {serv.active ? '✓' : '•'}
+                            </span>
+                            <span style={{ color: serv.active ? 'var(--text)' : '#94a3b8', fontWeight: serv.active ? 600 : 400 }}>
+                              {serv.name}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     {/* SECCIÓN 2: EXTRAS OPCIONALES CON COSTO */}
                     <div style={{ background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', marginBottom: '0.5rem' }}>
                       <span style={{ fontSize: '0.72rem', fontWeight: 800, color: totalExtras > 0 ? '#b45309' : 'var(--primary)', display: 'block', marginBottom: '0.25rem' }}>
-                        {totalExtras > 0 ? '➕ EXTRAS OPCIONALES (CON COSTO):' : '➕ COBERTURAS DEL PLAN:'}
+                        {totalExtras > 0 ? '➕ COBERTURAS EXTRAS (CON COSTO ADICIONAL):' : '➕ COBERTURAS ADICIONALES DEL PLAN:'}
                       </span>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
                         <span className="result-feature-label">Muerte Accidental:</span>
                         <span className="result-feature-value">
-                          {comp.muerte_accidental_suma ? `${comp.muerte_accidental_suma}${costoMuerteAcc > 0 ? ` (+${costoMuerteAcc.toFixed(2)}/año)` : ''}` : (comp.muerte_accidental ? 'Incluida' : 'No incluida')}
+                          {comp.muerte_accidental_suma || comp.muerte_accidental ? (
+                            costoMuerteAcc > 0 ? `${comp.muerte_accidental_suma || 'Cubierta'} (+ $${costoMuerteAcc.toFixed(2)}/año)` : `${comp.muerte_accidental_suma || 'Cubierta'} (Incluida en base)`
+                          ) : 'No incluida'}
                         </span>
                       </div>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
-                        <span className="result-feature-label">Invalidez Perm.:</span>
+                        <span className="result-feature-label">Invalidez Permanente:</span>
                         <span className="result-feature-value">
-                          {comp.invalidez_permanente_suma ? `${comp.invalidez_permanente_suma}${costoInvalidez > 0 ? ` (+${costoInvalidez.toFixed(2)}/año)` : ''}` : (comp.invalidez_permanente ? 'Incluida' : 'No incluida')}
+                          {comp.invalidez_permanente_suma || comp.invalidez_permanente ? (
+                            costoInvalidez > 0 ? `${comp.invalidez_permanente_suma || 'Cubierta'} (+ $${costoInvalidez.toFixed(2)}/año)` : `${comp.invalidez_permanente_suma || 'Cubierta'} (Incluida en base)`
+                          ) : 'No incluida'}
                         </span>
                       </div>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
                         <span className="result-feature-label">Maternidad:</span>
                         <span className="result-feature-value">
-                          {comp.maternidad_suma ? `${comp.maternidad_suma}${costoMat > 0 ? ` (+${costoMat.toFixed(2)}/año)` : ''}` : (comp.maternidad ? 'Incluida' : 'No incluida')}
+                          {comp.maternidad_suma || comp.maternidad ? (
+                            costoMat > 0 ? `${comp.maternidad_suma || 'Cubierta'} (+ $${costoMat.toFixed(2)}/año)` : `${comp.maternidad_suma || 'Cubierta'} (Incluida en base)`
+                          ) : 'No incluida'}
                         </span>
                       </div>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
                         <span className="result-feature-label">Asist. Internacional:</span>
                         <span className="result-feature-value">
-                          {comp.asist_intl_suma ? `${comp.asist_intl_suma}${costoAsist > 0 ? ` (+${costoAsist.toFixed(2)}/año)` : ''}` : 'No incluida'}
+                          {comp.asist_intl_suma ? (
+                            costoAsist > 0 ? `${comp.asist_intl_suma} (+ $${costoAsist.toFixed(2)}/año)` : `${comp.asist_intl_suma} (Incluida en base)`
+                          ) : 'No incluida'}
                         </span>
                       </div>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
                         <span className="result-feature-label">Servicio Funeral:</span>
                         <span className="result-feature-value">
-                          {comp.funeral_suma ? `${comp.funeral_suma}${costoFuneral > 0 ? ` (+${costoFuneral.toFixed(2)}/año)` : ''}` : 'No incluido'}
+                          {comp.funeral_suma ? (
+                            costoFuneral > 0 ? `${comp.funeral_suma} (+ $${costoFuneral.toFixed(2)}/año)` : `${comp.funeral_suma} (Incluido en base)`
+                          ) : 'No incluido'}
                         </span>
                       </div>
                     </div>
