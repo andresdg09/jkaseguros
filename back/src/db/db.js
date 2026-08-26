@@ -37,27 +37,32 @@ let fallbackData = {
   historico_comisiones: []
 };
 
-const fallbackFilePath = path.join(__dirname, '../../data/fallback_db.json');
-
-// Crear la carpeta data si no existe (con manejo seguro para entornos serverless de solo lectura)
-const dataDir = path.join(__dirname, '../../data');
-try {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+function getFallbackFilePath() {
+  const possiblePaths = [
+    path.join(__dirname, '../../data/fallback_db.json'),
+    path.join(process.cwd(), 'data/fallback_db.json'),
+    path.join(process.cwd(), 'back/data/fallback_db.json'),
+    path.join(__dirname, '../data/fallback_db.json'),
+    path.join(__dirname, 'data/fallback_db.json')
+  ];
+  for (const p of possiblePaths) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch (e) {}
   }
-} catch (e) {
-  // Ignorar en sistemas de archivos de solo lectura como Vercel Serverless
+  return path.join(__dirname, '../../data/fallback_db.json');
 }
 
 // Inicializar el Fallback (JSON)
 function initFallback() {
   isFallback = true;
+  const filePath = getFallbackFilePath();
   console.log('\x1b[33m%s\x1b[0m', '⚠️ No se pudo conectar a PostgreSQL. Activando Fallback de Base de Datos JSON local.');
-  console.log(`Guardando datos en: ${fallbackFilePath}`);
+  console.log(`Guardando datos en: ${filePath}`);
   
-  if (fs.existsSync(fallbackFilePath)) {
+  if (fs.existsSync(filePath)) {
     try {
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const fileContent = fs.readFileSync(filePath, 'utf8');
       fallbackData = JSON.parse(fileContent);
       if (!fallbackData.usuarios) fallbackData.usuarios = [];
       if (!fallbackData.datos_personales) fallbackData.datos_personales = [];
@@ -721,9 +726,14 @@ function seedFallback() {
 
 function saveFallback() {
   try {
-    fs.writeFileSync(fallbackFilePath, JSON.stringify(fallbackData, null, 2), 'utf8');
+    const filePath = getFallbackFilePath();
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, JSON.stringify(fallbackData, null, 2), 'utf8');
   } catch (err) {
-    console.error('Error al guardar base de datos JSON:', err);
+    // Ignorar en sistemas read-only de Vercel Serverless
   }
 }
 
@@ -1079,16 +1089,22 @@ try {
 
   client.release();
 } catch (err) {
-  console.error('❌ Error al conectar con PostgreSQL, activando fallback JSON:', err);
-  pool = null;
-  initFallback();
+  console.error('❌ Error al conectar con PostgreSQL (Neon):', err.message);
+  if (!process.env.DATABASE_URL) {
+    pool = null;
+    initFallback();
+  } else {
+    pool = null;
+    throw err;
+  }
 }
 }
 
 function syncFallbackFromDisk() {
-  if (fs.existsSync(fallbackFilePath)) {
+  const filePath = getFallbackFilePath();
+  if (fs.existsSync(filePath)) {
     try {
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
+      const fileContent = fs.readFileSync(filePath, 'utf8');
       const parsed = JSON.parse(fileContent);
       if (parsed && typeof parsed === 'object') {
         fallbackData = parsed;
@@ -1981,17 +1997,18 @@ export const db = {
   },
   saveFallback: () => saveFallback(),
   query: async (text, params) => {
-    if (isFallback || !pool) {
-      return fallbackQuery(text, params);
-    }
-    try {
+    if (pool) {
       return await pool.query(text, params);
-    } catch (err) {
-      console.error('Error ejecutando query en Postgres, reintentando con fallback.', err);
-      // Intentar fallback si falla la BD en caliente
+    }
+    if (!process.env.DATABASE_URL) {
       if (!isFallback) initFallback();
       return fallbackQuery(text, params);
     }
+    await initDb();
+    if (pool) {
+      return await pool.query(text, params);
+    }
+    throw new Error('No se pudo conectar a la base de datos PostgreSQL.');
   }
 };
 export default db;
