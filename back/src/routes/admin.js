@@ -503,20 +503,18 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
       const nuevasTarifas = [];
       parsedData.forEach((t, idx) => {
         let cId = null;
-        if (t.compania_id && compIdSet.has(parseInt(t.compania_id))) {
+        const compName = (t.compania || t.compania_nombre || '').trim();
+        if (compName && compMap[compName.toLowerCase()]) {
+          cId = compMap[compName.toLowerCase()];
+        } else if (compName) {
+          cId = fData.companias_seguros.length ? Math.max(...fData.companias_seguros.map(c => c.id)) + 1 : 1;
+          fData.companias_seguros.push({ id: cId, nombre: compName, created_at: new Date().toISOString() });
+          compMap[compName.toLowerCase()] = cId;
+          compIdSet.add(cId);
+        } else if (t.compania_id && compIdSet.has(parseInt(t.compania_id))) {
           cId = parseInt(t.compania_id);
         } else {
-          const compName = (t.compania || t.compania_nombre || '').trim();
-          if (compName && compMap[compName.toLowerCase()]) {
-            cId = compMap[compName.toLowerCase()];
-          } else if (compName) {
-            cId = fData.companias_seguros.length ? Math.max(...fData.companias_seguros.map(c => c.id)) + 1 : 1;
-            fData.companias_seguros.push({ id: cId, nombre: compName, created_at: new Date().toISOString() });
-            compMap[compName.toLowerCase()] = cId;
-            compIdSet.add(cId);
-          } else {
-            cId = fData.companias_seguros[0]?.id || 1;
-          }
+          cId = fData.companias_seguros[0]?.id || 1;
         }
 
         const edadMin = parseInt(t.edad_min);
@@ -607,25 +605,23 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
 
       for (const t of parsedData) {
         let cId = null;
-        if (t.compania_id && compIdSet.has(parseInt(t.compania_id))) {
+        const compName = (t.compania || t.compania_nombre || '').trim();
+        if (compName && compMap[compName.toLowerCase()]) {
+          cId = compMap[compName.toLowerCase()];
+        } else if (compName) {
+          const insRes = await db.query(
+            'INSERT INTO companias_seguros (nombre) VALUES ($1) RETURNING id',
+            [compName]
+          );
+          cId = insRes.rows[0].id;
+          compMap[compName.toLowerCase()] = cId;
+          compIdSet.add(cId);
+        } else if (t.compania_id && compIdSet.has(parseInt(t.compania_id))) {
           cId = parseInt(t.compania_id);
+        } else if (comps.rows.length > 0) {
+          cId = comps.rows[0].id;
         } else {
-          const compName = (t.compania || t.compania_nombre || '').trim();
-          if (compName && compMap[compName.toLowerCase()]) {
-            cId = compMap[compName.toLowerCase()];
-          } else if (compName) {
-            const insRes = await db.query(
-              'INSERT INTO companias_seguros (nombre) VALUES ($1) RETURNING id',
-              [compName]
-            );
-            cId = insRes.rows[0].id;
-            compMap[compName.toLowerCase()] = cId;
-            compIdSet.add(cId);
-          } else if (comps.rows.length > 0) {
-            cId = comps.rows[0].id;
-          } else {
-            cId = 1;
-          }
+          cId = 1;
         }
 
         const edadMin = parseInt(t.edad_min);
