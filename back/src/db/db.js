@@ -761,6 +761,21 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas_medicas VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS examenes_lab_imagenologia VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ambulancia VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS rehabilitacion BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS protesis BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muleta_silla_ruedas BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
+  await client.query("ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT 'Salud';");
 
   // Pólizas: la modalidad colectivo/individual se reemplaza por el nombre de plan contratado
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check;');

@@ -97,6 +97,43 @@ export default function AdminDashboard() {
     estado: 'vigente'
   });
 
+  // --- ESTADOS PARA CREACIÓN INTUITIVA DE TARIFAS ---
+  const [showNewTariffModal, setShowNewTariffModal] = useState(false);
+  const [submittingNewTariff, setSubmittingNewTariff] = useState(false);
+  const [newTariffForm, setNewTariffForm] = useState({
+    compania_id: '1',
+    plan: '',
+    ramo: 'Salud',
+    edad_min: 18,
+    edad_max: 29,
+    suma_asegurada: 5000,
+    deducible: 0,
+    prima: 100,
+    pago_contado: true,
+    pago_semestral: true,
+    pago_cuatrimestral: false,
+    pago_trimestral: true,
+    pago_mensual: true,
+    atencion_medica_primaria: true,
+    medicinas: true,
+    consultas_medicas: true,
+    rehabilitacion: false,
+    protesis: false,
+    muleta_silla_ruedas: false,
+    examenes_lab_imagenologia: true,
+    consultas: true,
+    maternidad: false,
+    maternidad_suma: '',
+    maternidad_costo: '',
+    oftalmologia: false,
+    odontologia: false,
+    ambulancia: true,
+    asist_intl_suma: '',
+    asist_intl_costo: '',
+    funeral_suma: '',
+    funeral_costo: ''
+  });
+
   // --- ESTADOS INTERNOS ---
   const [loading, setLoading] = useState(true);
   const [clearingData, setClearingData] = useState(false);
@@ -770,6 +807,72 @@ export default function AdminDashboard() {
     setModifiedRows(prev => ({ ...prev, [id]: true }));
   };
 
+  const handleCellMultipleChanges = (id, updates) => {
+    setTariffs(prev => prev.map(t => {
+      if (t.id === id) {
+        return { ...t, ...updates };
+      }
+      return t;
+    }));
+    setModifiedRows(prev => ({ ...prev, [id]: true }));
+  };
+
+  // --- CREAR TARIFA DESDE MODAL GUIADO ---
+  const handleCreateNewTariff = async (e) => {
+    e.preventDefault();
+    if (!newTariffForm.compania_id) {
+      showToast('Debe seleccionar una compañía aseguradora.', 'error');
+      return;
+    }
+    if (!newTariffForm.plan || !newTariffForm.plan.trim()) {
+      showToast('Debe especificar el nombre del Plan.', 'error');
+      return;
+    }
+    if (isNaN(newTariffForm.edad_min) || isNaN(newTariffForm.edad_max) || parseFloat(newTariffForm.edad_min) > parseFloat(newTariffForm.edad_max)) {
+      showToast('El rango de edad es inválido (Edad mínima debe ser menor o igual a edad máxima).', 'error');
+      return;
+    }
+    if (isNaN(newTariffForm.prima) || parseFloat(newTariffForm.prima) <= 0) {
+      showToast('La prima debe ser un valor numérico mayor a 0.', 'error');
+      return;
+    }
+
+    setSubmittingNewTariff(true);
+    try {
+      const payload = {
+        ...newTariffForm,
+        compania_id: parseInt(newTariffForm.compania_id),
+        edad_min: parseInt(newTariffForm.edad_min),
+        edad_max: parseInt(newTariffForm.edad_max),
+        suma_asegurada: parseFloat(newTariffForm.suma_asegurada),
+        deducible: parseFloat(newTariffForm.deducible || 0),
+        prima: parseFloat(newTariffForm.prima),
+        at_situ_medicamentos: newTariffForm.atencion_medica_primaria ? 'INCL' : '',
+        examenes_lab_imagenologia: newTariffForm.examenes_lab_imagenologia ? 'INCL' : '',
+        ambulancia: newTariffForm.ambulancia ? 'INCL' : ''
+      };
+
+      const res = await fetch(`${API_URL}/admin/tariffs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al crear la tarifa');
+
+      showToast('¡Tarifa creada y agregada al tarifario con éxito!');
+      setShowNewTariffModal(false);
+      await loadData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSubmittingNewTariff(false);
+    }
+  };
+
   const handleSaveTariff = async (tariff) => {
     const isNew = String(tariff.id).startsWith('new-');
     const method = isNew ? 'POST' : 'PUT';
@@ -805,13 +908,13 @@ export default function AdminDashboard() {
           at_situ_medicamentos: tariff.at_situ_medicamentos || (tariff.atencion_medica_primaria ? 'INCL' : ''),
           atencion_medica_primaria: !!(tariff.atencion_medica_primaria || tariff.at_situ_medicamentos === 'INCL'),
           medicinas: !!(tariff.medicinas === true || tariff.medicinas === 'true' || tariff.medicinas === 'INCL'),
-          consultas_medicas: !!(tariff.consultas_medicas === true || tariff.consultas_medicas === 'true' || tariff.consultas_medicas === 'INCL' || (typeof tariff.consultas_medicas === 'string' && tariff.consultas_medicas.length > 0 && tariff.consultas_medicas !== 'NO')),
+          consultas_medicas: !!(tariff.consultas_medicas === true || tariff.consultas_medicas === 'true' || tariff.consultas_medicas === 'INCL' || (typeof tariff.consultas_medicas === 'string' && tariff.consultas_medicas.length > 0 && tariff.consultas_medicas !== 'NO' && tariff.consultas_medicas !== 'false')),
           rehabilitacion: !!(tariff.rehabilitacion === true || tariff.rehabilitacion === 'true' || tariff.rehabilitacion === 'INCL'),
           protesis: !!(tariff.protesis === true || tariff.protesis === 'true' || tariff.protesis === 'INCL'),
           muleta_silla_ruedas: !!(tariff.muleta_silla_ruedas === true || tariff.muleta_silla_ruedas === 'true' || tariff.muleta_silla_ruedas === 'INCL'),
           examenes_lab_imagenologia: tariff.examenes_lab_imagenologia || '',
           consultas: !!(tariff.consultas === true || tariff.consultas === 'true' || tariff.consultas === 'INCL'),
-          maternidad: !!(tariff.maternidad === true || tariff.maternidad === 'true' || tariff.maternidad === 'INCL' || !!tariff.maternidad_suma),
+          maternidad: !!(tariff.maternidad === true || tariff.maternidad === 'true' || tariff.maternidad === 'INCL'),
           oftalmologia: !!(tariff.oftalmologia === true || tariff.oftalmologia === 'true' || tariff.oftalmologia === 'INCL'),
           odontologia: !!(tariff.odontologia === true || tariff.odontologia === 'true' || tariff.odontologia === 'INCL'),
           ambulancia: tariff.ambulancia || ''
@@ -867,18 +970,18 @@ export default function AdminDashboard() {
     const newRow = {
       id: tempId,
       compania_id: defaultCompanyId,
-      plan: '',
+      plan: 'NUEVO PLAN',
       pago_contado: true,
       pago_semestral: false,
       pago_cuatrimestral: false,
       pago_trimestral: false,
       pago_mensual: false,
       ramo: 'Salud',
-      edad_min: 30,
-      edad_max: 39,
+      edad_min: 18,
+      edad_max: 29,
       suma_asegurada: 5000,
       deducible: 0,
-      prima: 200,
+      prima: 100,
       maternidad_suma: '',
       maternidad_costo: '',
       asist_intl_suma: '',
@@ -887,20 +990,21 @@ export default function AdminDashboard() {
       funeral_costo: '',
       at_situ_medicamentos: 'INCL',
       atencion_medica_primaria: true,
-      medicinas: false,
+      medicinas: true,
       consultas_medicas: true,
       rehabilitacion: false,
       protesis: false,
       muleta_silla_ruedas: false,
-      examenes_lab_imagenologia: '',
-      consultas: false,
+      examenes_lab_imagenologia: 'INCL',
+      consultas: true,
       maternidad: false,
       oftalmologia: false,
       odontologia: false,
-      ambulancia: ''
+      ambulancia: 'INCL'
     };
-    setTariffs(prev => [...prev, newRow]);
+    setTariffs(prev => [newRow, ...prev]);
     setModifiedRows(prev => ({ ...prev, [tempId]: true }));
+    showToast('Nueva fila agregada al inicio de la planilla. Modifícala y presiona "Guardar Cambios".');
   };
 
   // --- ARRASTRE DE CABECERAS PARA REDIMENSIONAR (ESTILO EXCEL) ---
@@ -2735,13 +2839,303 @@ export default function AdminDashboard() {
           {activeTab === 'tarifas' && (
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', border: 'none' }}>
-                <span>Matriz de Tarifas</span>
-                {tariffView === 'excel' && (
-                  <button onClick={handleAddTariffRow} className="btn btn-accent" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>
-                    + Agregar Fila
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  📊 Matriz y Tarifario Oficial
+                </span>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => {
+                      setNewTariffForm({
+                        compania_id: companies[0]?.id ? String(companies[0].id) : '1',
+                        plan: '',
+                        ramo: 'Salud',
+                        edad_min: 18,
+                        edad_max: 29,
+                        suma_asegurada: 5000,
+                        deducible: 0,
+                        prima: 100,
+                        pago_contado: true,
+                        pago_semestral: true,
+                        pago_cuatrimestral: false,
+                        pago_trimestral: true,
+                        pago_mensual: true,
+                        atencion_medica_primaria: true,
+                        medicinas: true,
+                        consultas_medicas: true,
+                        rehabilitacion: false,
+                        protesis: false,
+                        muleta_silla_ruedas: false,
+                        examenes_lab_imagenologia: true,
+                        consultas: true,
+                        maternidad: false,
+                        maternidad_suma: '',
+                        maternidad_costo: '',
+                        oftalmologia: false,
+                        odontologia: false,
+                        ambulancia: true,
+                        asist_intl_suma: '',
+                        asist_intl_costo: '',
+                        funeral_suma: '',
+                        funeral_costo: ''
+                      });
+                      setShowNewTariffModal(true);
+                    }} 
+                    className="btn btn-primary" 
+                    style={{ fontSize: '0.85rem', padding: '0.45rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                  >
+                    ✨ + Nueva Tarifa (Modal Guiado)
                   </button>
-                )}
+                  {tariffView === 'excel' && (
+                    <button onClick={handleAddTariffRow} className="btn btn-accent" style={{ fontSize: '0.85rem', padding: '0.45rem 0.8rem', fontWeight: 600 }}>
+                      + Fila Rápida en Tabla
+                    </button>
+                  )}
+                </div>
               </h3>
+
+              {/* MODAL GUIADO PARA CREAR NUEVA TARIFA */}
+              {showNewTariffModal && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 9999, padding: '1rem'
+                }}>
+                  <div className="card" style={{ maxWidth: '750px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+                      <div>
+                        <h4 style={{ margin: 0, color: 'var(--primary)', fontWeight: 800, fontSize: '1.15rem' }}>✨ Agregar Nueva Tarifa al Tarifario</h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Configura los datos del plan, edades, prima y coberturas incluidas.</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowNewTariffModal(false)}
+                        style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreateNewTariff} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                      {/* SECCIÓN 1: ASEGURADORA Y PRODUCTO */}
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>🏢 1. Aseguradora y Plan</h5>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Compañía Aseguradora *</label>
+                            <select
+                              className="form-input"
+                              value={newTariffForm.compania_id}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, compania_id: e.target.value }))}
+                              required
+                            >
+                              {companies.map(comp => (
+                                <option key={comp.id} value={comp.id}>{comp.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Nombre del Plan / Producto *</label>
+                            <input
+                              type="text"
+                              placeholder="Ej. ACCESS, SALUD EXTERIOR, PLAN DORADO"
+                              className="form-input"
+                              value={newTariffForm.plan}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, plan: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Ramo</label>
+                            <select
+                              className="form-input"
+                              value={newTariffForm.ramo}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, ramo: e.target.value }))}
+                            >
+                              <option value="Salud">Salud</option>
+                              <option value="Patrimoniales">Patrimoniales</option>
+                              <option value="Vida">Vida</option>
+                              <option value="Visa">Visa</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SECCIÓN 2: VALORES ECONÓMICOS Y RANGO DE EDAD */}
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>💰 2. Rango de Edad y Costos</h5>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Edad Mínima *</label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={newTariffForm.edad_min}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, edad_min: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Edad Máxima *</label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={newTariffForm.edad_max}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, edad_max: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Suma Asegurada ($) *</label>
+                            <select
+                              className="form-input"
+                              value={newTariffForm.suma_asegurada}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, suma_asegurada: e.target.value }))}
+                            >
+                              {SUMA_ASEGURADA_OPTIONS.map(s => (
+                                <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600 }}>Deducible ($)</label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              className="form-input"
+                              value={newTariffForm.deducible}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, deducible: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontWeight: 600, color: 'var(--accent)' }}>Prima Base ($) *</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="100.00"
+                              className="form-input"
+                              value={newTariffForm.prima}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, prima: e.target.value }))}
+                              style={{ fontWeight: 'bold', color: 'var(--accent)' }}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SECCIÓN 3: FRECUENCIAS DE PAGO */}
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>💳 3. Modalidades de Pago Habilitadas</h5>
+                        <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
+                          {[
+                            { key: 'pago_contado', label: 'Contado (Anual)' },
+                            { key: 'pago_semestral', label: 'Semestral' },
+                            { key: 'pago_cuatrimestral', label: 'Cuatrimestral' },
+                            { key: 'pago_trimestral', label: 'Trimestral' },
+                            { key: 'pago_mensual', label: 'Mensual' }
+                          ].map(f => (
+                            <label key={f.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                              <input
+                                type="checkbox"
+                                checked={!!newTariffForm[f.key]}
+                                onChange={(e) => setNewTariffForm(prev => ({ ...prev, [f.key]: e.target.checked }))}
+                              />
+                              {f.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* SECCIÓN 4: COBERTURAS Y ASISTENCIAS */}
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>🏥 4. Coberturas y Beneficios Incluidos</h5>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.6rem' }}>
+                          {[
+                            { key: 'atencion_medica_primaria', label: '🏥 Atención Médica Primaria (AMP)' },
+                            { key: 'medicinas', label: '💊 Medicamentos Prescritos' },
+                            { key: 'consultas_medicas', label: '🩺 Consultas Médicas' },
+                            { key: 'examenes_lab_imagenologia', label: '🔬 Exámenes Lab e Imágenes' },
+                            { key: 'ambulancia', label: '🚑 Servicio de Ambulancia' },
+                            { key: 'consultas', label: '📋 Consultas Especialistas' },
+                            { key: 'rehabilitacion', label: '🩹 Fisioterapia / Rehabilitación' },
+                            { key: 'protesis', label: '🦿 Prótesis Quirúrgicas' },
+                            { key: 'muleta_silla_ruedas', label: '♿ Muleta + Silla de Ruedas' },
+                            { key: 'oftalmologia', label: '👓 Oftalmología' },
+                            { key: 'odontologia', label: '🦷 Odontología' },
+                            { key: 'maternidad', label: '🤰 Cobertura de Maternidad' }
+                          ].map(b => (
+                            <label key={b.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', background: '#fff', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!newTariffForm[b.key]}
+                                onChange={(e) => setNewTariffForm(prev => ({ ...prev, [b.key]: e.target.checked }))}
+                              />
+                              <span style={{ fontWeight: 500 }}>{b.label}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {/* Asistencias internacionales y gastos funerarios */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginTop: '0.75rem' }}>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Maternidad Suma ($)</label>
+                            <input
+                              type="text"
+                              placeholder="Ej. 3000"
+                              className="form-input"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}
+                              value={newTariffForm.maternidad_suma}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, maternidad_suma: e.target.value, maternidad: !!e.target.value || prev.maternidad }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Asistencia Viajes Suma ($)</label>
+                            <input
+                              type="text"
+                              placeholder="Ej. 5000"
+                              className="form-input"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}
+                              value={newTariffForm.asist_intl_suma}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, asist_intl_suma: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Gastos Funerarios Suma ($)</label>
+                            <input
+                              type="text"
+                              placeholder="Ej. 1000"
+                              className="form-input"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}
+                              value={newTariffForm.funeral_suma}
+                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, funeral_suma: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewTariffModal(false)}
+                          className="btn btn-secondary"
+                          disabled={submittingNewTariff}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={submittingNewTariff}
+                          style={{ fontWeight: 700, padding: '0.5rem 1.2rem' }}
+                        >
+                          {submittingNewTariff ? 'Guardando en Servidor...' : '✓ Guardar y Registrar en Tarifario'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
                 {tariffView === 'comparativa' 
                   ? 'Por cada rango de edad y suma asegurada se muestra la oferta más económica de cada aseguradora. Los campos vacíos indican que esa aseguradora no ofrece esa combinación.'
@@ -3301,11 +3695,11 @@ export default function AdminDashboard() {
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
-                                  checked={!!(t.atencion_medica_primaria || t.at_situ_medicamentos === 'INCL' || t.atencion_medica_primaria === 'true')}
-                                  onChange={(e) => {
-                                    handleCellChange(t.id, 'atencion_medica_primaria', e.target.checked);
-                                    handleCellChange(t.id, 'at_situ_medicamentos', e.target.checked ? 'INCL' : '');
-                                  }}
+                                  checked={!!(t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL' || t.at_situ_medicamentos === 'INCL')}
+                                  onChange={(e) => handleCellMultipleChanges(t.id, {
+                                    atencion_medica_primaria: e.target.checked,
+                                    at_situ_medicamentos: e.target.checked ? 'INCL' : ''
+                                  })}
                                   style={{ cursor: 'pointer' }}
                                   title="Atención Médica Primaria"
                                 />
@@ -3326,7 +3720,7 @@ export default function AdminDashboard() {
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
-                                  checked={!!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO'))}
+                                  checked={!!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false'))}
                                   onChange={(e) => handleCellChange(t.id, 'consultas_medicas', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
                                   title="Cons médicas"
@@ -3359,7 +3753,7 @@ export default function AdminDashboard() {
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
-                                  checked={!!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO'))}
+                                  checked={!!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO' && t.examenes_lab_imagenologia !== 'false'))}
                                   onChange={(e) => handleCellChange(t.id, 'examenes_lab_imagenologia', e.target.checked ? 'INCL' : '')}
                                   style={{ cursor: 'pointer' }}
                                   title="Exámenes"
@@ -3381,7 +3775,7 @@ export default function AdminDashboard() {
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
-                                  checked={!!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL' || !!t.maternidad_suma)}
+                                  checked={!!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL')}
                                   onChange={(e) => handleCellChange(t.id, 'maternidad', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
                                   title="Maternidad"
@@ -3414,7 +3808,7 @@ export default function AdminDashboard() {
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
-                                  checked={!!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL')}
+                                  checked={!!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL' || (typeof t.ambulancia === 'string' && t.ambulancia.length > 0 && t.ambulancia !== 'NO' && t.ambulancia !== 'false'))}
                                   onChange={(e) => handleCellChange(t.id, 'ambulancia', e.target.checked ? 'INCL' : '')}
                                   style={{ cursor: 'pointer' }}
                                   title="Ambulancia"

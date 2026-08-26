@@ -633,7 +633,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
   const { compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = req.body;
 
   if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
-    return res.status(400).json({ error: 'Faltan campos numéricos requeridos.' });
+    return res.status(400).json({ error: 'Faltan campos numéricos requeridos (Aseguradora, Edades, Suma Asegurada, Prima).' });
   }
 
   try {
@@ -649,13 +649,12 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
     const oftalmo = req.body.oftalmologia !== undefined ? (req.body.oftalmologia === true || req.body.oftalmologia === 'true' || req.body.oftalmologia === 'INCL') : false;
     const odonto = req.body.odontologia !== undefined ? (req.body.odontologia === true || req.body.odontologia === 'true' || req.body.odontologia === 'INCL') : false;
 
-    if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
+    let createdTariff = null;
 
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
       const newId = fData.tarifas.length > 0 ? Math.max(...fData.tarifas.map(t => t.id)) + 1 : 1;
-      const row = {
+      createdTariff = {
         id: newId,
         compania_id: parseInt(compania_id),
         edad_min: parseInt(edad_min),
@@ -682,12 +681,12 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         created_at: new Date().toISOString()
       };
       TARIFF_BENEFIT_FIELDS.forEach(f => {
-        if (row[f] === undefined) {
-          row[f] = req.body[f] || '';
+        if (createdTariff[f] === undefined) {
+          createdTariff[f] = req.body[f] || '';
         }
       });
-      fData.tarifas.push(row);
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      fData.tarifas.push(createdTariff);
+      db.saveFallback();
     } else {
       const q = `
         INSERT INTO tarifas (
@@ -698,8 +697,9 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
           rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
           oftalmologia, odontologia, ambulancia, ramo
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
+        RETURNING *
       `;
-      await db.query(q, [
+      const insRes = await db.query(q, [
         parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
         req.body.plan || '', req.body.pago || '',
         metodos.pago_contado, metodos.pago_semestral, metodos.pago_cuatrimestral, metodos.pago_trimestral, metodos.pago_mensual,
@@ -714,11 +714,12 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         req.body.ambulancia || '',
         req.body.ramo || 'Salud'
       ]);
+      createdTariff = insRes.rows[0];
     }
 
     await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'CREACION_TARIFA', `Nueva tarifa agregada para Compañía ID ${compania_id} (plan ${req.body.plan || 'N/A'})`);
-    res.json({ message: 'Tarifa creada correctamente.' });
+    res.json({ message: 'Tarifa creada correctamente.', tarifa: createdTariff });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al crear la tarifa.' });
@@ -748,15 +749,14 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
     const oftalmo = req.body.oftalmologia !== undefined ? (req.body.oftalmologia === true || req.body.oftalmologia === 'true' || req.body.oftalmologia === 'INCL') : false;
     const odonto = req.body.odontologia !== undefined ? (req.body.odontologia === true || req.body.odontologia === 'true' || req.body.odontologia === 'INCL') : false;
 
-    if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
+    let updatedTariff = null;
 
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
       const idx = fData.tarifas.findIndex(t => t.id === parseInt(id));
       if (idx === -1) return res.status(404).json({ error: 'Tarifa no encontrada.' });
 
-      const updated = {
+      updatedTariff = {
         ...fData.tarifas[idx],
         compania_id: parseInt(compania_id),
         edad_min: parseInt(edad_min),
@@ -783,11 +783,11 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
       };
       TARIFF_BENEFIT_FIELDS.forEach(f => {
         if (!['atencion_medica_primaria', 'medicinas', 'consultas_medicas', 'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'consultas', 'maternidad', 'oftalmologia', 'odontologia'].includes(f)) {
-          updated[f] = req.body[f] ?? updated[f] ?? '';
+          updatedTariff[f] = req.body[f] ?? updatedTariff[f] ?? '';
         }
       });
-      fData.tarifas[idx] = updated;
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      fData.tarifas[idx] = updatedTariff;
+      db.saveFallback();
     } else {
       const q = `
         UPDATE tarifas
@@ -798,6 +798,7 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
             rehabilitacion = $24, protesis = $25, muleta_silla_ruedas = $26, examenes_lab_imagenologia = $27, consultas = $28, maternidad = $29,
             oftalmologia = $30, odontologia = $31, ambulancia = $32, ramo = $33
         WHERE id = $34
+        RETURNING *
       `;
       const resUp = await db.query(q, [
         parseInt(compania_id), parseInt(edad_min), parseInt(edad_max), parseFloat(suma_asegurada), parseFloat(deducible || 0), parseFloat(prima),
@@ -816,11 +817,12 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         parseInt(id)
       ]);
       if (resUp.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
+      updatedTariff = resUp.rows[0];
     }
 
     await actualizarTarifarioMetadata(req.user.correo);
     await registrarAccion(req.user.id, req.user.correo, 'EDICION_TARIFA', `Tarifa ID ${id} modificada.`);
-    res.json({ message: 'Tarifa actualizada correctamente.' });
+    res.json({ message: 'Tarifa actualizada correctamente.', tarifa: updatedTariff });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al actualizar la tarifa.' });
@@ -837,10 +839,9 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
   }
 
   try {
+    let savedCount = 0;
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
+      const fData = db.getFallbackData();
 
       for (const t of tariffs) {
         const { id, compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = t;
@@ -895,6 +896,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             }
           });
           fData.tarifas.push(row);
+          savedCount++;
         } else {
           const idx = fData.tarifas.findIndex(item => item.id === parseInt(id));
           if (idx !== -1) {
@@ -929,10 +931,11 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               }
             });
             fData.tarifas[idx] = updated;
+            savedCount++;
           }
         }
       }
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } else {
       for (const t of tariffs) {
         const { id, compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = t;
@@ -979,6 +982,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             t.ambulancia || '',
             t.ramo || 'Salud'
           ]);
+          savedCount++;
         } else {
           const q = `
             UPDATE tarifas
@@ -1006,13 +1010,14 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             t.ramo || 'Salud',
             parseInt(id)
           ]);
+          savedCount++;
         }
       }
     }
 
     await actualizarTarifarioMetadata(req.user.correo);
-    await registrarAccion(req.user.id, req.user.correo, 'EDICION_TARIFA_LOTE', `Se actualizaron o crearon ${tariffs.length} tarifas en lote.`);
-    res.json({ message: 'Tarifas actualizadas en lote correctamente.', count: tariffs.length });
+    await registrarAccion(req.user.id, req.user.correo, 'EDICION_TARIFA_LOTE', `Se procesaron ${savedCount} tarifas en lote.`);
+    res.json({ message: 'Tarifas actualizadas en lote correctamente.', count: savedCount });
   } catch (err) {
     console.error('Error en guardado masivo:', err);
     res.status(500).json({ error: 'Error al procesar el guardado por lote de tarifas.' });
@@ -1026,12 +1031,9 @@ router.delete('/tariffs/:id', authenticateToken, async (req, res) => {
 
   try {
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
-      
+      const fData = db.getFallbackData();
       fData.tarifas = fData.tarifas.filter(t => t.id !== parseInt(id));
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } else {
       const q = `DELETE FROM tarifas WHERE id = $1`;
       const resDel = await db.query(q, [parseInt(id)]);
