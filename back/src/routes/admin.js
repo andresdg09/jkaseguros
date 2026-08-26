@@ -518,11 +518,18 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
     const fileContent = req.file.buffer.toString('utf8');
     const parsedData = JSON.parse(fileContent);
 
-    if (!Array.isArray(parsedData)) {
-      return res.status(400).json({ error: 'El formato de archivo no es válido. Debe ser una lista JSON de tarifas.' });
+    let tariffList = [];
+    if (Array.isArray(parsedData)) {
+      tariffList = parsedData;
+    } else if (parsedData && Array.isArray(parsedData.tarifas)) {
+      tariffList = parsedData.tarifas;
+    } else if (parsedData && Array.isArray(parsedData.data)) {
+      tariffList = parsedData.data;
+    } else {
+      return res.status(400).json({ error: 'El formato de archivo no es válido. Debe ser una lista JSON de tarifas o un objeto con la propiedad "tarifas".' });
     }
 
-    console.log(`Cargando masivamente ${parsedData.length} tarifas...`);
+    console.log(`Cargando masivamente ${tariffList.length} tarifas...`);
 
     let loadedCount = 0;
 
@@ -537,7 +544,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
       });
 
       const nuevasTarifas = [];
-      parsedData.forEach((t, idx) => {
+      tariffList.forEach((t, idx) => {
         let cId = null;
         const compName = (t.compania || t.compania_nombre || '').trim();
         if (compName && compMap[compName.toLowerCase()]) {
@@ -639,7 +646,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
         compIdSet.add(c.id);
       });
 
-      for (const t of parsedData) {
+      for (const t of tariffList) {
         let cId = null;
         const compName = (t.compania || t.compania_nombre || '').trim();
         if (compName && compMap[compName.toLowerCase()]) {
