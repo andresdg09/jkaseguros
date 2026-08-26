@@ -765,6 +765,8 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_bimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_4_cuotas BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
@@ -775,6 +777,12 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_costo VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
   await client.query("ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT 'Salud';");
 
   // Pólizas: la modalidad colectivo/individual se reemplaza por el nombre de plan contratado
@@ -889,6 +897,8 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_bimestral BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_4_cuotas BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
@@ -899,9 +909,15 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_costo VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente BOOLEAN DEFAULT FALSE;');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT \'Salud\';');
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
-  await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'mensual'));");
+  await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual'));");
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS comisiones_asesores (

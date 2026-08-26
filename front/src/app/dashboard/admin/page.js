@@ -97,8 +97,9 @@ export default function AdminDashboard() {
     estado: 'vigente'
   });
 
-  // --- ESTADOS PARA CREACIÓN INTUITIVA DE TARIFAS ---
+  // --- ESTADOS PARA CREACIÓN E EDICIÓN INTUITIVA DE TARIFAS ---
   const [showNewTariffModal, setShowNewTariffModal] = useState(false);
+  const [editingTariffId, setEditingTariffId] = useState(null);
   const [submittingNewTariff, setSubmittingNewTariff] = useState(false);
   const [newTariffForm, setNewTariffForm] = useState({
     compania_id: '1',
@@ -113,6 +114,8 @@ export default function AdminDashboard() {
     pago_semestral: true,
     pago_cuatrimestral: false,
     pago_trimestral: true,
+    pago_bimestral: false,
+    pago_4_cuotas: false,
     pago_mensual: true,
     atencion_medica_primaria: true,
     medicinas: true,
@@ -127,6 +130,12 @@ export default function AdminDashboard() {
     maternidad_costo: '',
     oftalmologia: false,
     odontologia: false,
+    muerte_accidental: false,
+    muerte_accidental_suma: '',
+    muerte_accidental_costo: '',
+    invalidez_permanente: false,
+    invalidez_permanente_suma: '',
+    invalidez_permanente_costo: '',
     ambulancia: true,
     asist_intl_suma: '',
     asist_intl_costo: '',
@@ -155,6 +164,8 @@ export default function AdminDashboard() {
     pago_semestral: 75,
     pago_cuatrimestral: 85,
     pago_trimestral: 75,
+    pago_bimestral: 80,
+    pago_4_cuotas: 95,
     pago_mensual: 75,
     edad_min: 70,
     edad_max: 70,
@@ -172,6 +183,12 @@ export default function AdminDashboard() {
     maternidad: 85,
     oftalmologia: 95,
     odontologia: 95,
+    muerte_accidental: 95,
+    muerte_accidental_suma: 105,
+    muerte_accidental_costo: 105,
+    invalidez_permanente: 95,
+    invalidez_permanente_suma: 105,
+    invalidez_permanente_costo: 105,
     ambulancia: 90,
     maternidad_suma: 100,
     maternidad_costo: 100,
@@ -179,7 +196,7 @@ export default function AdminDashboard() {
     asist_intl_costo: 100,
     funeral_suma: 100,
     funeral_costo: 100,
-    acciones: 90
+    acciones: 110
   });
   const [comparativeColWidths, setComparativeColWidths] = useState({});
 
@@ -817,8 +834,55 @@ export default function AdminDashboard() {
     setModifiedRows(prev => ({ ...prev, [id]: true }));
   };
 
-  // --- CREAR TARIFA DESDE MODAL GUIADO ---
-  const handleCreateNewTariff = async (e) => {
+  // --- ABRIR MODAL PARA EDITAR TARIFA EXISTENTE ---
+  const handleOpenEditTariffModal = (t) => {
+    setEditingTariffId(t.id);
+    setNewTariffForm({
+      compania_id: String(t.compania_id || companies[0]?.id || 1),
+      plan: t.plan || '',
+      ramo: t.ramo || 'Salud',
+      edad_min: t.edad_min,
+      edad_max: t.edad_max,
+      suma_asegurada: t.suma_asegurada,
+      deducible: t.deducible ?? 0,
+      prima: t.prima,
+      pago_contado: !!t.pago_contado,
+      pago_semestral: !!t.pago_semestral,
+      pago_cuatrimestral: !!t.pago_cuatrimestral,
+      pago_trimestral: !!t.pago_trimestral,
+      pago_bimestral: !!t.pago_bimestral,
+      pago_4_cuotas: !!t.pago_4_cuotas,
+      pago_mensual: !!t.pago_mensual,
+      atencion_medica_primaria: !!(t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL' || t.at_situ_medicamentos === 'INCL'),
+      medicinas: !!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL'),
+      consultas_medicas: !!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false')),
+      rehabilitacion: !!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL'),
+      protesis: !!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL'),
+      muleta_silla_ruedas: !!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL'),
+      examenes_lab_imagenologia: !!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO' && t.examenes_lab_imagenologia !== 'false')),
+      consultas: !!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL'),
+      maternidad: !!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL'),
+      maternidad_suma: t.maternidad_suma || '',
+      maternidad_costo: t.maternidad_costo || '',
+      oftalmologia: !!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL'),
+      odontologia: !!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL'),
+      muerte_accidental: !!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL'),
+      muerte_accidental_suma: t.muerte_accidental_suma || '',
+      muerte_accidental_costo: t.muerte_accidental_costo || '',
+      invalidez_permanente: !!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL'),
+      invalidez_permanente_suma: t.invalidez_permanente_suma || '',
+      invalidez_permanente_costo: t.invalidez_permanente_costo || '',
+      ambulancia: !!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL' || (typeof t.ambulancia === 'string' && t.ambulancia.length > 0 && t.ambulancia !== 'NO' && t.ambulancia !== 'false')),
+      asist_intl_suma: t.asist_intl_suma || '',
+      asist_intl_costo: t.asist_intl_costo || '',
+      funeral_suma: t.funeral_suma || '',
+      funeral_costo: t.funeral_costo || ''
+    });
+    setShowNewTariffModal(true);
+  };
+
+  // --- CREAR O EDITAR TARIFA DESDE MODAL GUIADO ---
+  const handleSaveTariffModal = async (e) => {
     e.preventDefault();
     if (!newTariffForm.compania_id) {
       showToast('Debe seleccionar una compañía aseguradora.', 'error');
@@ -852,8 +916,12 @@ export default function AdminDashboard() {
         ambulancia: newTariffForm.ambulancia ? 'INCL' : ''
       };
 
-      const res = await fetch(`${API_URL}/admin/tariffs`, {
-        method: 'POST',
+      const isEdit = !!editingTariffId;
+      const url = isEdit ? `${API_URL}/admin/tariffs/${editingTariffId}` : `${API_URL}/admin/tariffs`;
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -861,10 +929,11 @@ export default function AdminDashboard() {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al crear la tarifa');
+      if (!res.ok) throw new Error(data.error || (isEdit ? 'Error al actualizar la tarifa' : 'Error al crear la tarifa'));
 
-      showToast('¡Tarifa creada y agregada al tarifario con éxito!');
+      showToast(isEdit ? '¡Tarifa actualizada con éxito en el tarifario!' : '¡Tarifa creada y agregada al tarifario con éxito!');
       setShowNewTariffModal(false);
+      setEditingTariffId(null);
       await loadData();
     } catch (err) {
       showToast(err.message, 'error');
@@ -898,6 +967,8 @@ export default function AdminDashboard() {
           pago_semestral: !!tariff.pago_semestral,
           pago_cuatrimestral: !!tariff.pago_cuatrimestral,
           pago_trimestral: !!tariff.pago_trimestral,
+          pago_bimestral: !!tariff.pago_bimestral,
+          pago_4_cuotas: !!tariff.pago_4_cuotas,
           pago_mensual: !!tariff.pago_mensual,
           maternidad_suma: tariff.maternidad_suma || '',
           maternidad_costo: tariff.maternidad_costo || '',
@@ -917,6 +988,12 @@ export default function AdminDashboard() {
           maternidad: !!(tariff.maternidad === true || tariff.maternidad === 'true' || tariff.maternidad === 'INCL'),
           oftalmologia: !!(tariff.oftalmologia === true || tariff.oftalmologia === 'true' || tariff.oftalmologia === 'INCL'),
           odontologia: !!(tariff.odontologia === true || tariff.odontologia === 'true' || tariff.odontologia === 'INCL'),
+          muerte_accidental: !!(tariff.muerte_accidental === true || tariff.muerte_accidental === 'true' || tariff.muerte_accidental === 'INCL'),
+          muerte_accidental_suma: tariff.muerte_accidental_suma || '',
+          muerte_accidental_costo: tariff.muerte_accidental_costo || '',
+          invalidez_permanente: !!(tariff.invalidez_permanente === true || tariff.invalidez_permanente === 'true' || tariff.invalidez_permanente === 'INCL'),
+          invalidez_permanente_suma: tariff.invalidez_permanente_suma || '',
+          invalidez_permanente_costo: tariff.invalidez_permanente_costo || '',
           ambulancia: tariff.ambulancia || ''
         })
       });
@@ -964,6 +1041,29 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleExportCurrentTariffJson = () => {
+    try {
+      if (!tariffs || tariffs.length === 0) {
+        showToast('No hay tarifas registradas para descargar.', 'warning');
+        return;
+      }
+      const jsonStr = JSON.stringify(tariffs, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `tarifario_jkaseguros_actual_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('¡Archivo JSON del tarifario descargado exitosamente!');
+    } catch (err) {
+      showToast('Error al exportar JSON: ' + err.message, 'error');
+    }
+  };
+
   const handleAddTariffRow = () => {
     const tempId = `new-${Date.now()}`;
     const defaultCompanyId = companies[0]?.id || 1;
@@ -975,6 +1075,8 @@ export default function AdminDashboard() {
       pago_semestral: false,
       pago_cuatrimestral: false,
       pago_trimestral: false,
+      pago_bimestral: false,
+      pago_4_cuotas: false,
       pago_mensual: false,
       ramo: 'Salud',
       edad_min: 18,
@@ -1000,6 +1102,12 @@ export default function AdminDashboard() {
       maternidad: false,
       oftalmologia: false,
       odontologia: false,
+      muerte_accidental: false,
+      muerte_accidental_suma: '',
+      muerte_accidental_costo: '',
+      invalidez_permanente: false,
+      invalidez_permanente_suma: '',
+      invalidez_permanente_costo: '',
       ambulancia: 'INCL'
     };
     setTariffs(prev => [newRow, ...prev]);
@@ -2893,7 +3001,7 @@ export default function AdminDashboard() {
                 </div>
               </h3>
 
-              {/* MODAL GUIADO PARA CREAR NUEVA TARIFA */}
+              {/* MODAL GUIADO PARA CREAR / EDITAR TARIFA */}
               {showNewTariffModal && (
                 <div style={{
                   position: 'fixed',
@@ -2905,18 +3013,22 @@ export default function AdminDashboard() {
                   <div className="card" style={{ maxWidth: '750px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
                       <div>
-                        <h4 style={{ margin: 0, color: 'var(--primary)', fontWeight: 800, fontSize: '1.15rem' }}>✨ Agregar Nueva Tarifa al Tarifario</h4>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Configura los datos del plan, edades, prima y coberturas incluidas.</p>
+                        <h4 style={{ margin: 0, color: 'var(--primary)', fontWeight: 800, fontSize: '1.15rem' }}>
+                          {editingTariffId ? `✏️ Editar Tarifa (#${editingTariffId} - ${newTariffForm.plan || 'Plan'})` : '✨ Agregar Nueva Tarifa al Tarifario'}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {editingTariffId ? 'Modifica los valores del plan, edades, prima y coberturas de esta tarifa.' : 'Configura los datos del plan, edades, prima y coberturas incluidas.'}
+                        </p>
                       </div>
                       <button 
-                        onClick={() => setShowNewTariffModal(false)}
+                        onClick={() => { setShowNewTariffModal(false); setEditingTariffId(null); }}
                         style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-muted)' }}
                       >
                         ✕
                       </button>
                     </div>
 
-                    <form onSubmit={handleCreateNewTariff} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                    <form onSubmit={handleSaveTariffModal} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                       {/* SECCIÓN 1: ASEGURADORA Y PRODUCTO */}
                       <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
                         <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>🏢 1. Aseguradora y Plan</h5>
@@ -3026,15 +3138,17 @@ export default function AdminDashboard() {
                       {/* SECCIÓN 3: FRECUENCIAS DE PAGO */}
                       <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
                         <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>💳 3. Modalidades de Pago Habilitadas</h5>
-                        <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                           {[
                             { key: 'pago_contado', label: 'Contado (Anual)' },
-                            { key: 'pago_semestral', label: 'Semestral' },
-                            { key: 'pago_cuatrimestral', label: 'Cuatrimestral' },
-                            { key: 'pago_trimestral', label: 'Trimestral' },
-                            { key: 'pago_mensual', label: 'Mensual' }
+                            { key: 'pago_semestral', label: 'Semestral (2)' },
+                            { key: 'pago_cuatrimestral', label: 'Cuatrimestral (3)' },
+                            { key: 'pago_trimestral', label: 'Trimestral (4)' },
+                            { key: 'pago_bimestral', label: 'Bimestral (6)' },
+                            { key: 'pago_4_cuotas', label: '4 Cuotas Consecutivas (Mensual)' },
+                            { key: 'pago_mensual', label: 'Mensual (12)' }
                           ].map(f => (
-                            <label key={f.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                            <label key={f.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, background: '#fff', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                               <input
                                 type="checkbox"
                                 checked={!!newTariffForm[f.key]}
@@ -3062,6 +3176,8 @@ export default function AdminDashboard() {
                             { key: 'muleta_silla_ruedas', label: '♿ Muleta + Silla de Ruedas' },
                             { key: 'oftalmologia', label: '👓 Oftalmología' },
                             { key: 'odontologia', label: '🦷 Odontología' },
+                            { key: 'muerte_accidental', label: '🕊️ Muerte Accidental' },
+                            { key: 'invalidez_permanente', label: '🩼 Invalidez Permanente' },
                             { key: 'maternidad', label: '🤰 Cobertura de Maternidad' }
                           ].map(b => (
                             <label key={b.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', background: '#fff', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
@@ -3075,40 +3191,136 @@ export default function AdminDashboard() {
                           ))}
                         </div>
 
-                        {/* Asistencias internacionales y gastos funerarios */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginTop: '0.75rem' }}>
-                          <div>
-                            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Maternidad Suma ($)</label>
-                            <input
-                              type="text"
-                              placeholder="Ej. 3000"
-                              className="form-input"
-                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}
-                              value={newTariffForm.maternidad_suma}
-                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, maternidad_suma: e.target.value, maternidad: !!e.target.value || prev.maternidad }))}
-                            />
-                          </div>
-                          <div>
-                            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Asistencia Viajes Suma ($)</label>
-                            <input
-                              type="text"
-                              placeholder="Ej. 5000"
-                              className="form-input"
-                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}
-                              value={newTariffForm.asist_intl_suma}
-                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, asist_intl_suma: e.target.value }))}
-                            />
-                          </div>
-                          <div>
-                            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Gastos Funerarios Suma ($)</label>
-                            <input
-                              type="text"
-                              placeholder="Ej. 1000"
-                              className="form-input"
-                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}
-                              value={newTariffForm.funeral_suma}
-                              onChange={(e) => setNewTariffForm(prev => ({ ...prev, funeral_suma: e.target.value }))}
-                            />
+                        {/* Coberturas con Sumas Aseguradas y Costos Adicionales */}
+                        <div style={{ marginTop: '1rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.75rem' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
+                            📋 Sumas Aseguradas y Costos Adicionales (dejar en 0 o vacío si está 100% incluido):
+                          </span>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                            {/* Muerte Accidental */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🕊️ Muerte Accidental
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. 10000"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.muerte_accidental_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, muerte_accidental_suma: e.target.value, muerte_accidental: !!e.target.value || prev.muerte_accidental }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.muerte_accidental_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, muerte_accidental_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Invalidez Permanente */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🩼 Invalidez Permanente
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. 10000"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.invalidez_permanente_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, invalidez_permanente_suma: e.target.value, invalidez_permanente: !!e.target.value || prev.invalidez_permanente }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.invalidez_permanente_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, invalidez_permanente_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Maternidad */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🤰 Maternidad
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. 3000"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.maternidad_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, maternidad_suma: e.target.value, maternidad: !!e.target.value || prev.maternidad }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.maternidad_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, maternidad_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Asistencia Viajes */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                ✈️ Asistencia Viajes
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. 5000"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.asist_intl_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, asist_intl_suma: e.target.value }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.asist_intl_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, asist_intl_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Gastos Funerarios */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                ⚱️ Gastos Funerarios
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. 1000"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.funeral_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, funeral_suma: e.target.value }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.funeral_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, funeral_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3116,7 +3328,7 @@ export default function AdminDashboard() {
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                         <button
                           type="button"
-                          onClick={() => setShowNewTariffModal(false)}
+                          onClick={() => { setShowNewTariffModal(false); setEditingTariffId(null); }}
                           className="btn btn-secondary"
                           disabled={submittingNewTariff}
                         >
@@ -3128,7 +3340,7 @@ export default function AdminDashboard() {
                           disabled={submittingNewTariff}
                           style={{ fontWeight: 700, padding: '0.5rem 1.2rem' }}
                         >
-                          {submittingNewTariff ? 'Guardando en Servidor...' : '✓ Guardar y Registrar en Tarifario'}
+                          {submittingNewTariff ? 'Guardando en Servidor...' : (editingTariffId ? '✓ Guardar Cambios en Tarifa' : '✓ Guardar y Registrar en Tarifario')}
                         </button>
                       </div>
                     </form>
@@ -3218,33 +3430,43 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Botón/menú de carga masiva JSON */}
+                {/* Botón/menú de carga y descarga JSON */}
                 <details style={{ background: 'var(--secondary)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border)' }}>
-                  <summary style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--primary)', userSelect: 'none' }}>Opciones de Carga Masiva JSON</summary>
+                  <summary style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--primary)', userSelect: 'none' }}>⚙️ Opciones de Carga y Descarga JSON</summary>
                   <div style={{ marginTop: '1rem', cursor: 'default' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '1rem' }}>
-                      Sube un archivo JSON estructurado para sobreescribir y actualizar masivamente la matriz.
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                      Descarga el tarifario actual o sube un archivo JSON para actualizarlo masivamente.
                     </p>
-                    <form onSubmit={handleBulkUpload} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <button
+                        type="button"
+                        onClick={handleExportCurrentTariffJson}
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem', width: '100%', justifyContent: 'center', background: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+                      >
+                        📥 Descargar Tarifario Actual (JSON)
+                      </button>
+                      <a
+                        href="/plantilla_tarifas.json"
+                        download="plantilla_tarifas.json"
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem', width: '100%', justifyContent: 'center' }}
+                      >
+                        Descargar Plantilla JSON Vacía 📄
+                      </a>
+                    </div>
+                    <form onSubmit={handleBulkUpload} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <input
                         type="file"
                         id="file-upload-input"
                         accept=".json"
                         onChange={e => setFileToUpload(e.target.files[0])}
-                        style={{ border: '1px solid var(--border)', padding: '0.35rem', borderRadius: '4px', fontSize: '0.8rem', background: '#fff' }}
+                        style={{ border: '1px solid var(--border)', padding: '0.35rem', borderRadius: '4px', fontSize: '0.8rem', background: '#fff', flex: 1 }}
                       />
                       <button type="submit" className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} disabled={loading}>
-                        Ejecutar Carga JSON
+                        Subir JSON
                       </button>
                     </form>
-                    <a
-                      href="/plantilla_tarifas.json"
-                      download="plantilla_tarifas.json"
-                      className="btn btn-secondary"
-                      style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem', width: '100%', justifyContent: 'center' }}
-                    >
-                      Descargar Plantilla JSON 📥
-                    </a>
                   </div>
                 </details>
               </div>
@@ -3333,7 +3555,19 @@ export default function AdminDashboard() {
                               }
                               return (
                                 <React.Fragment key={c.id}>
-                                  <td style={{ border: '1px solid var(--border)', padding: '0.3rem', textAlign: 'center', fontSize: '0.8rem' }}>{cell.plan || 'N/A'}</td>
+                                  <td style={{ border: '1px solid var(--border)', padding: '0.3rem', textAlign: 'center', fontSize: '0.8rem' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}>
+                                      <span style={{ fontWeight: 600 }}>{cell.plan || 'N/A'}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditTariffModal(cell)}
+                                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', padding: '0.1rem', opacity: 0.8 }}
+                                        title="Editar esta tarifa individual en el modal guiado"
+                                      >
+                                        ✏️
+                                      </button>
+                                    </div>
+                                  </td>
                                   <td style={{ border: '1px solid var(--border)', padding: '0.2rem', background: isModified ? '#fffaf0' : 'transparent' }}>
                                     <input
                                       type="number"
@@ -3369,6 +3603,8 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.pago_semestral}px` }} />
                       <col style={{ width: `${detailedColWidths.pago_cuatrimestral}px` }} />
                       <col style={{ width: `${detailedColWidths.pago_trimestral}px` }} />
+                      <col style={{ width: `${detailedColWidths.pago_bimestral}px` }} />
+                      <col style={{ width: `${detailedColWidths.pago_4_cuotas}px` }} />
                       <col style={{ width: `${detailedColWidths.pago_mensual}px` }} />
                       <col style={{ width: `${detailedColWidths.edad_min}px` }} />
                       <col style={{ width: `${detailedColWidths.edad_max}px` }} />
@@ -3386,6 +3622,12 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.maternidad}px` }} />
                       <col style={{ width: `${detailedColWidths.oftalmologia}px` }} />
                       <col style={{ width: `${detailedColWidths.odontologia}px` }} />
+                      <col style={{ width: `${detailedColWidths.muerte_accidental}px` }} />
+                      <col style={{ width: `${detailedColWidths.muerte_accidental_suma}px` }} />
+                      <col style={{ width: `${detailedColWidths.muerte_accidental_costo}px` }} />
+                      <col style={{ width: `${detailedColWidths.invalidez_permanente}px` }} />
+                      <col style={{ width: `${detailedColWidths.invalidez_permanente_suma}px` }} />
+                      <col style={{ width: `${detailedColWidths.invalidez_permanente_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.ambulancia}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_costo}px` }} />
@@ -3424,6 +3666,14 @@ export default function AdminDashboard() {
                         <th style={{ textAlign: 'center', position: 'relative' }}>
                           Trimestral
                           <div className={`resize-handle ${resizingCol === 'pago_trimestral' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_trimestral')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Bimestral
+                          <div className={`resize-handle ${resizingCol === 'pago_bimestral' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_bimestral')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          4 Cuotas
+                          <div className={`resize-handle ${resizingCol === 'pago_4_cuotas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_4_cuotas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
                           Mensual
@@ -3494,6 +3744,30 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'odontologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'odontologia')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Muerte Accidental
+                          <div className={`resize-handle ${resizingCol === 'muerte_accidental' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'muerte_accidental')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Muerte Acc. Suma ($)
+                          <div className={`resize-handle ${resizingCol === 'muerte_accidental_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'muerte_accidental_suma')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Muerte Acc. Costo ($)
+                          <div className={`resize-handle ${resizingCol === 'muerte_accidental_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'muerte_accidental_costo')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Invalidez Perm.
+                          <div className={`resize-handle ${resizingCol === 'invalidez_permanente' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'invalidez_permanente')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Invalidez Suma ($)
+                          <div className={`resize-handle ${resizingCol === 'invalidez_permanente_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'invalidez_permanente_suma')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Invalidez Costo ($)
+                          <div className={`resize-handle ${resizingCol === 'invalidez_permanente_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'invalidez_permanente_costo')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
                           Ambulancia
                           <div className={`resize-handle ${resizingCol === 'ambulancia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ambulancia')} />
                         </th>
@@ -3530,7 +3804,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredTariffs.length === 0 ? (
                         <tr>
-                          <td colSpan="32" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan="40" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas registradas en la planilla.
                           </td>
                         </tr>
@@ -3609,6 +3883,24 @@ export default function AdminDashboard() {
                                   onChange={(e) => handleCellChange(t.id, 'pago_trimestral', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
                                   title="Trimestral"
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_bimestral}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_bimestral', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Bimestral"
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!t.pago_4_cuotas}
+                                  onChange={(e) => handleCellChange(t.id, 'pago_4_cuotas', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="4 Cuotas Consecutivas"
                                 />
                               </td>
                               <td style={{ textAlign: 'center' }}>
@@ -3804,6 +4096,32 @@ export default function AdminDashboard() {
                                 />
                               </td>
 
+                              {/* Muerte Accidental */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'muerte_accidental', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Muerte Accidental"
+                                />
+                              </td>
+                              <td>{textInput('muerte_accidental_suma')}</td>
+                              <td>{textInput('muerte_accidental_costo')}</td>
+
+                              {/* Invalidez Permanente */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL')}
+                                  onChange={(e) => handleCellChange(t.id, 'invalidez_permanente', e.target.checked)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Invalidez Permanente"
+                                />
+                              </td>
+                              <td>{textInput('invalidez_permanente_suma')}</td>
+                              <td>{textInput('invalidez_permanente_costo')}</td>
+
                               {/* Ambulancia */}
                               <td style={{ textAlign: 'center' }}>
                                 <input
@@ -3824,14 +4142,27 @@ export default function AdminDashboard() {
 
                               {/* Acciones */}
                               <td style={{ textAlign: 'center', padding: '0.2rem' }}>
-                                <button
-                                  onClick={() => handleDeleteTariff(t.id)}
-                                  className="btn"
-                                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca', cursor: 'pointer' }}
-                                  disabled={loading}
-                                >
-                                  Eliminar
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditTariffModal(t)}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                    title="Editar esta tarifa individual en el modal guiado"
+                                  >
+                                    ✏️ Editar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteTariff(t.id)}
+                                    className="btn"
+                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca', cursor: 'pointer' }}
+                                    disabled={loading}
+                                    title="Eliminar tarifa"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );

@@ -1003,7 +1003,9 @@ export default function Home() {
               const costoMat = parseExtraCost(comp.maternidad_costo);
               const costoAsist = parseExtraCost(comp.asist_intl_costo);
               const costoFuneral = parseExtraCost(comp.funeral_costo);
-              const totalExtras = costoMat + costoAsist + costoFuneral;
+              const costoMuerteAcc = parseExtraCost(comp.muerte_accidental_costo);
+              const costoInvalidez = parseExtraCost(comp.invalidez_permanente_costo);
+              const totalExtras = costoMat + costoAsist + costoFuneral + costoMuerteAcc + costoInvalidez;
               const primaBase = parseFloat(comp.prima || 0);
               const primaConExtras = primaBase + totalExtras;
 
@@ -1067,9 +1069,21 @@ export default function Home() {
                         {totalExtras > 0 ? '➕ EXTRAS OPCIONALES (CON COSTO):' : '➕ COBERTURAS DEL PLAN:'}
                       </span>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
+                        <span className="result-feature-label">Muerte Accidental:</span>
+                        <span className="result-feature-value">
+                          {comp.muerte_accidental_suma ? `${comp.muerte_accidental_suma}${costoMuerteAcc > 0 ? ` (+${costoMuerteAcc.toFixed(2)}/año)` : ''}` : (comp.muerte_accidental ? 'Incluida' : 'No incluida')}
+                        </span>
+                      </div>
+                      <div className="result-feature" style={{ padding: '0.15rem 0' }}>
+                        <span className="result-feature-label">Invalidez Perm.:</span>
+                        <span className="result-feature-value">
+                          {comp.invalidez_permanente_suma ? `${comp.invalidez_permanente_suma}${costoInvalidez > 0 ? ` (+${costoInvalidez.toFixed(2)}/año)` : ''}` : (comp.invalidez_permanente ? 'Incluida' : 'No incluida')}
+                        </span>
+                      </div>
+                      <div className="result-feature" style={{ padding: '0.15rem 0' }}>
                         <span className="result-feature-label">Maternidad:</span>
                         <span className="result-feature-value">
-                          {comp.maternidad_suma ? `${comp.maternidad_suma}${costoMat > 0 ? ` (+${costoMat.toFixed(2)}/año)` : ''}` : 'No incluida'}
+                          {comp.maternidad_suma ? `${comp.maternidad_suma}${costoMat > 0 ? ` (+${costoMat.toFixed(2)}/año)` : ''}` : (comp.maternidad ? 'Incluida' : 'No incluida')}
                         </span>
                       </div>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
@@ -1096,8 +1110,10 @@ export default function Home() {
                         {comp.pago_semestral && <span style={{ fontSize: '0.7rem', background: '#fef3c7', color: '#b45309', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Semestral (2)</span>}
                         {comp.pago_cuatrimestral && <span style={{ fontSize: '0.7rem', background: '#ffedd5', color: '#c2410c', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Cuatrimestral (3)</span>}
                         {comp.pago_trimestral && <span style={{ fontSize: '0.7rem', background: '#f3e8ff', color: '#7e22ce', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Trimestral (4)</span>}
+                        {comp.pago_bimestral && <span style={{ fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Bimestral (6)</span>}
+                        {comp.pago_4_cuotas && <span style={{ fontSize: '0.7rem', background: '#e0e7ff', color: '#3730a3', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>4 Cuotas (4)</span>}
                         {comp.pago_mensual && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>Mensual (12)</span>}
-                        {!comp.pago_contado && !comp.pago_semestral && !comp.pago_cuatrimestral && !comp.pago_trimestral && !comp.pago_mensual && (
+                        {!comp.pago_contado && !comp.pago_semestral && !comp.pago_cuatrimestral && !comp.pago_trimestral && !comp.pago_bimestral && !comp.pago_4_cuotas && !comp.pago_mensual && (
                           <span style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>Contado</span>
                         )}
                       </div>

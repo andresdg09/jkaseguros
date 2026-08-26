@@ -16,6 +16,8 @@ const FREQ_OPTIONS = [
   { key: 'semestral', label: 'Semestral (2 cuotas)', cuotas: 2 },
   { key: 'cuatrimestral', label: 'Cuatrimestral (3 cuotas)', cuotas: 3 },
   { key: 'trimestral', label: 'Trimestral (4 cuotas)', cuotas: 4 },
+  { key: 'bimestral', label: 'Bimestral (6 cuotas)', cuotas: 6 },
+  { key: '4_cuotas', label: '4 Cuotas Consecutivas (Mensual)', cuotas: 4 },
   { key: 'mensual', label: 'Mensual (12 cuotas)', cuotas: 12 },
 ];
 
@@ -51,6 +53,8 @@ export default function CotizacionPublicaPage() {
         else if (comp.pago_semestral) initialFreqs[key] = 'semestral';
         else if (comp.pago_cuatrimestral) initialFreqs[key] = 'cuatrimestral';
         else if (comp.pago_trimestral) initialFreqs[key] = 'trimestral';
+        else if (comp.pago_bimestral) initialFreqs[key] = 'bimestral';
+        else if (comp.pago_4_cuotas) initialFreqs[key] = '4_cuotas';
         else if (comp.pago_mensual) initialFreqs[key] = 'mensual';
         else initialFreqs[key] = 'contado';
       });
@@ -71,17 +75,19 @@ export default function CotizacionPublicaPage() {
   // Helper: obtener opciones de frecuencia disponibles para un plan
   const getAvailableFreqs = (comp) => {
     const available = [];
-    if (comp.pago_contado) available.push(FREQ_OPTIONS[0]);
-    if (comp.pago_semestral) available.push(FREQ_OPTIONS[1]);
-    if (comp.pago_cuatrimestral) available.push(FREQ_OPTIONS[2]);
-    if (comp.pago_trimestral) available.push(FREQ_OPTIONS[3]);
-    if (comp.pago_mensual) available.push(FREQ_OPTIONS[4]);
+    if (comp.pago_contado) available.push(FREQ_OPTIONS.find(f => f.key === 'contado'));
+    if (comp.pago_semestral) available.push(FREQ_OPTIONS.find(f => f.key === 'semestral'));
+    if (comp.pago_cuatrimestral) available.push(FREQ_OPTIONS.find(f => f.key === 'cuatrimestral'));
+    if (comp.pago_trimestral) available.push(FREQ_OPTIONS.find(f => f.key === 'trimestral'));
+    if (comp.pago_bimestral) available.push(FREQ_OPTIONS.find(f => f.key === 'bimestral'));
+    if (comp.pago_4_cuotas) available.push(FREQ_OPTIONS.find(f => f.key === '4_cuotas'));
+    if (comp.pago_mensual) available.push(FREQ_OPTIONS.find(f => f.key === 'mensual'));
     
-    // Si ninguna está marcada o solo 1, ofrecer todas las opciones estándar para que el cliente tenga flexibilidad
-    if (available.length <= 1) {
+    const valid = available.filter(Boolean);
+    if (valid.length <= 1) {
       return FREQ_OPTIONS;
     }
-    return available;
+    return valid;
   };
 
   const handleAcceptOption = async (option, sumVal) => {
@@ -284,7 +290,9 @@ export default function CotizacionPublicaPage() {
           const costoMat = parseExtraCost(comp.maternidad_costo);
           const costoAsist = parseExtraCost(comp.asist_intl_costo);
           const costoFuneral = parseExtraCost(comp.funeral_costo);
-          const totalExtras = costoMat + costoAsist + costoFuneral;
+          const costoMuerteAcc = parseExtraCost(comp.muerte_accidental_costo);
+          const costoInvalidez = parseExtraCost(comp.invalidez_permanente_costo);
+          const totalExtras = costoMat + costoAsist + costoFuneral + costoMuerteAcc + costoInvalidez;
           const primaBase = parseFloat(comp.prima || 0);
           const primaConExtras = primaBase + totalExtras;
 
@@ -298,6 +306,8 @@ export default function CotizacionPublicaPage() {
             { name: 'Prótesis', active: !!comp.protesis },
             { name: 'Muleta + Silla', active: !!comp.muleta_silla_ruedas },
             { name: 'Consultas', active: !!comp.consultas },
+            { name: 'Muerte Accidental', active: !!(comp.muerte_accidental || (comp.muerte_accidental_suma && costoMuerteAcc === 0)) },
+            { name: 'Invalidez Perm.', active: !!(comp.invalidez_permanente || (comp.invalidez_permanente_suma && costoInvalidez === 0)) },
             { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
             { name: 'Oftalmología', active: !!comp.oftalmologia },
             { name: 'Odontología', active: !!comp.odontologia }
@@ -384,7 +394,13 @@ export default function CotizacionPublicaPage() {
                 </span>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
                   <div>
-                    <strong>🤰 Maternidad:</strong> {comp.maternidad_suma ? comp.maternidad_suma : 'No incluida'} {costoMat > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoMat.toFixed(2)}/año)</span>}
+                    <strong>🕊️ Muerte Accidental:</strong> {comp.muerte_accidental_suma ? comp.muerte_accidental_suma : (comp.muerte_accidental ? 'Incluida' : 'No incluida')} {costoMuerteAcc > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoMuerteAcc.toFixed(2)}/año)</span>}
+                  </div>
+                  <div>
+                    <strong>🩼 Invalidez Perm.:</strong> {comp.invalidez_permanente_suma ? comp.invalidez_permanente_suma : (comp.invalidez_permanente ? 'Incluida' : 'No incluida')} {costoInvalidez > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoInvalidez.toFixed(2)}/año)</span>}
+                  </div>
+                  <div>
+                    <strong>🤰 Maternidad:</strong> {comp.maternidad_suma ? comp.maternidad_suma : (comp.maternidad ? 'Incluida' : 'No incluida')} {costoMat > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoMat.toFixed(2)}/año)</span>}
                   </div>
                   <div>
                     <strong>🌍 Asist. Internacional:</strong> {comp.asist_intl_suma ? comp.asist_intl_suma : 'No incluida'} {costoAsist > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>(+${costoAsist.toFixed(2)}/año)</span>}
