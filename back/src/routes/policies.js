@@ -313,9 +313,7 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
     let updatedPol;
 
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
+      const fData = db.getFallbackData();
 
       const idx = fData.polizas.findIndex(p => p.id === parseInt(id));
       if (idx === -1) return res.status(404).json({ error: 'Póliza no encontrada.' });
@@ -355,7 +353,7 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       }
 
       updatedPol = fData.polizas[idx];
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } else {
       // Postgres
       const oldRes = await db.query('SELECT estado, prima_anual, asesor_id, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);
@@ -441,9 +439,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     let advisorId = null;
     if (req.user.rango === 'asesor') {
       if (db.isFallback()) {
-        const fallbackFilePath = './data/fallback_db.json';
-        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-        const fData = JSON.parse(fileContent);
+        const fData = db.getFallbackData();
         const aseRes = fData.asesores.find(a => a.usuario_id === req.user.id);
         if (!aseRes) return res.status(403).json({ error: 'Asesor no encontrado.' });
         advisorId = aseRes.id;
@@ -455,9 +451,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     }
 
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
+      const fData = db.getFallbackData();
 
       for (const policy of policies) {
         const { id, plan, suma_asegurada, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura } = policy;
@@ -499,7 +493,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
         }
       }
 
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } else {
       for (const policy of policies) {
         const { id, plan, suma_asegurada, deducible, prima_anual, estado, motivo_rechazo, frecuencia_pago, tipo_negocio, tipo_cobertura } = policy;
@@ -571,9 +565,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
   try {
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
-      const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-      const fData = JSON.parse(fileContent);
+      const fData = db.getFallbackData();
 
       const idx = fData.polizas.findIndex(p => p.id === parseInt(id));
       if (idx === -1) return res.status(404).json({ error: 'Póliza no encontrada.' });
@@ -605,7 +597,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
       }
 
-      fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+      db.saveFallback();
     } else {
       // PostgreSQL
       const oldRes = await db.query('SELECT estado, frecuencia_pago FROM polizas WHERE id = $1', [parseInt(id)]);

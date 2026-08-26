@@ -132,7 +132,7 @@ export function AuthProvider({ children }) {
     window.fetch = async (...args) => {
       try {
         const res = await originalFetch(...args);
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401) {
           const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
           if (!url.includes('/auth/login') && !url.includes('/auth/register') && !url.includes('/public/')) {
             logout();

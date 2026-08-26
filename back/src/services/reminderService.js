@@ -42,10 +42,8 @@ export async function procesarRecordatoriosPolizas() {
     // 1. Obtener pólizas en negociación
     let polizas = [];
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
       try {
-        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-        const fData = JSON.parse(fileContent);
+        const fData = db.getFallbackData();
         polizas = fData.polizas
           .filter(p => p.estado === 'negociacion')
           .map(p => {
@@ -107,13 +105,11 @@ export async function procesarRecordatoriosPolizas() {
         
         // Actualizar en base de datos
         if (db.isFallback()) {
-          const fallbackFilePath = './data/fallback_db.json';
-          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-          const fData = JSON.parse(fileContent);
+          const fData = db.getFallbackData();
           const idx = fData.polizas.findIndex(pol => pol.id === p.id);
           if (idx !== -1) {
             fData.polizas[idx].estado = 'anulada';
-            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+            db.saveFallback();
           }
         } else {
           await db.query("UPDATE polizas SET estado = 'anulada' WHERE id = $1", [p.id]);
@@ -157,13 +153,11 @@ export async function procesarRecordatoriosPolizas() {
         
         // Actualizar en base de datos
         if (db.isFallback()) {
-          const fallbackFilePath = './data/fallback_db.json';
-          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-          const fData = JSON.parse(fileContent);
+          const fData = db.getFallbackData();
           const idx = fData.polizas.findIndex(pol => pol.id === p.id);
           if (idx !== -1) {
             fData.polizas[idx].recordatorio_5d = true;
-            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+            db.saveFallback();
           }
         } else {
           await db.query("UPDATE polizas SET recordatorio_5d = true WHERE id = $1", [p.id]);
@@ -194,13 +188,11 @@ export async function procesarRecordatoriosPolizas() {
 
         // Actualizar en base de datos
         if (db.isFallback()) {
-          const fallbackFilePath = './data/fallback_db.json';
-          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-          const fData = JSON.parse(fileContent);
+          const fData = db.getFallbackData();
           const idx = fData.polizas.findIndex(pol => pol.id === p.id);
           if (idx !== -1) {
             fData.polizas[idx].recordatorio_48h = true;
-            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+            db.saveFallback();
           }
         } else {
           await db.query("UPDATE polizas SET recordatorio_48h = true WHERE id = $1", [p.id]);
@@ -231,13 +223,11 @@ export async function procesarRecordatoriosPolizas() {
 
         // Actualizar en base de datos
         if (db.isFallback()) {
-          const fallbackFilePath = './data/fallback_db.json';
-          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-          const fData = JSON.parse(fileContent);
+          const fData = db.getFallbackData();
           const idx = fData.polizas.findIndex(pol => pol.id === p.id);
           if (idx !== -1) {
             fData.polizas[idx].recordatorio_24h = true;
-            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+            db.saveFallback();
           }
         } else {
           await db.query("UPDATE polizas SET recordatorio_24h = true WHERE id = $1", [p.id]);
@@ -329,10 +319,8 @@ export async function procesarRecordatoriosPagos() {
     let pagos = [];
 
     if (db.isFallback()) {
-      const fallbackFilePath = './data/fallback_db.json';
       try {
-        const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-        const fData = JSON.parse(fileContent);
+        const fData = db.getFallbackData();
         pagos = fData.pagos
           .filter(pa => pa.estado_pago === 'pendiente' || pa.estado_pago === 'vencido')
           .map(pa => {
@@ -403,13 +391,11 @@ export async function procesarRecordatoriosPagos() {
         console.log(`✉️ Enviando recordatorio preventivo de 2 días para ${cuotaLabel} de la póliza ${pa.codigo_poliza}.`);
 
         if (db.isFallback()) {
-          const fallbackFilePath = './data/fallback_db.json';
-          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-          const fData = JSON.parse(fileContent);
+          const fData = db.getFallbackData();
           const idx = fData.pagos.findIndex(p => p.id === pa.id);
           if (idx !== -1) {
             fData.pagos[idx].recordatorio_2d = true;
-            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+            db.saveFallback();
           }
         } else {
           await db.query('UPDATE pagos SET recordatorio_2d = true WHERE id = $1', [pa.id]);
@@ -453,14 +439,12 @@ export async function procesarRecordatoriosPagos() {
 
         // Actualizar a estado 'vencido'
         if (db.isFallback()) {
-          const fallbackFilePath = './data/fallback_db.json';
-          const fileContent = fs.readFileSync(fallbackFilePath, 'utf8');
-          const fData = JSON.parse(fileContent);
+          const fData = db.getFallbackData();
           const idx = fData.pagos.findIndex(p => p.id === pa.id);
           if (idx !== -1) {
             fData.pagos[idx].estado_pago = 'vencido';
             fData.pagos[idx].recordatorio_vencido = true;
-            fs.writeFileSync(fallbackFilePath, JSON.stringify(fData, null, 2), 'utf8');
+            db.saveFallback();
           }
         } else {
           await db.query("UPDATE pagos SET estado_pago = 'vencido', recordatorio_vencido = true WHERE id = $1", [pa.id]);
