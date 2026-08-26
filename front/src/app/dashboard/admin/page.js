@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
@@ -149,7 +149,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resumen'); // 'resumen', 'polizas', 'pagos', 'roles', 'tarifas', 'trazabilidad'
   const [fileToUpload, setFileToUpload] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCompany, setFilterCompany] = useState('todas'); // 'todas' o id de aseguradora
   const [filterSuma, setFilterSuma] = useState('todas'); // 'todas' o suma asegurada
+  const [filterRamo, setFilterRamo] = useState('todos'); // 'todos' o nombre del ramo
   const [groupBySuma, setGroupBySuma] = useState(false);
   const [expandedPolicies, setExpandedPolicies] = useState({});
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('todos'); // 'todos', 'en_revision', 'pendiente', 'pagado', 'vencido'
@@ -1229,16 +1231,17 @@ export default function AdminDashboard() {
 
       showToast(`¡Carga completada! Se procesaron ${data.count} tarifas.`);
       setFileToUpload(null);
-      document.getElementById('file-upload-input').value = '';
-      loadData();
+      const fileInput = document.getElementById('file-upload-input');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      await loadData();
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
-
-  if (!hydrated || !isLoggedIn || user?.rango !== 'admin') return null;
 
   // --- CÁLCULO DE MÉTRICAS KPI ---
   const totalPolizas = policies.length;
@@ -1386,32 +1389,58 @@ export default function AdminDashboard() {
   });
 
   // Sumas aseguradas disponibles (extraídas dinámicamente o del catálogo base)
-  const SUMA_ASEGURADA_OPTIONS = (() => {
+  const SUMA_ASEGURADA_OPTIONS = useMemo(() => {
     const fromTariffs = [...new Set(tariffs.map(t => parseFloat(t.suma_asegurada)).filter(Boolean))];
     const base = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000];
-    const combined = [...new Set([...base, ...fromTariffs])].sort((a, b) => a - b);
-    return combined;
-  })();
+    return [...new Set([...base, ...fromTariffs])].sort((a, b) => a - b);
+  }, [tariffs]);
 
-  const filteredTariffs = tariffs.filter(t => {
-    if (filterSuma !== 'todas' && parseFloat(t.suma_asegurada) !== parseFloat(filterSuma)) {
-      return false;
-    }
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    const compName = companies.find(c => c.id === parseInt(t.compania_id))?.nombre || t.compania_nombre || '';
-    return (
-      compName.toLowerCase().includes(q) ||
-      t.plan?.toLowerCase().includes(q) ||
-      String(t.edad_min).includes(q) ||
-      String(t.edad_max).includes(q) ||
-      String(t.suma_asegurada).includes(q) ||
-      String(t.prima).includes(q)
-    );
-  });
+  // Ramos disponibles
+  const RAMO_OPTIONS = useMemo(() => {
+    const fromTariffs = [...new Set(tariffs.map(t => t.ramo).filter(Boolean))];
+    const base = ['Salud', 'Patrimoniales', 'Visa', 'Vida'];
+    return [...new Set([...base, ...fromTariffs])];
+  }, [tariffs]);
+
+  // Conteo de tarifas por aseguradora para los badges en el filtro
+  const companyTariffCounts = useMemo(() => {
+    const counts = {};
+    tariffs.forEach(t => {
+      const cId = String(t.compania_id);
+      counts[cId] = (counts[cId] || 0) + 1;
+    });
+    return counts;
+  }, [tariffs]);
+
+  // Tarifas filtradas para el modo planilla (Excel)
+  const filteredTariffs = useMemo(() => {
+    return tariffs.filter(t => {
+      if (filterCompany !== 'todas' && String(t.compania_id) !== String(filterCompany)) {
+        return false;
+      }
+      if (filterSuma !== 'todas' && parseFloat(t.suma_asegurada) !== parseFloat(filterSuma)) {
+        return false;
+      }
+      if (filterRamo !== 'todos' && t.ramo !== filterRamo) {
+        return false;
+      }
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase().trim();
+      const compName = companies.find(c => c.id === parseInt(t.compania_id))?.nombre || t.compania_nombre || '';
+      return (
+        compName.toLowerCase().includes(q) ||
+        t.plan?.toLowerCase().includes(q) ||
+        String(t.edad_min).includes(q) ||
+        String(t.edad_max).includes(q) ||
+        String(t.suma_asegurada).includes(q) ||
+        String(t.prima).includes(q) ||
+        (t.ramo && t.ramo.toLowerCase().includes(q))
+      );
+    });
+  }, [tariffs, filterCompany, filterSuma, filterRamo, searchQuery, companies]);
 
   // Matriz pivote: una fila por (rango de edad, suma asegurada), con la oferta más económica de cada aseguradora
-  const pivotRows = (() => {
+  const pivotRows = useMemo(() => {
     const map = new Map();
     tariffs.forEach(t => {
       const key = `${t.edad_min}-${t.edad_max}|${t.suma_asegurada}`;
@@ -1426,21 +1455,65 @@ export default function AdminDashboard() {
       }
     });
     return [...map.values()].sort((a, b) => a.edad_min - b.edad_min || a.suma_asegurada - b.suma_asegurada);
-  })();
+  }, [tariffs]);
 
-  const filteredPivotRows = pivotRows.filter(row => {
-    if (filterSuma !== 'todas' && parseFloat(row.suma_asegurada) !== parseFloat(filterSuma)) {
-      return false;
+  // Aseguradoras visibles en la matriz comparativa según filtros activos (evita mostrar columnas vacías)
+  const visibleCompanies = useMemo(() => {
+    let list = [...companies];
+    if (filterCompany !== 'todas') {
+      list = list.filter(c => String(c.id) === String(filterCompany));
+    } else if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchingCompIds = new Set();
+      companies.forEach(c => {
+        if (c.nombre.toLowerCase().includes(q)) {
+          matchingCompIds.add(c.id);
+        }
+      });
+      tariffs.forEach(t => {
+        if (
+          t.plan?.toLowerCase().includes(q) ||
+          String(t.prima).includes(q) ||
+          (t.ramo && t.ramo.toLowerCase().includes(q))
+        ) {
+          matchingCompIds.add(parseInt(t.compania_id));
+        }
+      });
+      if (matchingCompIds.size > 0) {
+        list = list.filter(c => matchingCompIds.has(c.id));
+      }
     }
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
-    return companies.some(c => {
-      const cell = row.byCompany[c.id];
-      if (!cell) return false;
-      return c.nombre.toLowerCase().includes(q) || cell.plan?.toLowerCase().includes(q) || String(cell.prima).includes(q);
+    return list;
+  }, [companies, filterCompany, searchQuery, tariffs]);
+
+  // Filas pivote filtradas
+  const filteredPivotRows = useMemo(() => {
+    return pivotRows.filter(row => {
+      if (filterSuma !== 'todas' && parseFloat(row.suma_asegurada) !== parseFloat(filterSuma)) {
+        return false;
+      }
+      // Si la fila no tiene datos para ninguna de las aseguradoras visibles, ocultarla
+      const hasDataInVisible = visibleCompanies.some(c => !!row.byCompany[c.id]);
+      if (!hasDataInVisible) {
+        return false;
+      }
+      if (filterRamo !== 'todos') {
+        const hasRamoMatch = visibleCompanies.some(c => {
+          const cell = row.byCompany[c.id];
+          return cell && cell.ramo === filterRamo;
+        });
+        if (!hasRamoMatch) return false;
+      }
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase().trim();
+      if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
+      return visibleCompanies.some(c => {
+        const cell = row.byCompany[c.id];
+        if (!cell) return false;
+        return c.nombre.toLowerCase().includes(q) || cell.plan?.toLowerCase().includes(q) || String(cell.prima).includes(q);
+      });
     });
-  });
+  }, [pivotRows, filterSuma, filterRamo, searchQuery, visibleCompanies]);
 
 
   // --- CÁLCULO DE METRICAS / KPIS ---
@@ -1491,6 +1564,8 @@ export default function AdminDashboard() {
       totalPrima
     };
   }).sort((a, b) => b.totalPrima - a.totalPrima);
+
+  if (!hydrated || !isLoggedIn || user?.rango !== 'admin') return null;
 
   return (
     <div>
@@ -3399,39 +3474,122 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
-              {/* Buscador de planilla, filtro por Suma Asegurada y opciones */}
-              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar por aseguradora, plan, edad o prima..."
-                    className="form-input"
-                    style={{ minWidth: '260px', maxWidth: '340px', padding: '0.5rem 1rem', margin: 0 }}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+              {/* Buscador de planilla, filtros avanzados y opciones */}
+              <div style={{ marginBottom: '1.25rem', background: '#fff', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: 1 }}>
+                    {/* Buscador de texto libre */}
+                    <div style={{ position: 'relative', minWidth: '260px', maxWidth: '340px' }}>
+                      <input
+                        type="text"
+                        placeholder="🔍 Buscar aseguradora, plan, edad, prima..."
+                        className="form-input"
+                        style={{ width: '100%', padding: '0.55rem 2rem 0.55rem 0.85rem', margin: 0, fontSize: '0.85rem' }}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem' }}
+                          title="Borrar búsqueda"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
 
-                  {/* Selector / Filtro por Suma Asegurada */}
+                    {/* Filtro por Aseguradora */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>
+                        🏢 Aseguradora:
+                      </label>
+                      <select
+                        value={filterCompany}
+                        onChange={(e) => setFilterCompany(e.target.value)}
+                        className="form-input"
+                        style={{ padding: '0.5rem 0.75rem', margin: 0, fontSize: '0.82rem', fontWeight: 600, minWidth: '160px' }}
+                      >
+                        <option value="todas">Todas ({tariffs.length})</option>
+                        {companies.map(c => {
+                          const cnt = companyTariffCounts[String(c.id)] || 0;
+                          return (
+                            <option key={c.id} value={c.id}>
+                              {c.nombre} {cnt > 0 ? `(${cnt})` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    {/* Filtro por Suma Asegurada */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>
+                        🛡️ Suma:
+                      </label>
+                      <select
+                        value={filterSuma}
+                        onChange={(e) => setFilterSuma(e.target.value)}
+                        className="form-input"
+                        style={{ padding: '0.5rem 0.75rem', margin: 0, fontSize: '0.82rem', fontWeight: 600, minWidth: '130px' }}
+                      >
+                        <option value="todas">Todas</option>
+                        {SUMA_ASEGURADA_OPTIONS.map(s => (
+                          <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtro por Ramo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>
+                        🏥 Ramo:
+                      </label>
+                      <select
+                        value={filterRamo}
+                        onChange={(e) => setFilterRamo(e.target.value)}
+                        className="form-input"
+                        style={{ padding: '0.5rem 0.75rem', margin: 0, fontSize: '0.82rem', fontWeight: 600, minWidth: '110px' }}
+                      >
+                        <option value="todos">Todos</option>
+                        {RAMO_OPTIONS.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Botón Limpiar Filtros */}
+                    {(searchQuery || filterCompany !== 'todas' || filterSuma !== 'todas' || filterRamo !== 'todos') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setFilterCompany('todas');
+                          setFilterSuma('todas');
+                          setFilterRamo('todos');
+                        }}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#b91c1c' }}
+                      >
+                        ✕ Limpiar filtros
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Contador de resultados */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>
-                      🛡️ Suma Asegurada:
-                    </label>
-                    <select
-                      value={filterSuma}
-                      onChange={(e) => setFilterSuma(e.target.value)}
-                      className="form-input"
-                      style={{ padding: '0.45rem 0.8rem', margin: 0, fontSize: '0.85rem', fontWeight: 600, minWidth: '150px' }}
-                    >
-                      <option value="todas">Todas las sumas</option>
-                      {SUMA_ASEGURADA_OPTIONS.map(s => (
-                        <option key={s} value={s}>${s.toLocaleString('en-US')}</option>
-                      ))}
-                    </select>
+                    <span style={{ fontSize: '0.8rem', background: '#eff6ff', color: '#1e40af', padding: '0.35rem 0.75rem', borderRadius: '20px', fontWeight: 700, border: '1px solid #bfdbfe' }}>
+                      {tariffView === 'comparativa' 
+                        ? `${filteredPivotRows.length} ${filteredPivotRows.length === 1 ? 'fila' : 'filas'} (${visibleCompanies.length} aseguradoras)`
+                        : `${filteredTariffs.length} ${filteredTariffs.length === 1 ? 'tarifa' : 'tarifas'}`
+                      }
+                    </span>
                   </div>
                 </div>
 
-                {/* Botón/menú de carga y descarga JSON */}
-                <details style={{ background: 'var(--secondary)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border)' }}>
+                {/* Botón/menú desplegable de carga y descarga JSON */}
+                <details style={{ background: 'var(--secondary)', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border)' }}>
                   <summary style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--primary)', userSelect: 'none' }}>⚙️ Opciones de Carga y Descarga JSON</summary>
                   <div style={{ marginTop: '1rem', cursor: 'default' }}>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
@@ -3478,7 +3636,7 @@ export default function AdminDashboard() {
                     <colgroup>
                       <col style={{ width: `${comparativeColWidths['rango'] || 100}px` }} />
                       <col style={{ width: `${comparativeColWidths['suma_asegurada'] || 130}px` }} />
-                      {companies.map(c => (
+                      {visibleCompanies.map(c => (
                         <React.Fragment key={c.id}>
                           <col style={{ width: `${comparativeColWidths[`plan_${c.id}`] || 95}px` }} />
                           <col style={{ width: `${comparativeColWidths[`prima_${c.id}`] || 95}px` }} />
@@ -3497,12 +3655,12 @@ export default function AdminDashboard() {
                           Suma Asegurada ($)
                           <div className={`resize-handle ${resizingCol === 'suma_asegurada' ? 'resizing' : ''}`} onMouseDown={(e) => handleCompResizeStart(e, 'suma_asegurada', 130)} />
                         </th>
-                        {companies.map(c => (
+                        {visibleCompanies.map(c => (
                           <th key={c.id} colSpan={4} style={{ border: '1px solid var(--border)', padding: '0.5rem', textAlign: 'center' }}>{c.nombre}</th>
                         ))}
                       </tr>
                       <tr style={{ background: 'var(--secondary)' }}>
-                        {companies.map(c => (
+                        {visibleCompanies.map(c => (
                           <React.Fragment key={c.id}>
                             <th style={{ border: '1px solid var(--border)', padding: '0.4rem', fontSize: '0.75rem', position: 'relative', userSelect: 'none' }}>
                               Plan
@@ -3527,8 +3685,8 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredPivotRows.length === 0 ? (
                         <tr>
-                          <td colSpan={2 + companies.length * 4} className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
-                            No hay tarifas registradas en la planilla.
+                          <td colSpan={2 + Math.max(visibleCompanies.length, 1) * 4} className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                            No hay tarifas que coincidan con los filtros aplicados.
                           </td>
                         </tr>
                       ) : (
@@ -3540,7 +3698,7 @@ export default function AdminDashboard() {
                             <td style={{ border: '1px solid var(--border)', padding: '0.4rem', textAlign: 'center', fontWeight: 600 }}>
                               ${row.suma_asegurada.toLocaleString('en-US')}
                             </td>
-                            {companies.map(c => {
+                            {visibleCompanies.map(c => {
                               const cell = row.byCompany[c.id];
                               const isModified = cell && !!modifiedRows[cell.id];
                               if (!cell) {
