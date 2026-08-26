@@ -1977,7 +1977,6 @@ function fallbackQuery(text, params = []) {
 export const db = {
   isFallback: () => isFallback,
   getFallbackData: () => {
-    syncFallbackFromDisk();
     return fallbackData;
   },
   saveFallback: () => saveFallback(),

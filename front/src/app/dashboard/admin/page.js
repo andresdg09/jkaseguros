@@ -1445,15 +1445,24 @@ export default function AdminDashboard() {
   const pivotRows = useMemo(() => {
     const map = new Map();
     tariffs.forEach(t => {
-      const key = `${t.edad_min}-${t.edad_max}|${t.suma_asegurada}`;
+      const sAseg = parseFloat(t.suma_asegurada);
+      if (isNaN(sAseg)) return;
+      const key = `${t.edad_min}-${t.edad_max}|${sAseg}`;
       if (!map.has(key)) {
-        map.set(key, { edad_min: t.edad_min, edad_max: t.edad_max, suma_asegurada: parseFloat(t.suma_asegurada), byCompany: {} });
+        map.set(key, { edad_min: parseInt(t.edad_min), edad_max: parseInt(t.edad_max), suma_asegurada: sAseg, byCompany: {} });
       }
       const row = map.get(key);
       const compId = parseInt(t.compania_id);
-      const existing = row.byCompany[compId];
+      const compName = (t.compania_nombre || t.compania || '').toLowerCase().trim();
+      const existing = (!isNaN(compId) ? row.byCompany[compId] : null) || (compName ? row.byCompany[compName] : null);
       if (!existing || parseFloat(t.prima) < parseFloat(existing.prima)) {
-        row.byCompany[compId] = t;
+        if (!isNaN(compId)) {
+          row.byCompany[compId] = t;
+          row.byCompany[String(compId)] = t;
+        }
+        if (compName) {
+          row.byCompany[compName] = t;
+        }
       }
     });
     return [...map.values()].sort((a, b) => a.edad_min - b.edad_min || a.suma_asegurada - b.suma_asegurada);
@@ -1463,7 +1472,7 @@ export default function AdminDashboard() {
   const visibleCompanies = useMemo(() => {
     let list = [...companies];
     if (filterCompany !== 'todas') {
-      list = list.filter(c => String(c.id) === String(filterCompany));
+      list = list.filter(c => String(c.id) === String(filterCompany) || (c.nombre && c.nombre.toLowerCase().includes(filterCompany.toLowerCase())));
     } else if (searchQuery) {
       const q = searchQuery.toLowerCase().trim();
       const matchingCompIds = new Set();
@@ -1495,13 +1504,17 @@ export default function AdminDashboard() {
         return false;
       }
       // Si la fila no tiene datos para ninguna de las aseguradoras visibles, ocultarla
-      const hasDataInVisible = visibleCompanies.some(c => !!row.byCompany[c.id]);
-      if (!hasDataInVisible) {
+      const hasDataInVisible = visibleCompanies.some(c => {
+        const cName = (c.nombre || '').toLowerCase().trim();
+        return !!row.byCompany[c.id] || !!row.byCompany[String(c.id)] || (cName && !!row.byCompany[cName]);
+      });
+      if (!hasDataInVisible && visibleCompanies.length > 0) {
         return false;
       }
       if (filterRamo !== 'todos') {
         const hasRamoMatch = visibleCompanies.some(c => {
-          const cell = row.byCompany[c.id];
+          const cName = (c.nombre || '').toLowerCase().trim();
+          const cell = row.byCompany[c.id] || row.byCompany[String(c.id)] || (cName ? row.byCompany[cName] : null);
           return cell && cell.ramo === filterRamo;
         });
         if (!hasRamoMatch) return false;
@@ -1510,7 +1523,8 @@ export default function AdminDashboard() {
       const q = searchQuery.toLowerCase().trim();
       if (`${row.edad_min}-${row.edad_max}`.includes(q) || String(row.suma_asegurada).includes(q)) return true;
       return visibleCompanies.some(c => {
-        const cell = row.byCompany[c.id];
+        const cName = (c.nombre || '').toLowerCase().trim();
+        const cell = row.byCompany[c.id] || row.byCompany[String(c.id)] || (cName ? row.byCompany[cName] : null);
         if (!cell) return false;
         return c.nombre.toLowerCase().includes(q) || cell.plan?.toLowerCase().includes(q) || String(cell.prima).includes(q);
       });
@@ -3701,7 +3715,8 @@ export default function AdminDashboard() {
                               ${row.suma_asegurada.toLocaleString('en-US')}
                             </td>
                             {visibleCompanies.map(c => {
-                              const cell = row.byCompany[c.id];
+                              const cName = (c.nombre || '').toLowerCase().trim();
+                              const cell = row.byCompany[c.id] || row.byCompany[String(c.id)] || (cName ? row.byCompany[cName] : null);
                               const isModified = cell && !!modifiedRows[cell.id];
                               if (!cell) {
                                 return (
