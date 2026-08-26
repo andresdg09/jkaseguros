@@ -693,7 +693,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
 
 // 7. Listar todas las tarifas actuales
 router.get('/tariffs', authenticateToken, async (req, res) => {
-  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  if (req.user.rango !== 'admin' && req.user.rango !== 'asesor') return res.status(403).json({ error: 'No autorizado.' });
   try {
     const q = `
       SELECT t.*, c.nombre AS compania_nombre
