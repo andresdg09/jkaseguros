@@ -1099,7 +1099,6 @@ function syncFallbackFromDisk() {
 
 // Emulación de consultas SQL simples sobre JSON
 function fallbackQuery(text, params = []) {
-  syncFallbackFromDisk();
   const cleanSql = text.replace(/\s+/g, ' ').trim();
   
   // 1. SELECT * FROM usuarios WHERE correo = $1

@@ -1227,9 +1227,11 @@ export default function AdminDashboard() {
         body: formData
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al subir archivo');
-
-      showToast(`¡Carga completada! Se procesaron ${data.count} tarifas.`);
+      if (data.count === 0) {
+        showToast('El archivo fue recibido pero no contenía tarifas con datos válidos.', 'warning');
+      } else {
+        showToast(`¡Carga completada! Se guardaron ${data.count} tarifas exitosamente.`);
+      }
       setFileToUpload(null);
       const fileInput = document.getElementById('file-upload-input');
       if (fileInput) {
