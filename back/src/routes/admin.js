@@ -39,6 +39,48 @@ function getPagoBooleans(body) {
   return parsePagoMetodos(body.pago);
 }
 
+function cleanNumber(val) {
+  if (val === undefined || val === null || val === '') return NaN;
+  if (typeof val === 'number') return isNaN(val) ? NaN : val;
+  
+  let s = String(val).trim();
+  if (s.toLowerCase() === 'nan' || s.toLowerCase() === 'null') return NaN;
+  
+  // Eliminar signos de moneda, letras comunes y espacios
+  s = s.replace(/[\$\€\£\sUSDvesVESBs]/g, '').trim();
+  if (!s) return NaN;
+
+  // Caso 1: Tiene puntos y comas (ej. "1.500,50" o "1,500.50")
+  if (s.includes('.') && s.includes(',')) {
+    const firstDot = s.indexOf('.');
+    const firstComma = s.indexOf(',');
+    if (firstDot < firstComma) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } 
+  // Caso 2: Solo contiene puntos
+  else if (s.includes('.')) {
+    const dotParts = s.split('.');
+    if (dotParts.length > 2 || (dotParts.length === 2 && dotParts[1].length === 3 && dotParts[0].length >= 1)) {
+      s = s.replace(/\./g, '');
+    }
+  } 
+  // Caso 3: Solo contiene comas
+  else if (s.includes(',')) {
+    const commaParts = s.split(',');
+    if (commaParts.length > 2 || (commaParts.length === 2 && commaParts[1].length === 3 && commaParts[0].length >= 1)) {
+      s = s.replace(/,/g, '');
+    } else {
+      s = s.replace(/,/g, '.');
+    }
+  }
+
+  const num = parseFloat(s);
+  return isNaN(num) ? NaN : num;
+}
+
 // Helper: Actualizar metadatos de tarifario (versión y fecha de última modificación)
 async function actualizarTarifarioMetadata(usuarioCorreo) {
   const now = new Date().toISOString();
@@ -511,11 +553,11 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           cId = fData.companias_seguros[0]?.id || 1;
         }
 
-        const edadMin = parseInt(t.edad_min);
-        const edadMax = parseInt(t.edad_max);
-        const sumaAsegurada = parseFloat(t.suma_asegurada);
-        const deducibleVal = parseFloat(t.deducible || 0);
-        const primaVal = parseFloat(t.prima);
+        const edadMin = cleanNumber(t.edad_min);
+        const edadMax = cleanNumber(t.edad_max);
+        const sumaAsegurada = cleanNumber(t.suma_asegurada);
+        const deducibleVal = isNaN(cleanNumber(t.deducible)) ? 0 : cleanNumber(t.deducible);
+        const primaVal = cleanNumber(t.prima);
 
         if (isNaN(edadMin) || isNaN(edadMax) || isNaN(sumaAsegurada) || isNaN(primaVal)) {
           return;
@@ -618,11 +660,11 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           cId = 1;
         }
 
-        const edadMin = parseInt(t.edad_min);
-        const edadMax = parseInt(t.edad_max);
-        const sumaAsegurada = parseFloat(t.suma_asegurada);
-        const deducibleVal = parseFloat(t.deducible || 0);
-        const primaVal = parseFloat(t.prima);
+        const edadMin = cleanNumber(t.edad_min);
+        const edadMax = cleanNumber(t.edad_max);
+        const sumaAsegurada = cleanNumber(t.suma_asegurada);
+        const deducibleVal = isNaN(cleanNumber(t.deducible)) ? 0 : cleanNumber(t.deducible);
+        const primaVal = cleanNumber(t.prima);
 
         if (isNaN(edadMin) || isNaN(edadMax) || isNaN(sumaAsegurada) || isNaN(primaVal)) {
           continue;
