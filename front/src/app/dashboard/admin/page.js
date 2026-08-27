@@ -252,7 +252,31 @@ export default function AdminDashboard() {
       // 7. Cargar tarifas
       const resTariffs = await fetch(`${API_URL}/admin/tariffs`, { headers: { 'Authorization': `Bearer ${token}` } });
       const dataTariffs = await resTariffs.json();
-      setTariffs(Array.isArray(dataTariffs) ? dataTariffs : []);
+      const normalizedTariffs = Array.isArray(dataTariffs) ? dataTariffs.map(t => ({
+        ...t,
+        pago_contado: !!(t.pago_contado === true || t.pago_contado === 'true' || t.pago_contado === 1),
+        pago_semestral: !!(t.pago_semestral === true || t.pago_semestral === 'true' || t.pago_semestral === 1),
+        pago_cuatrimestral: !!(t.pago_cuatrimestral === true || t.pago_cuatrimestral === 'true' || t.pago_cuatrimestral === 1),
+        pago_trimestral: !!(t.pago_trimestral === true || t.pago_trimestral === 'true' || t.pago_trimestral === 1),
+        pago_bimestral: !!(t.pago_bimestral === true || t.pago_bimestral === 'true' || t.pago_bimestral === 1),
+        pago_4_cuotas: !!(t.pago_4_cuotas === true || t.pago_4_cuotas === 'true' || t.pago_4_cuotas === 1),
+        pago_mensual: !!(t.pago_mensual === true || t.pago_mensual === 'true' || t.pago_mensual === 1),
+        atencion_medica_primaria: !!(t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL' || t.at_situ_medicamentos === 'INCL'),
+        medicinas: !!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL'),
+        consultas_medicas: !!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false')),
+        rehabilitacion: !!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL'),
+        protesis: !!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL'),
+        muleta_silla_ruedas: !!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL'),
+        consultas: !!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL'),
+        maternidad: !!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL' || (t.maternidad_suma && String(t.maternidad_suma).trim().length > 0 && t.maternidad_suma !== '0' && t.maternidad_suma !== '$0')),
+        oftalmologia: !!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL'),
+        odontologia: !!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL'),
+        muerte_accidental: !!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL' || (t.muerte_accidental_suma && String(t.muerte_accidental_suma).trim().length > 0 && t.muerte_accidental_suma !== '0' && t.muerte_accidental_suma !== '$0')),
+        invalidez_permanente: !!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL' || (t.invalidez_permanente_suma && String(t.invalidez_permanente_suma).trim().length > 0 && t.invalidez_permanente_suma !== '0' && t.invalidez_permanente_suma !== '$0')),
+        examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
+        ambulancia: t.ambulancia || ''
+      })) : [];
+      setTariffs(normalizedTariffs);
 
       // 8. Cargar compañías
       const resCompanies = await fetch(`${API_URL}/admin/companies`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -1218,7 +1242,7 @@ export default function AdminDashboard() {
 
       showToast(`¡Cambios guardados con éxito! Se procesaron ${data.count} tarifas.`);
       setModifiedRows({});
-      loadData();
+      await loadData();
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
