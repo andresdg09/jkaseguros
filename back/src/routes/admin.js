@@ -809,18 +809,6 @@ router.get('/tariffs', authenticateToken, async (req, res) => {
   }
 });
 
-function buildPagoString(metodos) {
-  const parts = [];
-  if (metodos.pago_contado) parts.push('CONT');
-  if (metodos.pago_semestral) parts.push('SEM');
-  if (metodos.pago_cuatrimestral) parts.push('CUATRI');
-  if (metodos.pago_trimestral) parts.push('TRIM');
-  if (metodos.pago_bimestral) parts.push('BIM');
-  if (metodos.pago_4_cuotas) parts.push('4 CUOTAS');
-  if (metodos.pago_mensual) parts.push('MENS');
-  return parts.length > 0 ? parts.join(' / ') : 'CONT';
-}
-
 // Campos de beneficios de una tarifa (texto libre o flags: montos, "INCL", "NO", frecuencias, etc.)
 const TARIFF_BENEFIT_FIELDS = [
   'plan', 'pago', 'maternidad_suma', 'maternidad_costo', 'asist_intl_suma', 'asist_intl_costo',
@@ -833,40 +821,6 @@ const TARIFF_BENEFIT_FIELDS = [
   'ramo'
 ];
 
-// 8. Crear una tarifa individual
-router.post('/tariffs', authenticateToken, async (req, res) => {
-  if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
-  const { compania_id, edad_min, edad_max, suma_asegurada, prima, deducible } = req.body;
-
-  if (!compania_id || isNaN(edad_min) || isNaN(edad_max) || isNaN(suma_asegurada) || isNaN(prima)) {
-    return res.status(400).json({ error: 'Faltan campos numéricos requeridos (Aseguradora, Edades, Suma Asegurada, Prima).' });
-  }
-
-  try {
-    const metodos = getPagoBooleans(req.body);
-    const atMedPrim = req.body.atencion_medica_primaria !== undefined ? (req.body.atencion_medica_primaria === true || req.body.atencion_medica_primaria === 'true' || req.body.atencion_medica_primaria === 'INCL') : (req.body.at_situ_medicamentos === 'INCL' || !!req.body.at_situ_medicamentos);
-    const meds = req.body.medicinas !== undefined ? (req.body.medicinas === true || req.body.medicinas === 'true' || req.body.medicinas === 'INCL') : false;
-    const consMed = req.body.consultas_medicas !== undefined ? (typeof req.body.consultas_medicas === 'boolean' ? req.body.consultas_medicas : (req.body.consultas_medicas === 'INCL' || req.body.consultas_medicas === '2/AÑO' || (typeof req.body.consultas_medicas === 'string' && req.body.consultas_medicas.length > 0 && req.body.consultas_medicas !== 'NO'))) : false;
-    const rehab = req.body.rehabilitacion !== undefined ? (req.body.rehabilitacion === true || req.body.rehabilitacion === 'true' || req.body.rehabilitacion === 'INCL') : false;
-    const prot = req.body.protesis !== undefined ? (req.body.protesis === true || req.body.protesis === 'true' || req.body.protesis === 'INCL') : false;
-    const muletaSilla = req.body.muleta_silla_ruedas !== undefined ? (req.body.muleta_silla_ruedas === true || req.body.muleta_silla_ruedas === 'true' || req.body.muleta_silla_ruedas === 'INCL') : false;
-    const consult = req.body.consultas !== undefined ? (req.body.consultas === true || req.body.consultas === 'true' || req.body.consultas === 'INCL') : false;
-    const mat = req.body.maternidad !== undefined ? (req.body.maternidad === true || req.body.maternidad === 'true' || req.body.maternidad === 'INCL') : false;
-    const oftalmo = req.body.oftalmologia !== undefined ? (req.body.oftalmologia === true || req.body.oftalmologia === 'true' || req.body.oftalmologia === 'INCL') : false;
-    const odonto = req.body.odontologia !== undefined ? (req.body.odontologia === true || req.body.odontologia === 'true' || req.body.odontologia === 'INCL') : false;
-    const muerteAcc = req.body.muerte_accidental !== undefined ? (req.body.muerte_accidental === true || req.body.muerte_accidental === 'true' || req.body.muerte_accidental === 'INCL') : false;
-    const invalidezPerm = req.body.invalidez_permanente !== undefined ? (req.body.invalidez_permanente === true || req.body.invalidez_permanente === 'true' || req.body.invalidez_permanente === 'INCL') : false;
-
-    const pagoStr = req.body.pago || buildPagoString(metodos);
-    let createdTariff = null;
-
-    if (db.isFallback()) {
-      const fData = db.getFallbackData();
-      const newId = fData.tarifas.length > 0 ? Math.max(...fData.tarifas.map(t => t.id)) + 1 : 1;
-      createdTariff = {
-        id: newId,
-        compania_id: parseInt(compania_id),
-        edad_min: parseInt(edad_min),
 // 8. Crear una tarifa individual
 router.post('/tariffs', authenticateToken, async (req, res) => {
   if (req.user.rango !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
