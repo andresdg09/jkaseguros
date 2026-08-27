@@ -860,6 +860,34 @@ export default function AdminDashboard() {
     setModifiedRows(prev => ({ ...prev, [id]: true }));
   };
 
+  // Igual que handleCellMultipleChanges, pero para checkboxes de "servicios incluidos":
+  // después de aplicar el cambio a la fila actual, ofrece replicarlo a todas las demás
+  // filas del mismo plan (misma aseguradora + mismo nombre de plan), sin importar el
+  // rango de edad o la suma asegurada de cada fila.
+  const handleBenefitChange = (id, updates, label) => {
+    handleCellMultipleChanges(id, updates);
+
+    const source = tariffs.find(t => t.id === id);
+    if (!source || !source.plan) return;
+
+    const planKey = (t) => `${t.compania_id}|${String(t.plan || '').trim().toUpperCase()}`;
+    const key = planKey(source);
+    const siblings = tariffs.filter(t => t.id !== id && planKey(t) === key);
+    if (siblings.length === 0) return;
+
+    const isIncluded = !!Object.values(updates)[0];
+    const confirmMsg = `¿Aplicar "${label}: ${isIncluded ? 'Incluido' : 'No incluido'}" también a las otras ${siblings.length} fila(s) del plan "${source.plan}" (todas las edades y sumas aseguradas de esa aseguradora)?`;
+
+    if (confirm(confirmMsg)) {
+      setTariffs(prev => prev.map(t => (planKey(t) === key ? { ...t, ...updates } : t)));
+      setModifiedRows(prev => {
+        const next = { ...prev };
+        siblings.forEach(t => { next[t.id] = true; });
+        return next;
+      });
+    }
+  };
+
   // --- ABRIR MODAL PARA EDITAR TARIFA EXISTENTE ---
   const handleOpenEditTariffModal = (t) => {
     setEditingTariffId(t.id);
@@ -4196,7 +4224,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'rehabilitacion', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { rehabilitacion: e.target.checked }, 'Rehabilitación')}
                                   style={{ cursor: 'pointer' }}
                                   title="Rehabilitación"
                                 />
@@ -4207,10 +4235,10 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.atencion_medica_primaria === true || t.atencion_medica_primaria === 'true' || t.atencion_medica_primaria === 'INCL' || t.at_situ_medicamentos === 'INCL')}
-                                  onChange={(e) => handleCellMultipleChanges(t.id, {
+                                  onChange={(e) => handleBenefitChange(t.id, {
                                     atencion_medica_primaria: e.target.checked,
                                     at_situ_medicamentos: e.target.checked ? 'INCL' : ''
-                                  })}
+                                  }, 'Atención Médica Primaria')}
                                   style={{ cursor: 'pointer' }}
                                   title="Atención Médica Primaria"
                                 />
@@ -4221,7 +4249,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'medicinas', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { medicinas: e.target.checked }, 'Medicamentos prescritos')}
                                   style={{ cursor: 'pointer' }}
                                   title="Medicamentos prescritos"
                                 />
@@ -4232,7 +4260,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false'))}
-                                  onChange={(e) => handleCellChange(t.id, 'consultas_medicas', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { consultas_medicas: e.target.checked }, 'Consultas Médicas')}
                                   style={{ cursor: 'pointer' }}
                                   title="Consultas Médicas"
                                 />
@@ -4243,7 +4271,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'protesis', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { protesis: e.target.checked }, 'Prótesis')}
                                   style={{ cursor: 'pointer' }}
                                   title="Prótesis"
                                 />
@@ -4254,7 +4282,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'muleta_silla_ruedas', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { muleta_silla_ruedas: e.target.checked }, 'Muleta + Silla de ruedas')}
                                   style={{ cursor: 'pointer' }}
                                   title="Muleta + Silla de ruedas"
                                 />
@@ -4265,7 +4293,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO' && t.examenes_lab_imagenologia !== 'false'))}
-                                  onChange={(e) => handleCellChange(t.id, 'examenes_lab_imagenologia', e.target.checked ? 'INCL' : '')}
+                                  onChange={(e) => handleBenefitChange(t.id, { examenes_lab_imagenologia: e.target.checked ? 'INCL' : '' }, 'Exámenes')}
                                   style={{ cursor: 'pointer' }}
                                   title="Exámenes"
                                 />
@@ -4276,7 +4304,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'maternidad', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { maternidad: e.target.checked }, 'Maternidad')}
                                   style={{ cursor: 'pointer' }}
                                   title="Maternidad"
                                 />
@@ -4287,7 +4315,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'oftalmologia', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { oftalmologia: e.target.checked }, 'Oftalmología')}
                                   style={{ cursor: 'pointer' }}
                                   title="Oftalmología"
                                 />
@@ -4298,7 +4326,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'odontologia', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { odontologia: e.target.checked }, 'Odontología')}
                                   style={{ cursor: 'pointer' }}
                                   title="Odontología"
                                 />
@@ -4309,7 +4337,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'muerte_accidental', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { muerte_accidental: e.target.checked }, 'Muerte Accidental')}
                                   style={{ cursor: 'pointer' }}
                                   title="Muerte Accidental"
                                 />
@@ -4322,7 +4350,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'invalidez_permanente', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { invalidez_permanente: e.target.checked }, 'Invalidez Permanente')}
                                   style={{ cursor: 'pointer' }}
                                   title="Invalidez Permanente"
                                 />
@@ -4335,7 +4363,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL' || (typeof t.ambulancia === 'string' && t.ambulancia.length > 0 && t.ambulancia !== 'NO' && t.ambulancia !== 'false'))}
-                                  onChange={(e) => handleCellChange(t.id, 'ambulancia', e.target.checked ? 'INCL' : '')}
+                                  onChange={(e) => handleBenefitChange(t.id, { ambulancia: e.target.checked ? 'INCL' : '' }, 'Ambulancia')}
                                   style={{ cursor: 'pointer' }}
                                   title="Ambulancia"
                                 />
