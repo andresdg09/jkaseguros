@@ -1,15 +1,12 @@
 import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const PAGE_W = 595;
 const MARGIN = 40;
 const CONTENT_W = PAGE_W - MARGIN * 2; // 515
 const FOOTER_Y = 790;
+// Posición vertical fija del bloque "Contacta a tu asesor": se ancla justo
+// arriba del pie de página en TODAS las páginas del PDF.
+const CONTACT_Y = FOOTER_Y - 65;
 
 const COLORS = {
   primary: '#1e3a8a',
@@ -32,39 +29,12 @@ const BROKER_INFO_LINES = [
 ];
 
 /**
- * Busca la ruta del logo en la carpeta public
+ * Dibuja el encabezado institucional sobre fondo blanco (marca en texto, sin logo)
  */
-function getLogoPath() {
-  const possiblePaths = [
-    path.join(__dirname, '../../../front/public/logo.png'),
-    path.join(process.cwd(), '../front/public/logo.png'),
-    path.join(process.cwd(), 'front/public/logo.png'),
-    path.join(process.cwd(), 'public/logo.png'),
-    path.join(process.cwd(), 'logo.png')
-  ];
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      return p;
-    }
-  }
-  return null;
-}
-
-/**
- * Dibuja el encabezado institucional JKA sobre fondo blanco
- */
-function dibujarHeader(doc, logoPath, tituloPagina = '') {
+function dibujarHeader(doc, tituloPagina = '') {
   doc.rect(0, 0, PAGE_W, 65).fill('#ffffff');
 
-  if (logoPath) {
-    try {
-      doc.image(logoPath, 40, 12, { fit: [160, 42] });
-    } catch (e) {
-      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(16).text('PROTECCIÓN & SEGUROS 360', 40, 22);
-    }
-  } else {
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(16).text('PROTECCIÓN & SEGUROS 360', 40, 22);
-  }
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(15).text('Protección & Seguros 360', MARGIN, 24, { lineBreak: false });
 
   doc.fillColor(COLORS.primary).fontSize(8.5).font('Helvetica-Bold');
   doc.text((tituloPagina || 'COTIZACIÓN DE SEGUROS DE SALUD').toUpperCase(), 250, 16, { align: 'right', width: 305, lineBreak: false });
@@ -80,44 +50,52 @@ function dibujarHeader(doc, logoPath, tituloPagina = '') {
 /**
  * Dibuja el bloque de datos del asegurado
  */
+// Alto base del cuadro de datos del asegurado: 4 filas (Prospecto/Documento,
+// F. Nacimiento/Edad, Teléfono/Suma Asegurada, Fecha emisión/Vencimiento) más
+// margen superior/inferior. Se le suma el espacio de los dependientes si aplica.
+const DATOS_BOX_BASE_H = 84;
+
 function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
   const hasDeps = cliente.dependientes && cliente.dependientes.length > 0;
   const depLines = hasDeps ? Math.ceil(cliente.dependientes.length / 2) : 0;
-  const boxH = 70 + depLines * 14;
+  const boxH = DATOS_BOX_BASE_H + depLines * 14;
 
   doc.rect(MARGIN, 92, CONTENT_W, boxH).fill(COLORS.lightBg);
   doc.rect(MARGIN, 92, CONTENT_W, boxH).stroke(COLORS.border);
 
+  // Columnas de etiqueta/valor alineadas de forma consistente en las 4 filas,
+  // para que ningún valor quede pegado a su etiqueta ni desalineado entre filas.
   const col1 = 55;
   const col2 = 310;
+  const val1 = col1 + 90;
+  const val2 = col2 + 95;
   const fechaHoy = new Date().toLocaleDateString('es-VE');
   const fechaNac = new Date(cliente.fecha_nacimiento).toLocaleDateString('es-VE');
 
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8);
-  doc.text('Prospecto:', col1, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.primer_nombre} ${cliente.primer_apellido}`, col1 + 60, 100, { lineBreak: false });
-  doc.font('Helvetica-Bold').text('Documento:', col2, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.tipo_documento}-${cliente.nro_documento}`, col2 + 65, 100, { lineBreak: false });
+  doc.text('Prospecto:', col1, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.primer_nombre} ${cliente.primer_apellido}`, val1, 100, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Documento:', col2, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.tipo_documento}-${cliente.nro_documento}`, val2, 100, { lineBreak: false });
 
-  doc.font('Helvetica-Bold').text('F. Nacimiento:', col1, 114, { lineBreak: false }).font('Helvetica').text(fechaNac, col1 + 75, 114, { lineBreak: false });
-  doc.font('Helvetica-Bold').text('Edad / Género:', col2, 114, { lineBreak: false }).font('Helvetica').text(`${edad} años / ${cliente.genero || 'N/A'}`, col2 + 75, 114, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('F. Nacimiento:', col1, 114, { lineBreak: false }).font('Helvetica').text(fechaNac, val1, 114, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Edad / Género:', col2, 114, { lineBreak: false }).font('Helvetica').text(`${edad} años / ${cliente.genero || 'N/A'}`, val2, 114, { lineBreak: false });
 
-  doc.font('Helvetica-Bold').text('Teléfono:', col1, 128, { lineBreak: false }).font('Helvetica').text(cliente.telefono || 'N/A', col1 + 60, 128, { lineBreak: false });
-  doc.font('Helvetica-Bold').text('Suma Asegurada:', col2, 128, { lineBreak: false }).font('Helvetica-Bold').fillColor(COLORS.secondary).text(sumaFormateada, col2 + 85, 128, { lineBreak: false });
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.5).text('Válido por 10 días', col2 + 85, 140, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Teléfono:', col1, 128, { lineBreak: false }).font('Helvetica').text(cliente.telefono || 'N/A', val1, 128, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Suma Asegurada:', col2, 128, { lineBreak: false }).font('Helvetica-Bold').fillColor(COLORS.secondary).text(sumaFormateada, val2, 128, { lineBreak: false });
+
+  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8).text('Fecha de emisión:', col1, 142, { lineBreak: false }).font('Helvetica').text(fechaHoy, val1, 142, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Vencimiento:', col2, 142, { lineBreak: false }).fillColor(COLORS.muted).font('Helvetica').text('Válido por 10 días', val2, 142, { lineBreak: false });
 
   if (hasDeps) {
-    let dy = 154;
+    let dy = 160;
     doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8).text('Dependientes:', col1, dy, { lineBreak: false });
-    
+
     cliente.dependientes.forEach((dep, idx) => {
-      const col = idx % 2 === 0 ? col1 + 70 : col2;
+      const col = idx % 2 === 0 ? val1 : col2;
       const rowY = dy + Math.floor(idx / 2) * 14;
       const label = dep.relacion.charAt(0).toUpperCase() + dep.relacion.slice(1);
       doc.fillColor(COLORS.dark).font('Helvetica').fontSize(8).text(`• ${label} (Edad: ${dep.edad} años)`, col, rowY, { lineBreak: false });
     });
   }
-
-  const footY = 92 + boxH + 3;
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.5).text(`Fecha de emisión: ${fechaHoy}`, col1, footY, { lineBreak: false });
 }
 
 function parseExtraCost(costStr) {
@@ -561,15 +539,20 @@ function dibujarBloqueTermino(doc, bloque, x, y, width) {
  * Dibuja la sección de Términos y Condiciones a partir de startY, saltando de
  * página (con encabezado y bloque de contacto) tantas veces como haga falta.
  */
-function dibujarTerminosCondiciones(doc, logoPath, asesor, startY) {
-  const bottomLimit = FOOTER_Y - 15;
+function dibujarTerminosCondiciones(doc, asesor, startY) {
+  // El bloque de contacto queda anclado justo arriba del pie en TODAS las
+  // páginas, así que el contenido de términos debe dejar de fluir antes de
+  // llegar a esa franja reservada.
+  const bottomLimit = CONTACT_Y - 10;
   let y = startY;
 
   const saltarPagina = () => {
+    // Cierra la página saliente con su bloque de contacto anclado al pie
+    // antes de pasar a la siguiente.
+    dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
     doc.addPage();
-    dibujarHeader(doc, logoPath, 'TÉRMINOS Y CONDICIONES');
-    const contactoH = dibujarContactoAsesor(doc, asesor, MARGIN, 78, CONTENT_W);
-    y = 78 + contactoH + 16;
+    dibujarHeader(doc, 'TÉRMINOS Y CONDICIONES');
+    y = 80;
   };
 
   if (y + 20 > bottomLimit) saltarPagina();
@@ -592,19 +575,21 @@ function dibujarTerminosCondiciones(doc, logoPath, asesor, startY) {
     const usedH = dibujarBloqueTermino(doc, bloque, MARGIN, y, CONTENT_W);
     y += usedH + 6;
   });
+
+  // Cierra la última página de términos con su bloque de contacto al pie.
+  dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
 }
 
 /**
  * Dibuja el PDF estructurado en varias páginas
  */
 function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
-  const logoPath = getLogoPath();
   const sumaFormateada = `$${Number(sumaAsegurada).toLocaleString('en-US')}`;
 
   // ==========================================
   // PÁGINA 1: DATOS DEL ASEGURADO + TARJETAS DE PLANES
   // ==========================================
-  dibujarHeader(doc, logoPath, `DIAGNÓSTICO (SUMA ASEGURADA ${sumaFormateada})`);
+  dibujarHeader(doc, `DIAGNÓSTICO (SUMA ASEGURADA ${sumaFormateada})`);
 
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(11)
      .text(`DIAGNÓSTICO Y COMPARATIVA DE SEGUROS DE SALUD (SUMA ASEGURADA ${sumaFormateada})`, MARGIN, 75, { lineBreak: false });
@@ -613,11 +598,11 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   const hasDeps = cliente.dependientes && cliente.dependientes.length > 0;
   const depLines = hasDeps ? Math.ceil(cliente.dependientes.length / 2) : 0;
-  const boxH = 70 + depLines * 14;
+  const boxH = DATOS_BOX_BASE_H + depLines * 14;
 
-  const titleY = 92 + boxH + 12;
-  const subtitleY = titleY + 12;
-  const startCardsY = subtitleY + 16;
+  const titleY = 92 + boxH + 16;
+  const subtitleY = titleY + 13;
+  const startCardsY = subtitleY + 20;
 
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
      .text('Tu Comparativo Personalizado de Aseguradoras', MARGIN, titleY, { lineBreak: false });
@@ -626,31 +611,28 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   let cardY = startCardsY;
   const cardH = 150;
-  const cardGap = 14;
+  const cardGap = 22; // más espacio de separación entre tarjetas para que no se vean pegadas
 
   comparativas.forEach((comp) => {
-    if (cardY + cardH > FOOTER_Y - 20) {
+    if (cardY + cardH > CONTACT_Y - 10) {
+      // Cierra la página saliente con el bloque de contacto anclado al pie
+      dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
       doc.addPage();
-      dibujarHeader(doc, logoPath, 'DIAGNÓSTICO (CONTINUACIÓN)');
+      dibujarHeader(doc, 'DIAGNÓSTICO (CONTINUACIÓN)');
       cardY = 80;
     }
     dibujarTarjetaAseguradora(doc, MARGIN, cardY, CONTENT_W, cardH, comp, !!comp.recomendada);
     cardY += cardH + cardGap;
   });
 
-  // Contacta a tu asesor (se repite en todas las páginas)
-  if (cardY + 50 > FOOTER_Y - 15) {
-    doc.addPage();
-    dibujarHeader(doc, logoPath, 'DIAGNÓSTICO (CONTINUACIÓN)');
-    cardY = 80;
-  }
-  dibujarContactoAsesor(doc, asesor, MARGIN, cardY, CONTENT_W);
+  // Contacta a tu asesor: siempre anclado justo arriba del pie de página
+  dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
 
   // ==========================================
   // PÁGINA: SECCIÓN DE MARKETING / DISTRIBUCIÓN DE PROTECCIÓN
   // ==========================================
   doc.addPage();
-  dibujarHeader(doc, logoPath, 'PROTEGE TODO TU PATRIMONIO');
+  dibujarHeader(doc, 'PROTEGE TODO TU PATRIMONIO');
 
   let mktY = 78;
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(15)
@@ -694,20 +676,20 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
     doc.fillColor(COLORS.dark).font('Helvetica').fontSize(6.8).text(p.desc, bx + 12, boxesY + 26, { width: boxW - 20, height: 50 });
   });
 
-  // Contacta a tu asesor (se repite en todas las páginas)
-  let contactoY2 = boxesY + 82 + 20;
-  if (contactoY2 + 50 > FOOTER_Y - 15) {
+  // Si el contenido fijo de esta página llegara a invadir la franja reservada
+  // para el bloque de contacto (por ejemplo, en un tamaño de página distinto),
+  // se abre una página nueva antes de anclarlo al pie.
+  if (boxesY + 82 > CONTACT_Y - 10) {
     doc.addPage();
-    dibujarHeader(doc, logoPath, 'PROTEGE TODO TU PATRIMONIO (CONTINUACIÓN)');
-    contactoY2 = 80;
+    dibujarHeader(doc, 'PROTEGE TODO TU PATRIMONIO (CONTINUACIÓN)');
   }
-  dibujarContactoAsesor(doc, asesor, MARGIN, contactoY2, CONTENT_W);
+  dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
 
   // ==========================================
   // PÁGINA: CONDICIONES Y CONTACTO
   // ==========================================
   doc.addPage();
-  dibujarHeader(doc, logoPath, 'CONDICIONES Y CONTACTO');
+  dibujarHeader(doc, 'CONDICIONES Y CONTACTO');
 
   let condY = 80;
 
@@ -739,19 +721,20 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   condY += 52;
 
-  // Contacta a tu asesor (se repite en todas las páginas)
-  if (condY + 50 > FOOTER_Y - 15) {
+  // El bloque de contacto de esta página (y de las que sigan con los Términos
+  // y Condiciones) se dibuja de forma uniforme, siempre anclado al pie, dentro
+  // de dibujarTerminosCondiciones — así no queda un bloque "extra" a mitad de
+  // página además del anclado al final.
+  if (condY > CONTACT_Y - 10) {
     doc.addPage();
-    dibujarHeader(doc, logoPath, 'CONDICIONES Y CONTACTO (CONTINUACIÓN)');
+    dibujarHeader(doc, 'CONDICIONES Y CONTACTO (CONTINUACIÓN)');
     condY = 80;
   }
-  const contactoH3 = dibujarContactoAsesor(doc, asesor, MARGIN, condY, CONTENT_W);
-  condY += contactoH3 + 16;
 
   // ==========================================
   // TÉRMINOS Y CONDICIONES (continúa en tantas páginas como haga falta)
   // ==========================================
-  dibujarTerminosCondiciones(doc, logoPath, asesor, condY);
+  dibujarTerminosCondiciones(doc, asesor, condY);
 
   // ==========================================
   // PIE DE PÁGINA GLOBAL DE TODAS LAS PÁGINAS
