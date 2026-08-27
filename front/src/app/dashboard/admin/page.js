@@ -3842,7 +3842,6 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.protesis}px` }} />
                       <col style={{ width: `${detailedColWidths.muleta_silla_ruedas}px` }} />
                       <col style={{ width: `${detailedColWidths.examenes_lab_imagenologia}px` }} />
-                      <col style={{ width: `${detailedColWidths.consultas}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad}px` }} />
                       <col style={{ width: `${detailedColWidths.oftalmologia}px` }} />
                       <col style={{ width: `${detailedColWidths.odontologia}px` }} />
@@ -3896,7 +3895,7 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'pago_bimestral' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_bimestral')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          4 Cuotas
+                          4 Cuotas Mens. Consecutivas
                           <div className={`resize-handle ${resizingCol === 'pago_4_cuotas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'pago_4_cuotas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
@@ -3936,7 +3935,7 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'medicinas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'medicinas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Cons médicas
+                          Consultas Médicas
                           <div className={`resize-handle ${resizingCol === 'consultas_medicas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas_medicas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
@@ -3950,10 +3949,6 @@ export default function AdminDashboard() {
                         <th style={{ textAlign: 'center', position: 'relative' }}>
                           Exámenes
                           <div className={`resize-handle ${resizingCol === 'examenes_lab_imagenologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'examenes_lab_imagenologia')} />
-                        </th>
-                        <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Consultas
-                          <div className={`resize-handle ${resizingCol === 'consultas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'consultas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
                           Maternidad
@@ -4239,7 +4234,7 @@ export default function AdminDashboard() {
                                   checked={!!(t.consultas_medicas === true || t.consultas_medicas === 'true' || t.consultas_medicas === 'INCL' || (typeof t.consultas_medicas === 'string' && t.consultas_medicas.length > 0 && t.consultas_medicas !== 'NO' && t.consultas_medicas !== 'false'))}
                                   onChange={(e) => handleCellChange(t.id, 'consultas_medicas', e.target.checked)}
                                   style={{ cursor: 'pointer' }}
-                                  title="Cons médicas"
+                                  title="Consultas Médicas"
                                 />
                               </td>
 
@@ -4273,17 +4268,6 @@ export default function AdminDashboard() {
                                   onChange={(e) => handleCellChange(t.id, 'examenes_lab_imagenologia', e.target.checked ? 'INCL' : '')}
                                   style={{ cursor: 'pointer' }}
                                   title="Exámenes"
-                                />
-                              </td>
-
-                              {/* Consultas */}
-                              <td style={{ textAlign: 'center' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={!!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL')}
-                                  onChange={(e) => handleCellChange(t.id, 'consultas', e.target.checked)}
-                                  style={{ cursor: 'pointer' }}
-                                  title="Consultas"
                                 />
                               </td>
 
