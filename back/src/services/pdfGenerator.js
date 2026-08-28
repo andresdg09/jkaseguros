@@ -74,7 +74,7 @@ function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
 
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(8);
   doc.text('Prospecto:', col1, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.primer_nombre} ${cliente.primer_apellido}`, val1, 100, { lineBreak: false });
-  doc.font('Helvetica-Bold').text('Documento:', col2, 100, { lineBreak: false }).font('Helvetica').text(`${cliente.tipo_documento}-${cliente.nro_documento}`, val2, 100, { lineBreak: false });
+  doc.font('Helvetica-Bold').text('Documento:', col2, 100, { lineBreak: false }).font('Helvetica').text(`${prefijoDocumento(cliente.tipo_documento)}-${cliente.nro_documento}`, val2, 100, { lineBreak: false });
 
   doc.font('Helvetica-Bold').text('F. Nacimiento:', col1, 114, { lineBreak: false }).font('Helvetica').text(fechaNac, val1, 114, { lineBreak: false });
   doc.font('Helvetica-Bold').text('Edad / Género:', col2, 114, { lineBreak: false }).font('Helvetica').text(`${edad} años / ${cliente.genero || 'N/A'}`, val2, 114, { lineBreak: false });
@@ -96,6 +96,19 @@ function dibujarDatosAsegurado(doc, cliente, edad, sumaFormateada) {
       doc.fillColor(COLORS.dark).font('Helvetica').fontSize(8).text(`• ${label} (Edad: ${dep.edad} años)`, col, rowY, { lineBreak: false });
     });
   }
+}
+
+/**
+ * Convierte el tipo de documento (p.ej. "Venezolano") en su prefijo abreviado
+ * (V-, E-, P-) para mostrarlo junto a la cédula del asegurado.
+ */
+function prefijoDocumento(tipoDocumento) {
+  const tipo = String(tipoDocumento || '').trim().toLowerCase();
+  if (tipo.startsWith('extranjero')) return 'E';
+  if (tipo.startsWith('pasaporte')) return 'P';
+  if (tipo.startsWith('venezolano')) return 'V';
+  // Si ya viene como una letra (V, E, P) u otro valor, se usa tal cual.
+  return tipoDocumento ? String(tipoDocumento).charAt(0).toUpperCase() : 'V';
 }
 
 function parseExtraCost(costStr) {
@@ -172,13 +185,12 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   const servicios = [
     ['At. Primaria', comp.atencion_medica_primaria !== undefined ? comp.atencion_medica_primaria : comp.at_situ_medicamentos],
     ['Medicamentos', comp.medicinas],
-    ['Cons. Médicas', comp.consultas_medicas],
+    ['Consultas Médicas', comp.consultas_medicas],
     ['Exámenes', comp.examenes_lab_imagenologia],
     ['Ambulancia', comp.ambulancia],
     ['Rehabilitación', comp.rehabilitacion],
     ['Prótesis', comp.protesis],
     ['Muleta + Silla', comp.muleta_silla_ruedas],
-    ['Consultas', comp.consultas],
     ['Maternidad', (comp.maternidad || comp.maternidad_suma) && costoMat === 0],
     ['Oftalmología', comp.oftalmologia],
     ['Odontología', comp.odontologia],
@@ -209,40 +221,44 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   doc.roundedRect(padX, extraStartY, extraBoxW, extraBoxH, 4).fill('#f8fafc');
   doc.roundedRect(padX, extraStartY, extraBoxW, extraBoxH, 4).lineWidth(0.5).stroke('#e2e8f0');
 
+  // Solo se listan aquí los adicionales que tienen un costo extra (p.ej. Asist.
+  // Internacional, Gastos Funerarios). Si un beneficio (como Maternidad) ya viene
+  // incluido gratis en el plan base, no debe repetirse en esta sección: ya se
+  // muestra como incluido en "INCLUIDO EN EL PLAN BASE".
   const extrasList = [];
-  if (comp.maternidad_suma || costoMat > 0) {
+  if (costoMat > 0) {
     extrasList.push({
       nombre: 'Maternidad',
       suma: comp.maternidad_suma || 'Cubierta',
-      costo: costoMat > 0 ? `+ $${costoMat.toFixed(2)}/año` : 'Incluida en base'
+      costo: `+ $${costoMat.toFixed(2)}/año`
     });
   }
-  if (comp.muerte_accidental_suma || costoMuerteAcc > 0) {
+  if (costoMuerteAcc > 0) {
     extrasList.push({
       nombre: 'Muerte Accidental',
       suma: comp.muerte_accidental_suma || 'Cubierta',
-      costo: costoMuerteAcc > 0 ? `+ $${costoMuerteAcc.toFixed(2)}/año` : 'Incluida en base'
+      costo: `+ $${costoMuerteAcc.toFixed(2)}/año`
     });
   }
-  if (comp.invalidez_permanente_suma || costoInvalidez > 0) {
+  if (costoInvalidez > 0) {
     extrasList.push({
       nombre: 'Invalidez Permanente',
       suma: comp.invalidez_permanente_suma || 'Cubierta',
-      costo: costoInvalidez > 0 ? `+ $${costoInvalidez.toFixed(2)}/año` : 'Incluida en base'
+      costo: `+ $${costoInvalidez.toFixed(2)}/año`
     });
   }
-  if (comp.asist_intl_suma || costoAsist > 0) {
+  if (costoAsist > 0) {
     extrasList.push({
       nombre: 'Asist. Internacional',
       suma: comp.asist_intl_suma || 'Cubierta',
-      costo: costoAsist > 0 ? `+ $${costoAsist.toFixed(2)}/año` : 'Incluida en base'
+      costo: `+ $${costoAsist.toFixed(2)}/año`
     });
   }
-  if (comp.funeral_suma || costoFuneral > 0) {
+  if (costoFuneral > 0) {
     extrasList.push({
       nombre: 'Gastos Funerarios',
       suma: comp.funeral_suma || 'Cubierta',
-      costo: costoFuneral > 0 ? `+ $${costoFuneral.toFixed(2)}/año` : 'Incluido en base'
+      costo: `+ $${costoFuneral.toFixed(2)}/año`
     });
   }
 
@@ -589,7 +605,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   // ==========================================
   // PÁGINA 1: DATOS DEL ASEGURADO + TARJETAS DE PLANES
   // ==========================================
-  dibujarHeader(doc, `DIAGNÓSTICO (SUMA ASEGURADA ${sumaFormateada})`);
+  dibujarHeader(doc, `SU PROPUESTA (SUMA ASEGURADA ${sumaFormateada})`);
 
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(11)
      .text(`DIAGNÓSTICO Y COMPARATIVA DE SEGUROS DE SALUD (SUMA ASEGURADA ${sumaFormateada})`, MARGIN, 75, { lineBreak: false });
@@ -618,7 +634,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
       // Cierra la página saliente con el bloque de contacto anclado al pie
       dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
       doc.addPage();
-      dibujarHeader(doc, 'DIAGNÓSTICO (CONTINUACIÓN)');
+      dibujarHeader(doc, 'SU PROPUESTA (CONTINUACIÓN)');
       cardY = 80;
     }
     dibujarTarjetaAseguradora(doc, MARGIN, cardY, CONTENT_W, cardH, comp, !!comp.recomendada);
@@ -632,7 +648,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   // PÁGINA: SECCIÓN DE MARKETING / DISTRIBUCIÓN DE PROTECCIÓN
   // ==========================================
   doc.addPage();
-  dibujarHeader(doc, 'PROTEGE TODO TU PATRIMONIO');
+  dibujarHeader(doc, '¿ESTÁ REALMENTE PROTEGIDO?');
 
   let mktY = 78;
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(15)
@@ -681,7 +697,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   // se abre una página nueva antes de anclarlo al pie.
   if (boxesY + 82 > CONTACT_Y - 10) {
     doc.addPage();
-    dibujarHeader(doc, 'PROTEGE TODO TU PATRIMONIO (CONTINUACIÓN)');
+    dibujarHeader(doc, '¿ESTÁ REALMENTE PROTEGIDO? (CONTINUACIÓN)');
   }
   dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
 
