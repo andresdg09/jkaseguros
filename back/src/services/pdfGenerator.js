@@ -165,20 +165,32 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   const incStartY = topY + 26;
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6.5).text('✓ INCLUIDO EN EL PLAN BASE:', padX, incStartY, { lineBreak: false });
 
-  // Grid de datos base (3 columnas)
+  // Grid de datos base (3 columnas de ancho desigual): Suma Asegurada y
+  // Deducible ocupan solo lo que necesitan, para que Forma de Pago quede más
+  // pegada a Deducible y tenga suficiente ancho para mostrar todos los
+  // métodos de pago (incluso más de 3) sin cortarse.
   const baseData = [
     ['SUMA ASEGURADA', comp.suma_asegurada ? `$${Number(comp.suma_asegurada).toLocaleString('en-US')}` : 'Según cotización'],
     ['DEDUCIBLE', deducibleVal],
     ['FORMA DE PAGO', formaPagoVal]
   ];
-  const colW3 = leftW / 3;
+  const colWidths = [leftW * 0.20, leftW * 0.24, leftW * 0.56];
+  const colXs = [padX, padX + colWidths[0], padX + colWidths[0] + colWidths[1]];
   baseData.forEach(([label, val], i) => {
-    const colX = padX + i * colW3;
+    const colX = colXs[i];
+    const colW = colWidths[i];
     const rowY = incStartY + 9;
-    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(5.8).text(label, colX, rowY, { width: colW3 - 6, lineBreak: false });
+    const isForma = label === 'FORMA DE PAGO';
+    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(5.8).text(label, colX, rowY, { width: colW - 6, lineBreak: false });
     const isDed = label === 'DEDUCIBLE';
     const valColor = isDed ? (parseFloat(comp.deducible || 0) > 0 ? '#b45309' : COLORS.success) : COLORS.dark;
-    doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(6.8).text(val, colX, rowY + 7, { width: colW3 - 6, height: 10, lineBreak: false });
+    if (isForma) {
+      // Se permite ajustar en hasta 2 líneas (en vez de cortar en una sola)
+      // para que quepan todas las formas de pago disponibles.
+      doc.fillColor(valColor).font('Helvetica').fontSize(6.2).text(val, colX, rowY + 7, { width: colW - 6, height: 16 });
+    } else {
+      doc.fillColor(valColor).font(isDed ? 'Helvetica-Bold' : 'Helvetica').fontSize(6.8).text(val, colX, rowY + 7, { width: colW - 6, height: 10, lineBreak: false });
+    }
   });
 
   // Servicios incluidos base (2 filas de 7 columnas)
@@ -200,7 +212,9 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
 
   const servCols = 7;
   const servW = leftW / servCols;
-  const servStartY = incStartY + 27;
+  // +32 en vez de +27: dos líneas extra de aire para que la Forma de Pago en
+  // dos líneas no choque con la fila de servicios incluidos.
+  const servStartY = incStartY + 32;
 
   servicios.forEach(([label, val], idx) => {
     const col = idx % servCols;
@@ -420,7 +434,7 @@ const TERMINOS_CONTENIDO = [
   { tipo: 'bullets', items: ['Accidentes amparados por la póliza y enfermedades virales'] },
 
   { tipo: 'h1', texto: 'AVISO LEGAL Y CONDICIONES DE USO' },
-  { tipo: 'p', texto: 'Bienvenido al sitio web www.proteccionyseguros360.com, propiedad de Johann Joubert. El acceso y uso de este sitio web atribuyen la condición de usuario e implican la aceptación plena y sin reservas de todas y cada una de las disposiciones incluidas en este Aviso Legal.' },
+  { tipo: 'p', texto: 'El sitio web www.proteccionyseguros360.com es propiedad de Johann Joubert. El acceso y uso de este sitio web atribuyen la condición de usuario e implican la aceptación plena y sin reservas de todas y cada una de las disposiciones incluidas en este Aviso Legal.' },
 
   { tipo: 'h2', texto: '1. Información General y Regulatoria' },
   { tipo: 'p', texto: 'De conformidad con la Ley de la Actividad Aseguradora de la República Bolivariana de Venezuela, se informa que el titular de este sitio web es Johann Joubert, titular de la Cédula de Identidad N° V-11.414.838, actuando en su carácter de Corredor de Seguros debidamente autorizado, certificado e inscrito ante la Superintendencia de la Actividad Aseguradora (SUDEASEG) bajo la Credencial de la Actividad Aseguradora N° CAA-005236. Su actividad principal es la mediación y asesoría independiente en la celebración de contratos de seguros.' },
@@ -458,35 +472,51 @@ const TERMINOS_CONTENIDO = [
 ];
 
 /**
+ * Convierte un título a formato "oración": todo en minúscula salvo la
+ * primera letra (ignorando símbolos/números iniciales como "¿" o "1.").
+ */
+function tituloOracion(texto) {
+  if (!texto) return texto;
+  const minuscula = texto.toLowerCase();
+  return minuscula.replace(/[a-zà-öø-ÿ]/i, (c) => c.toUpperCase());
+}
+
+// Tamaños de fuente e interlineado reducidos para que todo el contenido de
+// Términos y Condiciones quepa en una sola página junto con la Nota de
+// Asesoría (antes ocupaba dos páginas).
+const TERMS_FONT = { h1: 8, h2: 7, p: 6.3, bullets: 6.3, nota: 6.2 };
+const TERMS_LINE_GAP = -0.6;
+
+/**
  * Calcula la altura que ocupará un bloque de Términos y Condiciones al dibujarlo,
  * sin dibujarlo (para decidir si hace falta saltar de página antes).
  */
 function alturaBloqueTermino(doc, bloque, width) {
   switch (bloque.tipo) {
     case 'h1':
-      doc.font('Helvetica-Bold').fontSize(9.5);
-      return doc.heightOfString(bloque.texto, { width }) + 12;
+      doc.font('Helvetica-Bold').fontSize(TERMS_FONT.h1);
+      return doc.heightOfString(tituloOracion(bloque.texto), { width, lineGap: TERMS_LINE_GAP }) + 6;
     case 'h2':
-      doc.font('Helvetica-Bold').fontSize(8);
-      return doc.heightOfString(bloque.texto, { width }) + 8;
+      doc.font('Helvetica-Bold').fontSize(TERMS_FONT.h2);
+      return doc.heightOfString(tituloOracion(bloque.texto), { width, lineGap: TERMS_LINE_GAP }) + 4;
     case 'p':
-      doc.font('Helvetica').fontSize(7.5);
-      return doc.heightOfString(bloque.texto, { width }) + 8;
+      doc.font('Helvetica').fontSize(TERMS_FONT.p);
+      return doc.heightOfString(bloque.texto, { width, lineGap: TERMS_LINE_GAP }) + 4;
     case 'bullets': {
-      doc.font('Helvetica').fontSize(7.5);
-      let h = 4;
-      bloque.items.forEach((item) => { h += doc.heightOfString(item, { width: width - 14 }) + 5; });
+      doc.font('Helvetica').fontSize(TERMS_FONT.bullets);
+      let h = 2;
+      bloque.items.forEach((item) => { h += doc.heightOfString(item, { width: width - 14, lineGap: TERMS_LINE_GAP }) + 2; });
       return h;
     }
     case 'numbered': {
-      doc.font('Helvetica').fontSize(7.5);
-      let h = 4;
-      bloque.items.forEach((item) => { h += doc.heightOfString(item, { width: width - 18 }) + 5; });
+      doc.font('Helvetica').fontSize(TERMS_FONT.bullets);
+      let h = 2;
+      bloque.items.forEach((item) => { h += doc.heightOfString(item, { width: width - 18, lineGap: TERMS_LINE_GAP }) + 2; });
       return h;
     }
     case 'nota':
-      doc.font('Helvetica').fontSize(7);
-      return doc.heightOfString(bloque.texto, { width: width - 16 }) + 24;
+      doc.font('Helvetica').fontSize(TERMS_FONT.nota);
+      return doc.heightOfString(bloque.texto, { width: width - 16, lineGap: TERMS_LINE_GAP }) + 18;
     default:
       return 0;
   }
@@ -499,29 +529,29 @@ function alturaBloqueTermino(doc, bloque, width) {
 function dibujarBloqueTermino(doc, bloque, x, y, width) {
   switch (bloque.tipo) {
     case 'h1':
-      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5).text(bloque.texto, x, y, { width });
-      return doc.y - y + 4;
+      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(TERMS_FONT.h1).text(tituloOracion(bloque.texto), x, y, { width, lineGap: TERMS_LINE_GAP });
+      return doc.y - y + 2;
     case 'h2':
-      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(8).text(bloque.texto, x, y, { width });
-      return doc.y - y + 4;
+      doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(TERMS_FONT.h2).text(tituloOracion(bloque.texto), x, y, { width, lineGap: TERMS_LINE_GAP });
+      return doc.y - y + 2;
     case 'p':
-      doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text(bloque.texto, x, y, { width });
-      return doc.y - y + 4;
+      doc.fillColor(COLORS.dark).font('Helvetica').fontSize(TERMS_FONT.p).text(bloque.texto, x, y, { width, lineGap: TERMS_LINE_GAP });
+      return doc.y - y + 2;
     case 'bullets': {
       let cy = y;
       bloque.items.forEach((item) => {
-        doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text('•', x, cy, { width: 12, lineBreak: false });
-        doc.text(item, x + 14, cy, { width: width - 14 });
-        cy = doc.y + 3;
+        doc.fillColor(COLORS.dark).font('Helvetica').fontSize(TERMS_FONT.bullets).text('•', x, cy, { width: 12, lineBreak: false });
+        doc.text(item, x + 14, cy, { width: width - 14, lineGap: TERMS_LINE_GAP });
+        cy = doc.y + 1.5;
       });
       return cy - y;
     }
     case 'numbered': {
       let cy = y;
       bloque.items.forEach((item, i) => {
-        doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(7.5).text(`${i + 1}.`, x, cy, { width: 16, lineBreak: false });
-        doc.font('Helvetica').text(item, x + 18, cy, { width: width - 18 });
-        cy = doc.y + 3;
+        doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(TERMS_FONT.bullets).text(`${i + 1}.`, x, cy, { width: 16, lineBreak: false });
+        doc.font('Helvetica').text(item, x + 18, cy, { width: width - 18, lineGap: TERMS_LINE_GAP });
+        cy = doc.y + 1.5;
       });
       return cy - y;
     }
@@ -529,7 +559,7 @@ function dibujarBloqueTermino(doc, bloque, x, y, width) {
       const h = alturaBloqueTermino(doc, bloque, width);
       doc.rect(x, y, width, h).fill('#fff3cd');
       doc.rect(x, y, width, h).stroke('#ffeeba');
-      doc.fillColor('#856404').font('Helvetica').fontSize(7).text(bloque.texto, x + 8, y + 8, { width: width - 16 });
+      doc.fillColor('#856404').font('Helvetica').fontSize(TERMS_FONT.nota).text(bloque.texto, x + 8, y + 8, { width: width - 16, lineGap: TERMS_LINE_GAP });
       return h;
     }
     default:
@@ -573,7 +603,7 @@ function dibujarTerminosCondiciones(doc, asesor, startY) {
     }
     if (y + h > bottomLimit) saltarPagina();
     const usedH = dibujarBloqueTermino(doc, bloque, MARGIN, y, CONTENT_W);
-    y += usedH + 6;
+    y += usedH + 3;
   });
 
   // Cierra la última página de términos con su bloque de contacto al pie.
