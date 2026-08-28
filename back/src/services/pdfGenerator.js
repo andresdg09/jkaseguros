@@ -296,51 +296,50 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   }
 
   // --- CAJA DE PRECIO / PRIMA (DERECHA) ---
+  // Tres recuadros independientes, uno debajo del otro, en vez de un solo
+  // cuadro con divisores: Prima Base, Extras y Total con Extras quedan cada
+  // uno en su propio rectángulo para que se lea más específico y claro.
   const priceX = x + width - priceBoxW - 10;
   const priceY = y + 8;
   const priceH = height - 16;
+  const hayExtras = totalExtras > 0;
 
-  doc.roundedRect(priceX, priceY, priceBoxW, priceH, 5).fill(isBest ? '#dbeafe' : '#f8fafc');
-  doc.roundedRect(priceX, priceY, priceBoxW, priceH, 5).lineWidth(1).stroke(isBest ? '#93c5fd' : COLORS.border);
+  const boxGap = 4;
+  const boxH1 = 36; // Prima Base (sin extras)
+  const boxH2 = 27; // Extras
+  const boxH3 = 36; // Total con Extras
+  let py = priceY;
 
-  // 1. Bloque Superior: Precio Base
-  let py = priceY + 6;
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6.5).text('PRIMA BASE (SIN EXTRAS)', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-  py += 9;
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(14)
-     .text(`$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-  py += 15;
+  // 1. Recuadro: Prima Base (sin extras)
+  doc.roundedRect(priceX, py, priceBoxW, boxH1, 4).fill(isBest ? '#dbeafe' : '#f8fafc');
+  doc.roundedRect(priceX, py, priceBoxW, boxH1, 4).lineWidth(1).stroke(isBest ? '#93c5fd' : COLORS.border);
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6).text('PRIMA BASE (SIN EXTRAS)', priceX, py + 5, { width: priceBoxW, align: 'center', lineBreak: false });
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(12)
+     .text(`$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py + 13, { width: priceBoxW, align: 'center', lineBreak: false });
   const numDeps = comp.desglosePrimas ? comp.desglosePrimas.length - 1 : 0;
   const labelDeps = numDeps > 0 ? `(titular + ${numDeps} dep.)` : 'por año (plan base)';
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.8).text(labelDeps, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.3).text(labelDeps, priceX, py + 27, { width: priceBoxW, align: 'center', lineBreak: false });
 
-  // Línea divisoria
-  py += 10;
-  doc.moveTo(priceX + 10, py).lineTo(priceX + priceBoxW - 10, py).lineWidth(0.5).strokeColor('#cbd5e1').stroke();
+  py += boxH1 + boxGap;
 
-  // 2. Bloque Inferior: Precio con Extras
-  py += 5;
-  if (totalExtras > 0) {
-    doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(6.2).text('TOTAL CON EXTRAS', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-    py += 8;
-    doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(12)
-       .text(`$${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-    py += 13;
-    doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(5.5).text(`(+ $${totalExtras.toFixed(2)} en extras opcionales)`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-  } else {
-    doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(6.2).text('PLAN COMPLETO', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-    py += 8;
-    doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(11)
-       .text(`$${primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-    py += 13;
-    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.5).text('(sin costos adicionales)', priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
-  }
+  // 2. Recuadro: Extras (costo adicional opcional)
+  doc.roundedRect(priceX, py, priceBoxW, boxH2, 4).fill(hayExtras ? '#fff7ed' : '#f8fafc');
+  doc.roundedRect(priceX, py, priceBoxW, boxH2, 4).lineWidth(1).stroke(hayExtras ? '#fed7aa' : COLORS.border);
+  doc.fillColor(hayExtras ? '#b45309' : COLORS.muted).font('Helvetica-Bold').fontSize(6).text('EXTRAS', priceX, py + 5, { width: priceBoxW, align: 'center', lineBreak: false });
+  doc.fillColor(hayExtras ? '#b45309' : COLORS.muted).font('Helvetica-Bold').fontSize(9.5)
+     .text(hayExtras ? `+ $${totalExtras.toFixed(2)}` : '$0.00', priceX, py + 14, { width: priceBoxW, align: 'center', lineBreak: false });
 
-  // 3. Score de Cobertura al final de la caja de precio
-  py += 9;
-  doc.moveTo(priceX + 12, py).lineTo(priceX + priceBoxW - 12, py).lineWidth(0.5).strokeColor('#cbd5e1').stroke();
-  py += 4;
-  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(6.5).text(`Score: ${comp.calidadScore ?? 0}/50 pts`, priceX, py, { width: priceBoxW, align: 'center', lineBreak: false });
+  py += boxH2 + boxGap;
+
+  // 3. Recuadro: Total con Extras
+  doc.roundedRect(priceX, py, priceBoxW, boxH3, 4).fill(hayExtras ? '#dcfce7' : '#f0fdf4');
+  doc.roundedRect(priceX, py, priceBoxW, boxH3, 4).lineWidth(1).stroke('#86efac');
+  doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(6).text('TOTAL CON EXTRAS', priceX, py + 5, { width: priceBoxW, align: 'center', lineBreak: false });
+  doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(12)
+     .text(`$${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py + 13, { width: priceBoxW, align: 'center', lineBreak: false });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.3).text(hayExtras ? 'con extras incluidos' : 'igual a la prima base', priceX, py + 27, { width: priceBoxW, align: 'center', lineBreak: false });
+  // Nota: el Score de Cobertura ya no se muestra en el PDF (se sigue
+  // calculando y usando internamente para elegir el plan recomendado).
 }
 
 /**
