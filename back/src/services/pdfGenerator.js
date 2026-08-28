@@ -409,7 +409,7 @@ const TERMINOS_CONTENIDO = [
   { tipo: 'h1', texto: 'LA PÓLIZA DE SEGURO: ES UN CONTRATO' },
   { tipo: 'p', texto: 'La póliza de seguro es un contrato que nace de la buena fe de las partes; será suscrita y emitida basada en la información solicitada y suministrada por el solicitante. La omisión de información con relación a alguna condición de salud actual, antecedente quirúrgico o médico (incluyendo la toma de medicamentos de forma rutinaria) de cualquiera de los solicitantes, puede tener consecuencias, por ejemplo: la no indemnización ante un reclamo, la anulación de la póliza y la imposibilidad de brindarle una asesoría y atención adecuada.' },
 
-  { tipo: 'h1', texto: '¿CUÁLES GASTOS CUBRE UNA PÓLIZA DE SEGURO? CONCEPTOS APLICABLES' },
+  { tipo: 'h1', texto: '¿CUÁLES GASTOS CUBRE UNA PÓLIZA DE SEGURO?' },
   { tipo: 'p', texto: 'La póliza de salud brinda cobertura para gastos médicos por enfermedades y accidentes bajo los siguientes criterios:' },
   { tipo: 'bullets', items: ['COSTOS RAZONABLES', 'COSTOS USUALES Y RAZONABLES', 'COSTOS RAZONABLES, USUALES Y ACOSTUMBRADOS'] },
   { tipo: 'p', texto: 'Esto significa que algunos costos no serán asumidos por la compañía aseguradora, debiendo ser negociados y cubiertos por el asegurado con sus propios fondos.' },
@@ -454,21 +454,7 @@ const TERMINOS_CONTENIDO = [
   { tipo: 'p', texto: 'Las presentes condiciones se rigen en su totalidad por las leyes de la República Bolivariana de Venezuela. Para la resolución de cualquier controversia judicial derivada del uso de este sitio web, las partes se someten expresamente a la jurisdicción de los tribunales competentes de la ciudad de Caracas, Distrito Capital.' },
 
   { tipo: 'h1', texto: 'NUESTRO COMPROMISO COMO SU INTERMEDIARIO DE SEGUROS' },
-  { tipo: 'p', texto: 'Nuestro compromiso durante la vigencia del contrato de seguro, es ofrecerle una asesoría especializada y orientación en cuanto al uso de la póliza y sus productos asociados, procesos de reclamos (reembolsos - carta aval) y/o resolución de conflictos exclusivamente ante la compañía de seguros, no ante instancias públicas administrativas centrales o descentralizadas.' },
-  { tipo: 'p', texto: 'Son actividades propias de los intermediarios de seguros, las siguientes:' },
-  { tipo: 'numbered', items: [
-    'Promover y en su caso concluir, la contratación de seguro.',
-    'Informar con oportunidad al asegurador sobre las verdaderas circunstancias del riesgo y agravaciones importantes que de éste tenga noticia.',
-    'Ofrecer al asegurado el contrato más adecuado y conveniente a sus necesidades particulares e informarle sobre las condiciones, coberturas y requisitos de la misma.',
-    'Vigilar para que los seguros contratados por su mediación permanezcan en vigor y sean plenamente eficaces.',
-    'Asesorar a los asegurados y beneficiarios y asistirlos en los casos de siniestro, procurando se lleven a cabo las diligencias necesarias para la mayor discusión del riesgo.',
-    'Procurar que en caso de siniestro se utilicen los elementos necesarios para que tanto el asegurador como el asegurado conozcan la verdadera dimensión y valor del daño.',
-    'Participar en la cobranza de las primas, procurando que sean pagadas en los términos establecidos en las pólizas y en las leyes.',
-    'Atender en todo tiempo a las necesidades de los asegurados, recabando de las entidades aseguradoras las condiciones, coberturas, documentos y servicios que sean necesarios.',
-    'Realizar las diligencias que sean precisas para que en todo tiempo se cumplan las instrucciones recibidas, tanto del asegurador como del asegurado, y las diligencias contractuales y legales correspondientes.',
-    'Actuar en todo caso con rectitud, profesionalidad y ética.'
-  ] },
-  { tipo: 'nota', texto: 'Por requerimiento de SUDEASEG y la compañía aseguradora al momento de suscribir la póliza deberá suministrar: DATOS PERSONALES Y DE CONTACTO, DECLARACIÓN DE SALUD ACTUAL Y CONDICIÓN DE SALUD EXISTENTE.' }
+  { tipo: 'p', texto: 'Nuestro compromiso durante la vigencia del contrato de seguro, es ofrecerle una asesoría especializada y orientación en cuanto al uso de la póliza y sus productos asociados, procesos de reclamos (reembolsos - carta aval) y/o resolución de conflictos exclusivamente ante la compañía de seguros, no ante instancias públicas administrativas centrales o descentralizadas.' }
 ];
 
 /**
@@ -571,10 +557,8 @@ function dibujarTerminosCondiciones(doc, asesor, startY) {
     y = 80;
   };
 
-  if (y + 20 > bottomLimit) saltarPagina();
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11).text('Términos y Condiciones', MARGIN, y, { lineBreak: false });
-  y += 20;
-
+  // No se dibuja un título "Términos y Condiciones" aquí: el título de la
+  // página (arriba, en el encabezado) ya lo indica.
   TERMINOS_CONTENIDO.forEach((bloque, i) => {
     // +10% de margen de seguridad: heightOfString() (usado para estimar sin dibujar)
     // no siempre coincide exactamente con la altura real que consume el texto ya
@@ -702,33 +686,14 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
 
   // ==========================================
-  // PÁGINA: CONDICIONES Y CONTACTO
+  // PÁGINA: TÉRMINOS Y CONDICIONES
   // ==========================================
   doc.addPage();
-  dibujarHeader(doc, 'CONDICIONES Y CONTACTO');
+  dibujarHeader(doc, 'TÉRMINOS Y CONDICIONES');
 
   let condY = 80;
 
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
-     .text('Consideraciones Técnicas del Análisis', MARGIN, condY, { lineBreak: false });
-  condY += 16;
-
-  const features = [
-    { title: 'Suma Asegurada:', desc: `Esta cotización refleja la suma asegurada de ${sumaFormateada} seleccionada. Cambiar la suma asegurada puede variar la prima y los beneficios disponibles.` },
-    { title: 'Deducible:', desc: 'El deducible es el monto que corre por cuenta del asegurado antes de que la aseguradora empiece a indemnizar los gastos médicos cubiertos. Los planes con "$0 (Sin deducible)" brindan cobertura desde el primer gasto.' },
-    { title: 'Maternidad y Asistencia Internacional:', desc: 'Cuando aparecen como "No incluida", la aseguradora no ofrece ese beneficio para el plan y edad cotizados; de estar disponibles, se indica el límite de cobertura y su costo anual adicional.' },
-    { title: 'Condiciones de Pago:', desc: 'Varían según la aseguradora (contado, semestral, trimestral o mensual). Consulte con su asesor las condiciones exactas antes de formalizar la contratación.' }
-  ];
-
-  features.forEach(item => {
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(8).text(item.title, MARGIN, condY, { lineBreak: false });
-    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text(item.desc, MARGIN, condY + 10, { width: CONTENT_W });
-    condY += 32;
-  });
-
-  condY += 4;
-
-  // Nota de Asesoría
+  // Nota de Asesoría: primer bloque de la página, antes del contenido legal.
   doc.rect(MARGIN, condY, CONTENT_W, 40).fill('#fff3cd');
   doc.rect(MARGIN, condY, CONTENT_W, 40).stroke('#ffeeba');
   doc.fillColor('#856404').font('Helvetica-Bold').fontSize(7.5).text('NOTA DE ASESORÍA:', MARGIN + 8, condY + 6, { lineBreak: false });
@@ -743,7 +708,7 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   // página además del anclado al final.
   if (condY > CONTACT_Y - 10) {
     doc.addPage();
-    dibujarHeader(doc, 'CONDICIONES Y CONTACTO (CONTINUACIÓN)');
+    dibujarHeader(doc, 'TÉRMINOS Y CONDICIONES (CONTINUACIÓN)');
     condY = 80;
   }
 
