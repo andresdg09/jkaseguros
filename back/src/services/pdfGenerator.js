@@ -663,56 +663,75 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   // ==========================================
   // PÁGINA: SECCIÓN DE MARKETING / DISTRIBUCIÓN DE PROTECCIÓN
+  // Orden: título → cuadro de atención → gráfica → título "El valor de
+  // blindar tu esfuerzo" → carta personal. Todo debe caber en esta página.
   // ==========================================
   doc.addPage();
   dibujarHeader(doc, '¿ESTÁ REALMENTE PROTEGIDO?');
 
   let mktY = 78;
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(15)
-     .text('¿Sabías que un seguro de salud es solo una parte de tu protección?', MARGIN, mktY, { width: CONTENT_W });
-  mktY += 34;
-  doc.fillColor(COLORS.dark).font('Helvetica').fontSize(8.5)
-     .text('Una protección financiera completa cubre tu salud y tu vida, pero también tu patrimonio (vivienda, vehículo, negocio) y tu responsabilidad ante terceros. Mira cómo se distribuye una cobertura integral recomendada por Protección y Seguros 360:', MARGIN, mktY, { width: CONTENT_W });
-  mktY += 46;
 
+  // 1. Título principal
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(15)
+     .text('¿Sabías que un seguro de salud es solo una parte de la protección que necesitas?', MARGIN, mktY, { width: CONTENT_W });
+  mktY = doc.y + 14;
+
+  // 2. Cuadro de atención (ahora arriba de la gráfica)
+  const calloutH = 40;
+  doc.roundedRect(MARGIN, mktY, CONTENT_W, calloutH, 6).fill('#fff7ed');
+  doc.roundedRect(MARGIN, mktY, CONTENT_W, calloutH, 6).stroke('#fed7aa');
+  doc.fillColor('#9a3412').font('Helvetica-Bold').fontSize(8.5)
+     .text('¡ATENCIÓN! HOY SOLO ESTÁS CUBRIENDO EL 20% DE TU PROTECCIÓN FINANCIERA IDEAL', MARGIN + 12, mktY + 8, { width: CONTENT_W - 24, lineBreak: false });
+  doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5)
+     .text('Con un seguro de salud contratado, aún te falta cubrir otras áreas importantes de tu vida, considerando tu perfil individual.', MARGIN + 12, mktY + 20, { width: CONTENT_W - 24 });
+  mktY += calloutH + 16;
+
+  // 3. Gráfica de distribución de protección financiera
   const chartCx = MARGIN + 90;
   const chartCy = mktY + 85;
   const chartRadius = 78;
   dibujarGraficoDistribucion(doc, chartCx, chartCy, chartRadius, MARGIN + 210, mktY + 20);
+  mktY += 178;
 
-  const calloutY = mktY + 180;
-  doc.roundedRect(MARGIN, calloutY, CONTENT_W, 42, 6).fill('#fff7ed');
-  doc.roundedRect(MARGIN, calloutY, CONTENT_W, 42, 6).stroke('#fed7aa');
-  doc.fillColor('#9a3412').font('Helvetica-Bold').fontSize(8.5)
-     .text('¡ATENCIÓN! HOY SOLO ESTÁS CUBRIENDO EL 20% DE TU PROTECCIÓN FINANCIERA IDEAL', MARGIN + 12, calloutY + 8, { width: CONTENT_W - 24, lineBreak: false });
-  doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5)
-     .text('Con un seguro de Salud contratado, aún te falta cubrir Vida, Patrimonio y Responsabilidad Civil. Conversa con tu asesor de Protección y Seguros 360 para armar un plan a tu medida.', MARGIN + 12, calloutY + 20, { width: CONTENT_W - 24 });
+  // 4. Título "El valor de blindar tu esfuerzo"
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11.5)
+     .text('El valor de blindar tu esfuerzo', MARGIN, mktY, { lineBreak: false });
+  mktY += 18;
 
-  let boxesY = calloutY + 56;
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
-     .text('Conoce los seguros que completan tu protección', MARGIN, boxesY, { lineBreak: false });
-  boxesY += 16;
+  // 5. Carta personal: fuente reducida y sin salto de página, para que todo
+  // el texto entre en esta misma página junto con el título y la gráfica.
+  const MKT_FONT = 7.8;
+  const MKT_GAP = -0.2;
 
-  const productos = [
-    { titulo: 'Seguro de Vida (30%)', color: '#93c5fd', desc: 'Garantiza estabilidad económica a tu familia ante un imprevisto, cubriendo deudas, educación y gastos del hogar.' },
-    { titulo: 'Seguro Patrimonial (25%)', color: COLORS.amber, desc: 'Protege tu vivienda, vehículo o negocio ante incendios, robos, daños o desastres naturales.' },
-    { titulo: 'Responsabilidad Civil (25%)', color: COLORS.success, desc: 'Te respalda ante reclamos por daños a terceros, evitando que un accidente comprometa tu patrimonio.' }
-  ];
+  const drawMktP = (texto, y) => {
+    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(MKT_FONT)
+       .text(texto, MARGIN, y, { width: CONTENT_W, lineGap: MKT_GAP });
+    return doc.y;
+  };
 
-  const boxW = (CONTENT_W - 2 * 14) / 3;
-  productos.forEach((p, i) => {
-    const bx = MARGIN + i * (boxW + 14);
-    doc.roundedRect(bx, boxesY, boxW, 82, 5).fill(COLORS.lightBg);
-    doc.roundedRect(bx, boxesY, boxW, 82, 5).stroke(COLORS.border);
-    doc.rect(bx, boxesY, 4, 82).fill(p.color);
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(7.5).text(p.titulo, bx + 12, boxesY + 10, { width: boxW - 20 });
-    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(6.8).text(p.desc, bx + 12, boxesY + 26, { width: boxW - 20, height: 50 });
-  });
+  const drawMktItem = (num, lead, resto, y) => {
+    doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(MKT_FONT)
+       .text(`${num}) ${lead} `, MARGIN, y, { width: CONTENT_W, continued: true, lineGap: MKT_GAP });
+    doc.font('Helvetica').text(resto, { lineGap: MKT_GAP });
+    return doc.y;
+  };
+
+  mktY = drawMktP('Primero que nada, quiero felicitarte de corazón. Al dar el paso de solicitar tu seguro de salud, estás demostrando algo invaluable: el compromiso real de proteger tu vida y estar allí para quienes dependen de ti. Cuidar de tu bienestar físico es, sin duda, la base de todo.', mktY) + 5;
+  mktY = drawMktP('Sin embargo, sabemos muy bien que la verdadera tranquilidad no se vive a medias; por eso, con la misma prioridad con la que hoy blindas tu salud, quiero ayudarte a proteger los otros pilares que sostienen tu mundo:', mktY) + 5;
+  mktY = drawMktItem(1, 'El futuro de los tuyos (Seguro de Vida):', 'Tu salud estará respaldada, pero tu amor va más allá del presente. Si el día de mañana no llegaras a estar, una póliza de vida es la certeza de que los sueños de tus hijos, su educación y el sustento de tu hogar seguirán adelante, sin que ellos tengan que heredar cargas financieras ni desamparo en los momentos más difíciles.', mktY) + 4;
+  mktY = drawMktItem(2, 'Tu verdadero refugio (Seguro de Hogar):', 'Tu cuerpo es tu primer templo, y tu casa el segundo. Ya seas propietario o inquilino, allí dentro está tu historia, tus recuerdos y el esfuerzo de tus años reflejado en cada mueble y equipo electrónico. Protégela frente a incendios, daños por agua o terremotos; que un imprevisto de la naturaleza jamás te arrebate lo que tanto te costó levantar.', mktY) + 4;
+  mktY = drawMktItem(3, 'Tu tranquilidad en el camino (Seguro de Auto):', 'Tu vehículo es tu herramienta de movilidad diaria y parte de tu libertad. En nuestras vías, los riesgos de un accidente, una avería o un percance vial están a la orden del día. Asegurarlo te garantiza el auxilio inmediato y la cobertura de daños para que un mal momento en la calle no se convierta en una crisis para tu bolsillo.', mktY) + 4;
+  mktY = drawMktItem(4, 'El escudo para tu profesión y ahorros (Responsabilidad Civil General o Profesional):', 'Has pasado años preparándote y construyendo una reputación. Un error involuntario en tu ejercicio profesional o un accidente fortuito de un tercero bajo tu responsabilidad pueden poner en riesgo los ahorros de toda tu vida en un instante. Esta cobertura es el blindaje legal y económico que responde por ti ante reclamos o demandas, manteniendo a salvo tu patrimonio de años.', mktY) + 4;
+  mktY = drawMktP('Al unificar y centralizar todas tus soluciones de protección conmigo, no solo optimizas tus costos, sino que ganas algo que no tiene precio: simplificar tu vida y tener un único punto de contacto de absoluta confianza para todo lo que te importa.', mktY) + 8;
+
+  doc.fillColor(COLORS.primary).font('Helvetica-BoldOblique').fontSize(8.3)
+     .text('Elegir salud es cuidar el presente. Completar tu protección es blindar tu futuro.', MARGIN, mktY, { width: CONTENT_W, align: 'center' });
+  mktY = doc.y;
 
   // Si el contenido fijo de esta página llegara a invadir la franja reservada
   // para el bloque de contacto (por ejemplo, en un tamaño de página distinto),
   // se abre una página nueva antes de anclarlo al pie.
-  if (boxesY + 82 > CONTACT_Y - 10) {
+  if (mktY > CONTACT_Y - 10) {
     doc.addPage();
     dibujarHeader(doc, '¿ESTÁ REALMENTE PROTEGIDO? (CONTINUACIÓN)');
   }
