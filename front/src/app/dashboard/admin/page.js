@@ -99,6 +99,11 @@ export default function AdminDashboard() {
 
   // --- ESTADOS PARA CREACIÓN E EDICIÓN INTUITIVA DE TARIFAS ---
   const [showNewTariffModal, setShowNewTariffModal] = useState(false);
+  // Modal de confirmación (reemplaza el confirm() nativo del navegador) para
+  // aplicar un cambio de servicio adicional o forma de pago a todas las filas
+  // del mismo plan (misma aseguradora + mismo nombre de plan), sin importar
+  // la edad o suma asegurada de cada fila.
+  const [benefitConfirm, setBenefitConfirm] = useState(null);
   const [editingTariffId, setEditingTariffId] = useState(null);
   const [submittingNewTariff, setSubmittingNewTariff] = useState(false);
   const [newTariffForm, setNewTariffForm] = useState({
@@ -860,32 +865,47 @@ export default function AdminDashboard() {
     setModifiedRows(prev => ({ ...prev, [id]: true }));
   };
 
-  // Igual que handleCellMultipleChanges, pero para checkboxes de "servicios incluidos":
-  // después de aplicar el cambio a la fila actual, ofrece replicarlo a todas las demás
-  // filas del mismo plan (misma aseguradora + mismo nombre de plan), sin importar el
-  // rango de edad o la suma asegurada de cada fila.
+  // Igual que handleCellMultipleChanges, pero para checkboxes de "servicios
+  // adicionales" y "formas de pago": después de aplicar el cambio a la fila
+  // actual, ofrece (con un botón, no con el confirm() nativo del navegador)
+  // replicarlo a todas las demás filas del mismo plan (misma aseguradora +
+  // mismo nombre de plan), sin importar el rango de edad o la suma
+  // asegurada de cada fila.
+  const planRowKey = (t) => `${t.compania_id}|${String(t.plan || '').trim().toUpperCase()}`;
+
   const handleBenefitChange = (id, updates, label) => {
     handleCellMultipleChanges(id, updates);
 
     const source = tariffs.find(t => t.id === id);
     if (!source || !source.plan) return;
 
-    const planKey = (t) => `${t.compania_id}|${String(t.plan || '').trim().toUpperCase()}`;
-    const key = planKey(source);
-    const siblings = tariffs.filter(t => t.id !== id && planKey(t) === key);
-    if (siblings.length === 0) return;
+    const key = planRowKey(source);
+    const siblingsCount = tariffs.filter(t => t.id !== id && planRowKey(t) === key).length;
+    if (siblingsCount === 0) return;
 
-    const isIncluded = !!Object.values(updates)[0];
-    const confirmMsg = `¿Aplicar "${label}: ${isIncluded ? 'Incluido' : 'No incluido'}" también a las otras ${siblings.length} fila(s) del plan "${source.plan}" (todas las edades y sumas aseguradas de esa aseguradora)?`;
+    setBenefitConfirm({
+      planKey: key,
+      planName: source.plan,
+      label,
+      updates,
+      isIncluded: !!Object.values(updates)[0],
+      siblingsCount
+    });
+  };
 
-    if (confirm(confirmMsg)) {
-      setTariffs(prev => prev.map(t => (planKey(t) === key ? { ...t, ...updates } : t)));
-      setModifiedRows(prev => {
-        const next = { ...prev };
-        siblings.forEach(t => { next[t.id] = true; });
-        return next;
-      });
-    }
+  // Aplica el cambio pendiente (guardado en benefitConfirm) a todas las filas
+  // del mismo plan, sin importar edad ni suma asegurada.
+  const applyBenefitToAllRows = () => {
+    if (!benefitConfirm) return;
+    const { planKey: key, updates } = benefitConfirm;
+
+    setTariffs(prev => prev.map(t => (planRowKey(t) === key ? { ...t, ...updates } : t)));
+    setModifiedRows(prev => {
+      const next = { ...prev };
+      tariffs.forEach(t => { if (planRowKey(t) === key) next[t.id] = true; });
+      return next;
+    });
+    setBenefitConfirm(null);
   };
 
   // --- ABRIR MODAL PARA EDITAR TARIFA EXISTENTE ---
@@ -3169,6 +3189,77 @@ export default function AdminDashboard() {
                 </div>
               </h3>
 
+              {/* MODAL: aplicar servicio adicional / forma de pago a todas las filas del plan */}
+              {benefitConfirm && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(15,23,42,0.55)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 10000, padding: '1rem'
+                }}>
+                  <div style={{
+                    background: '#fff', borderRadius: '14px', padding: '1.4rem 1.5rem',
+                    maxWidth: '440px', width: '100%',
+                    boxShadow: '0 24px 48px -12px rgba(0,0,0,0.35)',
+                    border: '1px solid var(--border)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', marginBottom: '0.9rem' }}>
+                      <div style={{
+                        width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+                        background: benefitConfirm.isIncluded ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem'
+                      }}>
+                        {benefitConfirm.isIncluded ? '✅' : '🚫'}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 800, color: 'var(--primary)' }}>
+                          Aplicar a todo el plan
+                        </h4>
+                        <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                          {benefitConfirm.label}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.55, margin: '0 0 1.3rem 0' }}>
+                      Marcaste <strong>“{benefitConfirm.label}”</strong> como{' '}
+                      <strong style={{ color: benefitConfirm.isIncluded ? '#059669' : '#dc2626' }}>
+                        {benefitConfirm.isIncluded ? 'incluido' : 'no incluido'}
+                      </strong>{' '}
+                      en el plan <strong>“{benefitConfirm.planName}”</strong>. ¿Aplicamos el mismo cambio a las
+                      otras <strong>{benefitConfirm.siblingsCount}</strong> fila(s) de ese plan — todas sus
+                      edades y sumas aseguradas — o solo dejamos esta fila?
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setBenefitConfirm(null)}
+                        style={{
+                          padding: '0.55rem 1rem', borderRadius: '9px', border: '1px solid var(--border)',
+                          background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem'
+                        }}
+                      >
+                        Solo esta fila
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applyBenefitToAllRows}
+                        style={{
+                          padding: '0.55rem 1.15rem', borderRadius: '9px', border: 'none',
+                          background: 'linear-gradient(135deg, #2563eb, #1e3a8a)', color: '#fff',
+                          fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem',
+                          boxShadow: '0 6px 14px -4px rgba(37,99,235,0.55)'
+                        }}
+                      >
+                        ✓ Aplicar a las {benefitConfirm.siblingsCount} filas
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* MODAL GUIADO PARA CREAR / EDITAR TARIFA */}
               {showNewTariffModal && (
                 <div style={{
@@ -4100,7 +4191,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_contado}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_contado', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_contado: e.target.checked }, 'Forma de Pago: Contado')}
                                   style={{ cursor: 'pointer' }}
                                   title="Contado"
                                 />
@@ -4109,7 +4200,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_semestral}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_semestral', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_semestral: e.target.checked }, 'Forma de Pago: Semestral')}
                                   style={{ cursor: 'pointer' }}
                                   title="Semestral"
                                 />
@@ -4118,7 +4209,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_cuatrimestral}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_cuatrimestral', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_cuatrimestral: e.target.checked }, 'Forma de Pago: Cuatrimestral')}
                                   style={{ cursor: 'pointer' }}
                                   title="Cuatrimestral"
                                 />
@@ -4127,7 +4218,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_trimestral}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_trimestral', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_trimestral: e.target.checked }, 'Forma de Pago: Trimestral')}
                                   style={{ cursor: 'pointer' }}
                                   title="Trimestral"
                                 />
@@ -4136,7 +4227,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_bimestral}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_bimestral', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_bimestral: e.target.checked }, 'Forma de Pago: Bimestral')}
                                   style={{ cursor: 'pointer' }}
                                   title="Bimestral"
                                 />
@@ -4145,7 +4236,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_4_cuotas}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_4_cuotas', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_4_cuotas: e.target.checked }, 'Forma de Pago: 4 Cuotas Consecutivas')}
                                   style={{ cursor: 'pointer' }}
                                   title="4 Cuotas Consecutivas"
                                 />
@@ -4154,7 +4245,7 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!t.pago_mensual}
-                                  onChange={(e) => handleCellChange(t.id, 'pago_mensual', e.target.checked)}
+                                  onChange={(e) => handleBenefitChange(t.id, { pago_mensual: e.target.checked }, 'Forma de Pago: Mensual')}
                                   style={{ cursor: 'pointer' }}
                                   title="Mensual"
                                 />

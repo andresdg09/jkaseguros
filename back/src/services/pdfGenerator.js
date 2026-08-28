@@ -34,7 +34,7 @@ const BROKER_INFO_LINES = [
 function dibujarHeader(doc, tituloPagina = '') {
   doc.rect(0, 0, PAGE_W, 65).fill('#ffffff');
 
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(15).text('Protección & Seguros 360', MARGIN, 24, { lineBreak: false });
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(12).text('www.protecciónyseguros360.com', MARGIN, 26, { lineBreak: false });
 
   doc.fillColor(COLORS.primary).fontSize(8.5).font('Helvetica-Bold');
   doc.text((tituloPagina || 'COTIZACIÓN DE SEGUROS DE SALUD').toUpperCase(), 250, 16, { align: 'right', width: 305, lineBreak: false });
@@ -263,7 +263,7 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   }
   if (costoAsist > 0) {
     extrasList.push({
-      nombre: 'Asist. Internacional',
+      nombre: 'Asistencia de Viajes',
       suma: comp.asist_intl_suma || 'Cubierta',
       costo: `+ $${costoAsist.toFixed(2)}/año`
     });
@@ -301,13 +301,17 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   // uno en su propio rectángulo para que se lea más específico y claro.
   const priceX = x + width - priceBoxW - 10;
   const priceY = y + 8;
-  const priceH = height - 16;
   const hayExtras = totalExtras > 0;
 
   const boxGap = 4;
-  const boxH1 = 36; // Prima Base (sin extras)
-  const boxH2 = 27; // Extras
-  const boxH3 = 36; // Total con Extras
+  // El recuadro de "Total con Extras" queda alineado (misma posición y misma
+  // altura) con el recuadro de "Coberturas Extras Disponibles" de la
+  // izquierda, para que ambos se lean como un mismo renglón.
+  const box3Y = extraStartY;
+  const box3H = extraBoxH;
+  const availTop = box3Y - priceY - boxGap; // espacio para Prima Base + separador + Extras
+  const boxH1 = Math.round(availTop * 0.55); // Prima Base (sin extras)
+  const boxH2 = availTop - boxGap - boxH1; // Extras
   let py = priceY;
 
   // 1. Recuadro: Prima Base (sin extras)
@@ -329,11 +333,11 @@ function dibujarTarjetaAseguradora(doc, x, y, width, height, comp, isBest) {
   doc.fillColor(hayExtras ? '#b45309' : COLORS.muted).font('Helvetica-Bold').fontSize(9.5)
      .text(hayExtras ? `+ $${totalExtras.toFixed(2)}` : '$0.00', priceX, py + 14, { width: priceBoxW, align: 'center', lineBreak: false });
 
-  py += boxH2 + boxGap;
-
-  // 3. Recuadro: Total con Extras
-  doc.roundedRect(priceX, py, priceBoxW, boxH3, 4).fill(hayExtras ? '#dcfce7' : '#f0fdf4');
-  doc.roundedRect(priceX, py, priceBoxW, boxH3, 4).lineWidth(1).stroke('#86efac');
+  // 3. Recuadro: Total con Extras — alineado con el recuadro de Coberturas
+  // Extras Disponibles (misma Y de inicio y misma altura).
+  py = box3Y;
+  doc.roundedRect(priceX, py, priceBoxW, box3H, 4).fill(hayExtras ? '#dcfce7' : '#f0fdf4');
+  doc.roundedRect(priceX, py, priceBoxW, box3H, 4).lineWidth(1).stroke('#86efac');
   doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(6).text('TOTAL CON EXTRAS', priceX, py + 5, { width: priceBoxW, align: 'center', lineBreak: false });
   doc.fillColor(COLORS.success).font('Helvetica-Bold').fontSize(12)
      .text(`$${primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceX, py + 13, { width: priceBoxW, align: 'center', lineBreak: false });

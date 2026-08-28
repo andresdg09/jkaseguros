@@ -1118,7 +1118,7 @@ export default function Home() {
                         </span>
                       </div>
                       <div className="result-feature" style={{ padding: '0.15rem 0' }}>
-                        <span className="result-feature-label">Asist. Internacional:</span>
+                        <span className="result-feature-label">Asistencia de Viajes:</span>
                         <span className="result-feature-value">
                           {comp.asist_intl_suma ? (
                             costoAsist > 0 ? `${comp.asist_intl_suma} (+ $${costoAsist.toFixed(2)}/año)` : `${comp.asist_intl_suma} (Incluida en base)`
