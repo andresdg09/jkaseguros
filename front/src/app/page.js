@@ -1074,7 +1074,8 @@ export default function Home() {
                           { name: 'Odontología', active: !!comp.odontologia },
                           { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
                           { name: 'Muerte Acc. base', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
-                          { name: 'Invalidez base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) }
+                          { name: 'Invalidez base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) },
+                          { name: 'Reembolso Carta Aval', active: !!comp.reembolso_carta_aval }
                         ].map((serv, sIdx) => (
                           <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem' }}>
                             <span style={{ color: serv.active ? '#15803d' : '#cbd5e1', fontWeight: 800 }}>

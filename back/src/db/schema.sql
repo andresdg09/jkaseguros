@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS tarifas (
     invalidez_permanente_costo VARCHAR(50),
     ambulancia VARCHAR(50),
     ramo VARCHAR(100) NOT NULL DEFAULT 'Salud',
+    reembolso_carta_aval BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

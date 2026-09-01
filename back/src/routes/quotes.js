@@ -26,7 +26,7 @@ const BENEFIT_FIELDS = [
   'atencion_medica_primaria', 'at_situ_medicamentos', 'medicinas', 'consultas_medicas', 'examenes_lab_imagenologia', 'ambulancia',
   'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'consultas', 'maternidad', 'maternidad_suma',
   'oftalmologia', 'odontologia', 'muerte_accidental', 'muerte_accidental_suma', 'invalidez_permanente', 'invalidez_permanente_suma',
-  'asist_intl_suma', 'funeral_suma'
+  'asist_intl_suma', 'funeral_suma', 'reembolso_carta_aval'
 ];
 
 function tieneBeneficio(valor) {
@@ -156,6 +156,7 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       invalidez_permanente_suma: t.invalidez_permanente_suma || '',
       invalidez_permanente_costo: t.invalidez_permanente_costo || '',
       ambulancia: t.ambulancia || '',
+      reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL'),
       calidadScore,
       relacion_calidad_precio,
       recomendada: false,

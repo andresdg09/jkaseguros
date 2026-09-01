@@ -870,6 +870,7 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
   await client.query("ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT 'Salud';");
+  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS reembolso_carta_aval BOOLEAN DEFAULT FALSE;');
 
   // Pólizas: la modalidad colectivo/individual se reemplaza por el nombre de plan contratado
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check;');

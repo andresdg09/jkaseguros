@@ -310,7 +310,8 @@ export default function CotizacionPublicaPage() {
             { name: 'Invalidez Perm.', active: !!(comp.invalidez_permanente || (comp.invalidez_permanente_suma && costoInvalidez === 0)) },
             { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
             { name: 'Oftalmología', active: !!comp.oftalmologia },
-            { name: 'Odontología', active: !!comp.odontologia }
+            { name: 'Odontología', active: !!comp.odontologia },
+            { name: 'Reembolso Carta Aval', active: !!comp.reembolso_carta_aval }
           ];
 
           return (

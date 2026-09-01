@@ -87,6 +87,7 @@ function extractTariffBenefits(body) {
   const rehab = isTrue(body.rehabilitacion !== undefined ? body.rehabilitacion : (body.fisioterapia_rehabilitacion !== undefined ? body.fisioterapia_rehabilitacion : body.rehabilitación));
   const prot = isTrue(body.protesis !== undefined ? body.protesis : (body.protesis_quirurgicas !== undefined ? body.protesis_quirurgicas : body.prótesis));
   const muletaSilla = isTrue(body.muleta_silla_ruedas !== undefined ? body.muleta_silla_ruedas : (body.muletas !== undefined ? body.muletas : (body.silla_ruedas !== undefined ? body.silla_ruedas : body.muleta_silla)));
+  const reembolsoCartaAval = isTrue(body.reembolso_carta_aval !== undefined ? body.reembolso_carta_aval : (body.reembolso !== undefined ? body.reembolso : body.carta_aval));
   const consult = isTrue(body.consultas !== undefined ? body.consultas : (body.consultas_especialistas !== undefined ? body.consultas_especialistas : body.consultas_especialista));
   const mat = isTrue(body.maternidad) || hasValue(body.maternidad_suma);
   const oftalmo = isTrue(body.oftalmologia !== undefined ? body.oftalmologia : body.oftalmología);
@@ -121,7 +122,8 @@ function extractTariffBenefits(body) {
     asist_intl_suma: body.asist_intl_suma || '',
     asist_intl_costo: body.asist_intl_costo || '',
     funeral_suma: body.funeral_suma || '',
-    funeral_costo: body.funeral_costo || ''
+    funeral_costo: body.funeral_costo || '',
+    reembolso_carta_aval: reembolsoCartaAval
   };
 }
 
@@ -735,11 +737,11 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
             funeral_suma, funeral_costo, at_situ_medicamentos, atencion_medica_primaria, medicinas, consultas_medicas,
             rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
             oftalmologia, odontologia, muerte_accidental, muerte_accidental_suma, muerte_accidental_costo,
-            invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo
+            invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
             $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-            $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
+            $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
           )
         `;
 
@@ -758,7 +760,7 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           benefits.muerte_accidental, benefits.muerte_accidental_suma, benefits.muerte_accidental_costo,
           benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
           benefits.ambulancia,
-          t.ramo || 'Salud'
+          t.ramo || 'Salud', benefits.reembolso_carta_aval
         ]);
         loadedCount++;
       }
@@ -814,7 +816,7 @@ const TARIFF_BENEFIT_FIELDS = [
   'plan', 'pago', 'maternidad_suma', 'maternidad_costo', 'asist_intl_suma', 'asist_intl_costo',
   'funeral_suma', 'funeral_costo', 'at_situ_medicamentos', 'atencion_medica_primaria', 'medicinas', 'consultas_medicas',
   'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'examenes_lab_imagenologia', 'consultas', 'maternidad',
-  'oftalmologia', 'odontologia', 'ambulancia',
+  'oftalmologia', 'odontologia', 'ambulancia', 'reembolso_carta_aval',
   'muerte_accidental', 'muerte_accidental_suma', 'muerte_accidental_costo',
   'invalidez_permanente', 'invalidez_permanente_suma', 'invalidez_permanente_costo',
   'pago_contado', 'pago_semestral', 'pago_cuatrimestral', 'pago_trimestral', 'pago_bimestral', 'pago_4_cuotas', 'pago_mensual',
@@ -871,11 +873,11 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
           funeral_suma, funeral_costo, at_situ_medicamentos, atencion_medica_primaria, medicinas, consultas_medicas,
           rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
           oftalmologia, odontologia, muerte_accidental, muerte_accidental_suma, muerte_accidental_costo,
-          invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo
+          invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
           $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-          $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
+          $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
         )
         RETURNING *
       `;
@@ -894,7 +896,7 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         benefits.muerte_accidental, benefits.muerte_accidental_suma, benefits.muerte_accidental_costo,
         benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
         benefits.ambulancia,
-        req.body.ramo || 'Salud'
+        req.body.ramo || 'Salud', benefits.reembolso_carta_aval
       ]);
       createdTariff = insRes.rows[0];
     }
@@ -962,8 +964,9 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
             funeral_suma = $20, funeral_costo = $21, at_situ_medicamentos = $22, atencion_medica_primaria = $23, medicinas = $24, consultas_medicas = $25,
             rehabilitacion = $26, protesis = $27, muleta_silla_ruedas = $28, examenes_lab_imagenologia = $29, consultas = $30, maternidad = $31,
             oftalmologia = $32, odontologia = $33, muerte_accidental = $34, muerte_accidental_suma = $35, muerte_accidental_costo = $36,
-            invalidez_permanente = $37, invalidez_permanente_suma = $38, invalidez_permanente_costo = $39, ambulancia = $40, ramo = $41
-        WHERE id = $42
+            invalidez_permanente = $37, invalidez_permanente_suma = $38, invalidez_permanente_costo = $39, ambulancia = $40, ramo = $41,
+            reembolso_carta_aval = $42
+        WHERE id = $43
         RETURNING *
       `;
       const resUp = await db.query(q, [
@@ -982,6 +985,7 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
         benefits.ambulancia,
         req.body.ramo || 'Salud',
+        benefits.reembolso_carta_aval,
         parseInt(id)
       ]);
       if (resUp.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
@@ -1097,11 +1101,11 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               funeral_suma, funeral_costo, at_situ_medicamentos, atencion_medica_primaria, medicinas, consultas_medicas,
               rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
               oftalmologia, odontologia, muerte_accidental, muerte_accidental_suma, muerte_accidental_costo,
-              invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo
+              invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval
             ) VALUES (
               $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
               $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-              $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
+              $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
             )
           `;
           await db.query(q, [
@@ -1119,7 +1123,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             benefits.muerte_accidental, benefits.muerte_accidental_suma, benefits.muerte_accidental_costo,
             benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
             benefits.ambulancia,
-            t.ramo || 'Salud'
+            t.ramo || 'Salud', benefits.reembolso_carta_aval
           ]);
           savedCount++;
         } else {
@@ -1132,8 +1136,9 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
                 funeral_suma = $20, funeral_costo = $21, at_situ_medicamentos = $22, atencion_medica_primaria = $23, medicinas = $24, consultas_medicas = $25,
                 rehabilitacion = $26, protesis = $27, muleta_silla_ruedas = $28, examenes_lab_imagenologia = $29, consultas = $30, maternidad = $31,
                 oftalmologia = $32, odontologia = $33, muerte_accidental = $34, muerte_accidental_suma = $35, muerte_accidental_costo = $36,
-                invalidez_permanente = $37, invalidez_permanente_suma = $38, invalidez_permanente_costo = $39, ambulancia = $40, ramo = $41
-            WHERE id = $42
+                invalidez_permanente = $37, invalidez_permanente_suma = $38, invalidez_permanente_costo = $39, ambulancia = $40, ramo = $41,
+                reembolso_carta_aval = $42
+            WHERE id = $43
           `;
           await db.query(q, [
             parseInt(compania_id), edadMin, edadMax, sumaAsegurada, deducibleVal, primaVal,
@@ -1151,6 +1156,7 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
             benefits.ambulancia,
             t.ramo || 'Salud',
+            benefits.reembolso_carta_aval,
             parseInt(id)
           ]);
           savedCount++;

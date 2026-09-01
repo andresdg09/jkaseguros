@@ -142,6 +142,7 @@ export default function AdminDashboard() {
     invalidez_permanente_suma: '',
     invalidez_permanente_costo: '',
     ambulancia: true,
+    reembolso_carta_aval: false,
     asist_intl_suma: '',
     asist_intl_costo: '',
     funeral_suma: '',
@@ -197,6 +198,7 @@ export default function AdminDashboard() {
     invalidez_permanente_suma: 105,
     invalidez_permanente_costo: 105,
     ambulancia: 90,
+    reembolso_carta_aval: 120,
     maternidad_suma: 100,
     maternidad_costo: 100,
     asist_intl_suma: 100,
@@ -279,7 +281,8 @@ export default function AdminDashboard() {
         muerte_accidental: !!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL' || (t.muerte_accidental_suma && String(t.muerte_accidental_suma).trim().length > 0 && t.muerte_accidental_suma !== '0' && t.muerte_accidental_suma !== '$0')),
         invalidez_permanente: !!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL' || (t.invalidez_permanente_suma && String(t.invalidez_permanente_suma).trim().length > 0 && t.invalidez_permanente_suma !== '0' && t.invalidez_permanente_suma !== '$0')),
         examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
-        ambulancia: t.ambulancia || ''
+        ambulancia: t.ambulancia || '',
+        reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL')
       })) : [];
       setTariffs(normalizedTariffs);
 
@@ -947,6 +950,7 @@ export default function AdminDashboard() {
       invalidez_permanente_suma: t.invalidez_permanente_suma || '',
       invalidez_permanente_costo: t.invalidez_permanente_costo || '',
       ambulancia: !!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL' || (typeof t.ambulancia === 'string' && t.ambulancia.length > 0 && t.ambulancia !== 'NO' && t.ambulancia !== 'false')),
+      reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL'),
       asist_intl_suma: t.asist_intl_suma || '',
       asist_intl_costo: t.asist_intl_costo || '',
       funeral_suma: t.funeral_suma || '',
@@ -1012,7 +1016,8 @@ export default function AdminDashboard() {
         invalidez_permanente_costo: newTariffForm.invalidez_permanente_costo || '',
         at_situ_medicamentos: newTariffForm.atencion_medica_primaria ? 'INCL' : '',
         examenes_lab_imagenologia: newTariffForm.examenes_lab_imagenologia ? 'INCL' : '',
-        ambulancia: newTariffForm.ambulancia ? 'INCL' : ''
+        ambulancia: newTariffForm.ambulancia ? 'INCL' : '',
+        reembolso_carta_aval: !!newTariffForm.reembolso_carta_aval
       };
 
       const isEdit = !!editingTariffId;
@@ -1207,7 +1212,8 @@ export default function AdminDashboard() {
       invalidez_permanente: false,
       invalidez_permanente_suma: '',
       invalidez_permanente_costo: '',
-      ambulancia: 'INCL'
+      ambulancia: 'INCL',
+      reembolso_carta_aval: false
     };
     setTariffs(prev => [newRow, ...prev]);
     setModifiedRows(prev => ({ ...prev, [tempId]: true }));
@@ -3437,7 +3443,8 @@ export default function AdminDashboard() {
                             { key: 'odontologia', label: '🦷 Odontología' },
                             { key: 'muerte_accidental', label: '🕊️ Muerte Accidental' },
                             { key: 'invalidez_permanente', label: '🩼 Invalidez Permanente' },
-                            { key: 'maternidad', label: '🤰 Cobertura de Maternidad' }
+                            { key: 'maternidad', label: '🤰 Cobertura de Maternidad' },
+                            { key: 'reembolso_carta_aval', label: '📄 Reembolso / Carta Aval' }
                           ].map(b => (
                             <label key={b.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', background: '#fff', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                               <input
@@ -3971,6 +3978,7 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.invalidez_permanente_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.invalidez_permanente_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.ambulancia}px` }} />
+                      <col style={{ width: `${detailedColWidths.reembolso_carta_aval}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.asist_intl_suma}px` }} />
@@ -4109,6 +4117,10 @@ export default function AdminDashboard() {
                           Ambulancia
                           <div className={`resize-handle ${resizingCol === 'ambulancia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ambulancia')} />
                         </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Reembolso Carta Aval
+                          <div className={`resize-handle ${resizingCol === 'reembolso_carta_aval' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'reembolso_carta_aval')} />
+                        </th>
                         <th style={{ position: 'relative' }}>
                           Maternidad Suma
                           <div className={`resize-handle ${resizingCol === 'maternidad_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'maternidad_suma')} />
@@ -4142,7 +4154,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredTariffs.length === 0 ? (
                         <tr>
-                          <td colSpan="40" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan="41" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas registradas en la planilla.
                           </td>
                         </tr>
@@ -4457,6 +4469,17 @@ export default function AdminDashboard() {
                                   onChange={(e) => handleBenefitChange(t.id, { ambulancia: e.target.checked ? 'INCL' : '' }, 'Ambulancia')}
                                   style={{ cursor: 'pointer' }}
                                   title="Ambulancia"
+                                />
+                              </td>
+
+                              {/* Reembolso Carta Aval */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL')}
+                                  onChange={(e) => handleBenefitChange(t.id, { reembolso_carta_aval: e.target.checked }, 'Reembolso Carta Aval')}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Reembolso Carta Aval"
                                 />
                               </td>
 
