@@ -135,7 +135,6 @@ const GRID_H = GRID_ROWS * GRID_ROW_H;
 const SECTION_DIVIDER_GAP = 10;
 const EXTRAS_BOX_H = 74; // título + 5 filas con separador punteado
 const PAYMENT_BOX_FIXED = 24; // título + paddings de la caja de formas de pago (sin las píldoras)
-const SCORE_ROW_H = 13;
 const CARD_BOTTOM_PAD = 10;
 
 const PAY_CHIP_FONT = 6;
@@ -287,7 +286,7 @@ function calcularAlturaTarjeta(doc, comp, width, scale = 1) {
   const chipsH = filasPago.length * payChipH + (filasPago.length - 1) * PAY_CHIP_GAP_Y * s;
   const fixedSum = CARD_TOP_PAD + CARD_HEADER_H + CARD_GAP + CARD_PRICEBOX_H + CARD_GAP +
          SECTION_TITLE_H + GAP_XS + DEDBOX_H + GAP_SM + GRID_H + SECTION_DIVIDER_GAP +
-         EXTRAS_BOX_H + CARD_GAP + PAYMENT_BOX_FIXED + GAP_SM + SCORE_ROW_H + CARD_BOTTOM_PAD;
+         EXTRAS_BOX_H + CARD_GAP + PAYMENT_BOX_FIXED + CARD_BOTTOM_PAD;
   return fixedSum * s + chipsH;
 }
 
@@ -296,21 +295,26 @@ function calcularAlturaTarjeta(doc, comp, width, scale = 1) {
  * "Cuadro Comparativo de Opciones" de la página web: nombre (oscuro) + plan
  * (azul) con línea divisoria, caja de precio única de ancho completo (prima
  * base y total con extras en una sola caja), caja de deducible, grid de 2
- * columnas con los 14 servicios del plan base, recuadro de coberturas extras
- * con separadores punteados, píldoras de colores por forma de pago, y el
- * score de cobertura al final.
+ * columnas con los 15 servicios del plan base, recuadro de coberturas extras
+ * con separadores punteados, y píldoras de colores por forma de pago
+ * (sin score de cobertura, no se muestra en el PDF).
  *
  * `scale` (por defecto 1) reduce proporcionalmente fuentes y espaciados
  * verticales — lo usa `dibujarPdf` para que todas las tarjetas quepan en una
  * sola página sin importar cuántas aseguradoras se estén comparando.
+ *
+ * `forcedHeight` (opcional) fuerza el alto del recuadro de la tarjeta a un
+ * valor dado en vez del que necesitaría su propio contenido — así todas las
+ * tarjetas de la comparativa quedan del mismo tamaño (se usa el alto de la
+ * que más contenido tenga), aunque a alguna le sobre espacio libre al final.
  */
-function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1) {
+function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeight = null) {
   const s = scale;
   const padX = x + 12;
   const contentW = width - 24;
   const fin = calcularDatosFinancieros(comp);
   const hayExtras = fin.totalExtras > 0;
-  const height = calcularAlturaTarjeta(doc, comp, width, s);
+  const height = forcedHeight != null ? forcedHeight : calcularAlturaTarjeta(doc, comp, width, s);
 
   // Tarjeta blanca con borde gris, igual para todas las opciones — el
   // comparativo web no distingue visualmente un plan "recomendado".
@@ -447,13 +451,6 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1) {
     });
     chipY += payChipH + payChipGapY;
   });
-  cy += payBoxH + GAP_SM * s;
-
-  // --- Score de Cobertura ---
-  doc.dash(1, { space: 1.5 }).strokeColor(COLORS.border).lineWidth(0.75).moveTo(padX, cy).lineTo(padX + contentW, cy).stroke();
-  doc.undash();
-  doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(7 * s).text('Score de Cobertura:', padX, cy + 4 * s, { lineBreak: false });
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(7 * s).text(`${comp.calidadScore || 0} / 50 pts`, padX, cy + 4 * s, { width: contentW, align: 'right' });
 }
 
 /**
@@ -774,10 +771,13 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
   // espaciados) con `scale`. Si ni siquiera al tamaño mínimo legible entran,
   // se recurre al flujo anterior con salto de página por fila, a tamaño
   // completo.
+  //
+  // Todas las tarjetas usan el mismo alto — el de la que más contenido
+  // necesite (calcularAlturaMaxima) — para que se vean del mismo tamaño en
+  // vez de que cada una se ajuste solo a su propio contenido.
   const MIN_SCALE = 0.62;
-  const alturaTotalFilas = (scale) => filas.reduce((acc, fila) => (
-    acc + Math.max(...fila.map((comp) => calcularAlturaTarjeta(doc, comp, cardW, scale)))
-  ), 0) + (filas.length - 1) * rowGap;
+  const calcularAlturaMaxima = (scale) => Math.max(...comparativas.map((comp) => calcularAlturaTarjeta(doc, comp, cardW, scale)));
+  const alturaTotalFilas = (scale) => filas.length * calcularAlturaMaxima(scale) + (filas.length - 1) * rowGap;
 
   const availableH = (CONTACT_Y - 10) - cardY;
   const alturaSinEscalar = alturaTotalFilas(1);
@@ -788,20 +788,20 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   if (alturaTotalFilas(scale) <= availableH) {
     // Todas las tarjetas caben en la página actual, sin saltos de página.
+    const cardH = calcularAlturaMaxima(scale);
     filas.forEach((fila) => {
-      const filaH = Math.max(...fila.map((comp) => calcularAlturaTarjeta(doc, comp, cardW, scale)));
       fila.forEach((comp, j) => {
         const cardX = MARGIN + j * (cardW + colGap);
-        dibujarTarjetaAseguradora(doc, cardX, cardY, cardW, comp, scale);
+        dibujarTarjetaAseguradora(doc, cardX, cardY, cardW, comp, scale, cardH);
       });
-      cardY += filaH + rowGap;
+      cardY += cardH + rowGap;
     });
   } else {
     // Demasiadas aseguradoras para una sola página incluso al tamaño mínimo:
     // se dibuja a tamaño completo (más legible) con salto de página por fila.
+    const cardH = calcularAlturaMaxima(1);
     filas.forEach((fila) => {
-      const filaH = Math.max(...fila.map((comp) => calcularAlturaTarjeta(doc, comp, cardW, 1)));
-      if (cardY + filaH > CONTACT_Y - 10) {
+      if (cardY + cardH > CONTACT_Y - 10) {
         // Cierra la página saliente con el bloque de contacto anclado al pie
         dibujarContactoAsesor(doc, asesor, MARGIN, CONTACT_Y, CONTENT_W);
         doc.addPage();
@@ -810,9 +810,9 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
       }
       fila.forEach((comp, j) => {
         const cardX = MARGIN + j * (cardW + colGap);
-        dibujarTarjetaAseguradora(doc, cardX, cardY, cardW, comp, 1);
+        dibujarTarjetaAseguradora(doc, cardX, cardY, cardW, comp, 1, cardH);
       });
-      cardY += filaH + rowGap;
+      cardY += cardH + rowGap;
     });
   }
 
