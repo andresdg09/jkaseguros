@@ -173,27 +173,27 @@ function calcularDatosFinancieros(comp) {
 }
 
 /**
- * Lista de 15 servicios del plan base para el grid de 2 columnas — igual al
- * arreglo usado en el "Cuadro Comparativo de Opciones" de la web (incluye
- * "Reembolso Carta Aval", la casilla de servicios adicionales del tarifario).
+ * Lista de 15 servicios del plan base para el grid de 2 columnas — mismos
+ * campos y mismo orden que la sección "Coberturas y Beneficios Incluidos"
+ * del tarifario (panel admin), no el comparativo de la web.
  */
 function construirServiciosGrid(comp, fin) {
   return [
-    { name: 'At. Primaria (AMP)', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
-    { name: 'Medicamentos', active: !!comp.medicinas },
-    { name: 'Cons. Médicas', active: !!comp.consultas_medicas },
-    { name: 'Exámenes Lab/Img', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' && comp.examenes_lab_imagenologia !== 'false') },
-    { name: 'Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO' && comp.ambulancia !== 'false') },
-    { name: 'Rehabilitación', active: !!comp.rehabilitacion },
-    { name: 'Prótesis', active: !!comp.protesis },
-    { name: 'Muleta + Silla', active: !!comp.muleta_silla_ruedas },
-    { name: 'Consultas Espec.', active: !!comp.consultas },
+    { name: 'Atención Médica Primaria (AMP)', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
+    { name: 'Medicamentos Prescritos', active: !!comp.medicinas },
+    { name: 'Consultas Médicas', active: !!comp.consultas_medicas },
+    { name: 'Exámenes Lab e Imágenes', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' && comp.examenes_lab_imagenologia !== 'false') },
+    { name: 'Servicio de Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO' && comp.ambulancia !== 'false') },
+    { name: 'Consultas Especialistas', active: !!comp.consultas },
+    { name: 'Fisioterapia / Rehabilitación', active: !!comp.rehabilitacion },
+    { name: 'Prótesis Quirúrgicas', active: !!comp.protesis },
+    { name: 'Muleta + Silla de Ruedas', active: !!comp.muleta_silla_ruedas },
     { name: 'Oftalmología', active: !!comp.oftalmologia },
     { name: 'Odontología', active: !!comp.odontologia },
-    { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && fin.costoMat === 0) },
-    { name: 'Muerte Acc. base', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && fin.costoMuerteAcc === 0) },
-    { name: 'Invalidez base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && fin.costoInvalidez === 0) },
-    { name: 'Reembolso Carta Aval', active: !!comp.reembolso_carta_aval }
+    { name: 'Muerte Accidental', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && fin.costoMuerteAcc === 0) },
+    { name: 'Invalidez Permanente', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && fin.costoInvalidez === 0) },
+    { name: 'Cobertura de Maternidad', active: !!((comp.maternidad || comp.maternidad_suma) && fin.costoMat === 0) },
+    { name: 'Reembolso / Carta Aval', active: !!comp.reembolso_carta_aval }
   ];
 }
 
