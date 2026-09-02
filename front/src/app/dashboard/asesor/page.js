@@ -1604,7 +1604,8 @@ export default function AsesorDashboard() {
                                 </td>
                               </tr>
                             );
-                          })}
+                          })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -2934,7 +2935,7 @@ export default function AsesorDashboard() {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               justifyContent: 'center',
@@ -2942,25 +2943,67 @@ export default function AsesorDashboard() {
               zIndex: 9999,
               padding: '1rem'
             }}>
-              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200/90 animate-fadeIn">
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '20px',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+                width: '100%',
+                maxWidth: '880px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0'
+              }}>
                 
                 {/* Modal Header */}
-                <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white flex items-center justify-between">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 text-white font-black flex items-center justify-center text-base border border-white/20 shadow-inner">
+                <div style={{
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
+                  padding: '1.25rem 1.75rem',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '14px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      border: '1px solid rgba(255, 255, 255, 0.25)',
+                      color: '#ffffff',
+                      fontWeight: 900,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.1rem',
+                      boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)'
+                    }}>
                       {(profileModalClient.nombre || 'C').split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/20 text-blue-200 border border-blue-400/30 uppercase tracking-wider">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                        <span style={{
+                          backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                          color: '#bfdbfe',
+                          border: '1px solid rgba(147, 197, 253, 0.4)',
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '9999px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
                           Ficha 360 del Asegurado
                         </span>
-                        <span className="text-xs text-slate-300 font-medium">• Modo Asesor</span>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>• Modo Asesor</span>
                       </div>
-                      <h3 className="font-black text-xl tracking-tight text-white mt-0.5">
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
                         {profileModalClient.nombre || `${profileModalClient.primer_nombre} ${profileModalClient.primer_apellido}`}
                       </h3>
-                      <p className="text-xs text-slate-300 font-medium">
+                      <p style={{ fontSize: '0.75rem', color: '#cbd5e1', margin: '0.15rem 0 0 0' }}>
                         {profileModalClient.tipo_documento} {profileModalClient.nro_documento} • {profileModalClient.correo} • {profileModalClient.telefono}
                       </p>
                     </div>
@@ -2969,103 +3012,179 @@ export default function AsesorDashboard() {
                   <button
                     type="button"
                     onClick={() => setProfileModalClient(null)}
-                    className="w-9 h-9 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-sm transition"
+                    style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '10px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                      border: 'none',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      transition: 'background-color 0.2s ease'
+                    }}
                   >
                     ✕
                   </button>
                 </div>
 
                 {/* Subheader / Segmented Pill Tabs */}
-                <div className="px-6 py-3 bg-slate-100/90 border-b border-slate-200/80 overflow-x-auto">
-                  <div className="flex gap-1.5 p-1 bg-slate-200/70 rounded-2xl w-fit">
-                    <button
-                      type="button"
-                      onClick={() => setProfileModalTab('socio')}
-                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
-                        profileModalTab === 'socio' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>📌 Sociodemográfico</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProfileModalTab('familiar')}
-                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
-                        profileModalTab === 'familiar' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>👨‍👩‍👧 Familiar</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProfileModalTab('patrimonial')}
-                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
-                        profileModalTab === 'patrimonial' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>💼 Patrimonio (Privado)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProfileModalTab('conductual')}
-                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
-                        profileModalTab === 'conductual' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>🎯 Hábitos & Seguros</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProfileModalTab('notas')}
-                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
-                        profileModalTab === 'notas' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>📝 Notas Asesor</span>
-                    </button>
-                  </div>
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  padding: '0.75rem 1.5rem',
+                  borderBottom: '1px solid #e2e8f0',
+                  overflowX: 'auto',
+                  display: 'flex',
+                  gap: '0.5rem'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalTab('socio')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      border: profileModalTab === 'socio' ? 'none' : '1px solid #e2e8f0',
+                      cursor: 'pointer',
+                      backgroundColor: profileModalTab === 'socio' ? 'var(--primary)' : '#ffffff',
+                      color: profileModalTab === 'socio' ? '#ffffff' : '#475569',
+                      boxShadow: profileModalTab === 'socio' ? '0 2px 6px rgba(30, 58, 138, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    📌 Sociodemográfico
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalTab('familiar')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      border: profileModalTab === 'familiar' ? 'none' : '1px solid #e2e8f0',
+                      cursor: 'pointer',
+                      backgroundColor: profileModalTab === 'familiar' ? 'var(--primary)' : '#ffffff',
+                      color: profileModalTab === 'familiar' ? '#ffffff' : '#475569',
+                      boxShadow: profileModalTab === 'familiar' ? '0 2px 6px rgba(30, 58, 138, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    👨‍👩‍👧 Familiar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalTab('patrimonial')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      border: profileModalTab === 'patrimonial' ? 'none' : '1px solid #e2e8f0',
+                      cursor: 'pointer',
+                      backgroundColor: profileModalTab === 'patrimonial' ? '#059669' : '#ffffff',
+                      color: profileModalTab === 'patrimonial' ? '#ffffff' : '#475569',
+                      boxShadow: profileModalTab === 'patrimonial' ? '0 2px 6px rgba(5, 150, 105, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    💼 Patrimonio (Privado)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalTab('conductual')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      border: profileModalTab === 'conductual' ? 'none' : '1px solid #e2e8f0',
+                      cursor: 'pointer',
+                      backgroundColor: profileModalTab === 'conductual' ? '#7c3aed' : '#ffffff',
+                      color: profileModalTab === 'conductual' ? '#ffffff' : '#475569',
+                      boxShadow: profileModalTab === 'conductual' ? '0 2px 6px rgba(124, 58, 237, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    🎯 Hábitos & Seguros
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalTab('notas')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      border: profileModalTab === 'notas' ? 'none' : '1px solid #e2e8f0',
+                      cursor: 'pointer',
+                      backgroundColor: profileModalTab === 'notas' ? '#d97706' : '#ffffff',
+                      color: profileModalTab === 'notas' ? '#ffffff' : '#475569',
+                      boxShadow: profileModalTab === 'notas' ? '0 2px 6px rgba(217, 119, 6, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    📝 Bitácora Asesor
+                  </button>
                 </div>
 
                 {/* Form Body with Scroll */}
-                <form onSubmit={handleSaveProfile} className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+                <form onSubmit={handleSaveProfile} style={{ flex: 1, overflowY: 'auto', padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   
                   {/* TAB 1: SOCIODEMOGRÁFICO */}
                   {profileModalTab === 'socio' && (
-                    <div className="space-y-4">
-                      <div className="border-b border-slate-100 pb-2">
-                        <h4 className="text-sm font-black text-slate-800">Datos Sociodemográficos y Residencia</h4>
-                        <p className="text-xs text-slate-400">Información sobre la ocupación, nivel de educación y vivienda del asegurado.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                          Datos Sociodemográficos y Residencia
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
+                          Información sobre la ocupación, nivel de educación y lugar de residencia del asegurado.
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Profesión u Oficio</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Profesión u Oficio</label>
                           <input
                             type="text"
                             value={profileForm.profesion_ocupacion}
                             onChange={e => setProfileForm({ ...profileForm, profesion_ocupacion: e.target.value })}
                             placeholder="Ej: Médico Cirujano, Ingeniero Civil..."
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Empresa / Lugar de Trabajo</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Empresa / Lugar de Trabajo</label>
                           <input
                             type="text"
                             value={profileForm.empresa_trabajo}
                             onChange={e => setProfileForm({ ...profileForm, empresa_trabajo: e.target.value })}
                             placeholder="Ej: Clínica Santa Sofía, Independiente..."
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Nivel Educativo</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Nivel Educativo</label>
                           <select
                             value={profileForm.nivel_educativo}
                             onChange={e => setProfileForm({ ...profileForm, nivel_educativo: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Bachillerato">Bachillerato</option>
                             <option value="Técnico Superior">Técnico Superior</option>
@@ -3075,34 +3194,37 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Ciudad de Residencia</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Ciudad de Residencia</label>
                           <input
                             type="text"
                             value={profileForm.ciudad_residencia}
                             onChange={e => setProfileForm({ ...profileForm, ciudad_residencia: e.target.value })}
-                            placeholder="Ej: Caracas, Lechería, Maracaibo..."
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="Ej: Caracas, Lechería, Valencia..."
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Zona / Urbanización</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Zona / Urbanización</label>
                           <input
                             type="text"
                             value={profileForm.zona_sector}
                             onChange={e => setProfileForm({ ...profileForm, zona_sector: e.target.value })}
                             placeholder="Ej: Altamira, Los Palos Grandes..."
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Tipo de Vivienda</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Tipo de Vivienda</label>
                           <select
                             value={profileForm.tipo_vivienda}
                             onChange={e => setProfileForm({ ...profileForm, tipo_vivienda: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Propia">Casa / Apartamento Propio</option>
                             <option value="Alquilada">Alquilada</option>
@@ -3115,19 +3237,24 @@ export default function AsesorDashboard() {
 
                   {/* TAB 2: FAMILIAR */}
                   {profileModalTab === 'familiar' && (
-                    <div className="space-y-4">
-                      <div className="border-b border-slate-100 pb-2">
-                        <h4 className="text-sm font-black text-slate-800">Estructura y Dependientes Familiares</h4>
-                        <p className="text-xs text-slate-400">Datos determinantes para el cálculo de cobertura en Seguro de Vida y Salud Colectivo.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                          Estructura y Dependientes Familiares
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
+                          Variables determinantes para calcular la cobertura ideal de Seguro de Vida y Salud Colectivo.
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Estado Civil</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Estado Civil</label>
                           <select
                             value={profileForm.estado_civil}
                             onChange={e => setProfileForm({ ...profileForm, estado_civil: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Soltero">Soltero(a)</option>
                             <option value="Casado">Casado(a)</option>
@@ -3137,73 +3264,93 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de Cónyuge (Opcional)</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Nombre de Cónyuge (Opcional)</label>
                           <input
                             type="text"
                             value={profileForm.nombre_conyuge}
                             onChange={e => setProfileForm({ ...profileForm, nombre_conyuge: e.target.value })}
                             placeholder="Ej: María González"
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Número de Hijos</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Número de Hijos</label>
                           <input
                             type="number"
                             min="0"
                             max="20"
                             value={profileForm.numero_hijos}
                             onChange={e => setProfileForm({ ...profileForm, numero_hijos: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Edades de los Hijos</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Edades de los Hijos</label>
                           <input
                             type="text"
                             value={profileForm.edades_hijos}
                             onChange={e => setProfileForm({ ...profileForm, edades_hijos: e.target.value })}
                             placeholder="Ej: 4, 11, 15 años"
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Dependientes Económicos Totales</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Dependientes Económicos Totales</label>
                           <input
                             type="number"
                             min="0"
                             max="20"
                             value={profileForm.dependientes_economicos}
                             onChange={e => setProfileForm({ ...profileForm, dependientes_economicos: parseInt(e.target.value) || 0 })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
-                          <span className="text-[10px] text-slate-400 mt-1 block">Hijos, padres mayores o dependientes directos.</span>
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.25rem', display: 'block' }}>
+                            Hijos, padres mayores o dependientes directos.
+                          </span>
                         </div>
 
-                        <div className="flex items-center pt-3">
-                          <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer text-xs font-bold text-slate-800 w-full hover:bg-slate-100 transition">
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            padding: '0.85rem 1rem',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            color: '#1e293b',
+                            width: '100%'
+                          }}>
                             <input
                               type="checkbox"
                               checked={profileForm.sosten_principal}
                               onChange={e => setProfileForm({ ...profileForm, sosten_principal: e.target.checked })}
-                              className="w-4 h-4 text-blue-600 rounded"
+                              style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
                             />
                             ¿Es el principal sostén económico del hogar?
                           </label>
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Prioridad Familiar Declarada</label>
+                        <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Prioridad Familiar Declarada</label>
                           <input
                             type="text"
                             value={profileForm.prioridad_familiar}
                             onChange={e => setProfileForm({ ...profileForm, prioridad_familiar: e.target.value })}
                             placeholder="Ej: Asegurar educación universitaria de los hijos, tranquilidad en caso de falta del padre..."
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                           />
                         </div>
                       </div>
@@ -3212,22 +3359,35 @@ export default function AsesorDashboard() {
 
                   {/* TAB 3: PATRIMONIAL & FINANZAS */}
                   {profileModalTab === 'patrimonial' && (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-900 flex items-start gap-3">
-                        <span className="text-xl">🔒</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{
+                        padding: '1rem 1.25rem',
+                        backgroundColor: '#ecfdf5',
+                        borderRadius: '14px',
+                        border: '1px solid #a7f3d0',
+                        fontSize: '0.8rem',
+                        color: '#065f46',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem'
+                      }}>
+                        <span style={{ fontSize: '1.5rem' }}>🔒</span>
                         <div>
-                          <strong className="block font-black">Información de Uso Interno Confidencial:</strong>
-                          <span>Estos datos financieros no son mostrados al cliente. Se utilizan para calcular el potencial de venta cruzada y diseñar propuestas de seguro de vida desgravamen y patrimonio.</span>
+                          <strong style={{ display: 'block', fontWeight: 800, color: '#047857' }}>
+                            Información de Uso Interno Confidencial
+                          </strong>
+                          <span>Estos datos financieros no son visibles por el cliente. Se emplean para calibrar scoring de venta cruzada y pólizas de vida/patrimonio.</span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Rango Estimado de Ingresos Mensuales</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Rango Estimado de Ingresos Mensuales</label>
                           <select
                             value={profileForm.rango_ingresos}
                             onChange={e => setProfileForm({ ...profileForm, rango_ingresos: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Menos de $1,000">Menos de $1,000 USD</option>
                             <option value="$1,000 - $3,000">$1,000 - $3,000 USD</option>
@@ -3236,12 +3396,13 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Capacidad Estimada de Ahorro</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Capacidad Estimada de Ahorro</label>
                           <select
                             value={profileForm.capacidad_ahorro}
                             onChange={e => setProfileForm({ ...profileForm, capacidad_ahorro: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Baja">Baja (Menos del 10% de ingresos)</option>
                             <option value="Media">Media (10% - 25% de ingresos)</option>
@@ -3250,53 +3411,71 @@ export default function AsesorDashboard() {
                         </div>
 
                         {/* Inmuebles */}
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                          <label className="flex items-center gap-2.5 cursor-pointer font-black text-xs text-slate-900 mb-2">
+                        <div style={{
+                          padding: '1.2rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '14px',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem'
+                        }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
                             <input
                               type="checkbox"
                               checked={profileForm.posee_inmuebles}
                               onChange={e => setProfileForm({ ...profileForm, posee_inmuebles: e.target.checked })}
-                              className="w-4 h-4 text-emerald-600 rounded"
+                              style={{ width: '18px', height: '18px', accentColor: '#059669' }}
                             />
-                            ¿Posee Inmuebles / Bienes Raíces?
+                            🏠 ¿Posee Inmuebles / Bienes Raíces?
                           </label>
                           {profileForm.posee_inmuebles && (
-                            <div className="mt-2">
-                              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Cantidad de Inmuebles</label>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Cantidad de Inmuebles</label>
                               <input
                                 type="number"
                                 min="1"
                                 max="50"
                                 value={profileForm.cantidad_inmuebles}
                                 onChange={e => setProfileForm({ ...profileForm, cantidad_inmuebles: parseInt(e.target.value) || 1 })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                                className="form-input"
+                                style={{ margin: 0, padding: '0.5rem 0.75rem', borderRadius: '8px' }}
                               />
                             </div>
                           )}
                         </div>
 
                         {/* Vehículos */}
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                          <label className="flex items-center gap-2.5 cursor-pointer font-black text-xs text-slate-900 mb-2">
+                        <div style={{
+                          padding: '1.2rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '14px',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem'
+                        }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
                             <input
                               type="checkbox"
                               checked={profileForm.posee_vehiculos}
                               onChange={e => setProfileForm({ ...profileForm, posee_vehiculos: e.target.checked })}
-                              className="w-4 h-4 text-emerald-600 rounded"
+                              style={{ width: '18px', height: '18px', accentColor: '#059669' }}
                             />
-                            ¿Posee Vehículos Automotores?
+                            🚗 ¿Posee Vehículos Automotores?
                           </label>
                           {profileForm.posee_vehiculos && (
-                            <div className="space-y-2 mt-2">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                               <div>
-                                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Cantidad de Vehículos</label>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Cantidad de Vehículos</label>
                                 <input
                                   type="number"
                                   min="1"
                                   max="20"
                                   value={profileForm.cantidad_vehiculos}
                                   onChange={e => setProfileForm({ ...profileForm, cantidad_vehiculos: parseInt(e.target.value) || 1 })}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                                  className="form-input"
+                                  style={{ margin: 0, padding: '0.5rem 0.75rem', borderRadius: '8px' }}
                                 />
                               </div>
                               <div>
@@ -3305,7 +3484,8 @@ export default function AsesorDashboard() {
                                   placeholder="Detalle: Toyota Fortuner 2022, Corolla..."
                                   value={profileForm.detalles_vehiculos}
                                   onChange={e => setProfileForm({ ...profileForm, detalles_vehiculos: e.target.value })}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                                  className="form-input"
+                                  style={{ margin: 0, padding: '0.5rem 0.75rem', borderRadius: '8px' }}
                                 />
                               </div>
                             </div>
@@ -3313,40 +3493,62 @@ export default function AsesorDashboard() {
                         </div>
 
                         {/* Negocio / Empresa */}
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 sm:col-span-2">
-                          <label className="flex items-center gap-2.5 cursor-pointer font-black text-xs text-slate-900 mb-2">
+                        <div style={{
+                          padding: '1.2rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '14px',
+                          border: '1px solid #e2e8f0',
+                          gridColumn: '1 / -1',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem'
+                        }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
                             <input
                               type="checkbox"
                               checked={profileForm.posee_empresa_negocio}
                               onChange={e => setProfileForm({ ...profileForm, posee_empresa_negocio: e.target.checked })}
-                              className="w-4 h-4 text-emerald-600 rounded"
+                              style={{ width: '18px', height: '18px', accentColor: '#059669' }}
                             />
-                            ¿Es Dueño de Empresa, Comercio o Negocio Propio?
+                            🏢 ¿Es Dueño de Empresa, Comercio o Negocio Propio?
                           </label>
                           {profileForm.posee_empresa_negocio && (
-                            <div className="mt-2">
-                              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Ramo de la Empresa / Nro. Empleados</label>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Ramo de la Empresa / Nro. Empleados</label>
                               <input
                                 type="text"
                                 placeholder="Ej: Distribuidora de Alimentos, 20 empleados"
                                 value={profileForm.nombre_empresa_ramo}
                                 onChange={e => setProfileForm({ ...profileForm, nombre_empresa_ramo: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                                className="form-input"
+                                style={{ margin: 0, padding: '0.5rem 0.75rem', borderRadius: '8px' }}
                               />
                             </div>
                           )}
                         </div>
 
                         {/* Hipotecas / Deudas */}
-                        <div className="sm:col-span-2">
-                          <label className="flex items-center gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-100 transition">
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            padding: '1rem',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '14px',
+                            border: '1px solid #e2e8f0',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            color: '#1e293b'
+                          }}>
                             <input
                               type="checkbox"
                               checked={profileForm.tiene_hipoteca_deuda}
                               onChange={e => setProfileForm({ ...profileForm, tiene_hipoteca_deuda: e.target.checked })}
-                              className="w-4 h-4 text-emerald-600 rounded"
+                              style={{ width: '18px', height: '18px', accentColor: '#059669' }}
                             />
-                            ¿Posee deudas, hipotecas o créditos comerciales activos? (Alto potencial de Seguro de Vida Desgravamen)
+                            💳 ¿Posee deudas, hipotecas o créditos comerciales activos? (Alto potencial de Seguro de Vida Desgravamen)
                           </label>
                         </div>
                       </div>
@@ -3355,19 +3557,24 @@ export default function AsesorDashboard() {
 
                   {/* TAB 4: CONDUCTUAL & HÁBITOS */}
                   {profileModalTab === 'conductual' && (
-                    <div className="space-y-4">
-                      <div className="border-b border-slate-100 pb-2">
-                        <h4 className="text-sm font-black text-slate-800">Hábitos, Estilo de Vida y Preferencias</h4>
-                        <p className="text-xs text-slate-400">Información conductual para determinar coberturas internacionales y estilo de comunicación.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                          Hábitos, Estilo de Vida y Preferencias
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
+                          Información conductual para afinar recomendaciones y canal de comunicación ideal.
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Frecuencia de Viajes</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Frecuencia de Viajes</label>
                           <select
                             value={profileForm.frecuencia_viajes}
                             onChange={e => setProfileForm({ ...profileForm, frecuencia_viajes: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="No viaja">Rara vez viaja</option>
                             <option value="Nacional frecuente">Viajes nacionales frecuentes</option>
@@ -3376,12 +3583,13 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Práctica de Deportes / Fitness</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Práctica de Deportes / Fitness</label>
                           <select
                             value={profileForm.practica_deportes}
                             onChange={e => setProfileForm({ ...profileForm, practica_deportes: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Ninguno">Sedentario / No habitual</option>
                             <option value="Ocasional">Deporte recreativo ocasional</option>
@@ -3390,12 +3598,13 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Hábito Tabáquico</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Hábito Tabáquico</label>
                           <select
                             value={profileForm.fumador}
                             onChange={e => setProfileForm({ ...profileForm, fumador: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="No fumador">No fumador</option>
                             <option value="Fumador social">Fumador social</option>
@@ -3403,12 +3612,13 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Perfil de Aversión al Riesgo</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Perfil de Aversión al Riesgo</label>
                           <select
                             value={profileForm.perfil_riesgo}
                             onChange={e => setProfileForm({ ...profileForm, perfil_riesgo: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Conservador">Conservador (Prioriza seguridad y respaldo)</option>
                             <option value="Moderado">Moderado (Balance costo / cobertura)</option>
@@ -3416,12 +3626,13 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Área de Mayor Interés de Cobertura</label>
+                        <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Área de Mayor Interés de Cobertura</label>
                           <select
                             value={profileForm.interes_principal}
                             onChange={e => setProfileForm({ ...profileForm, interes_principal: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff', fontWeight: 700, color: 'var(--primary)' }}
                           >
                             <option value="Salud Integral">🏥 Salud Integral (Atención médica y emergencias)</option>
                             <option value="Protección Familiar (Vida)">👨‍👩‍👧 Protección Familiar & Futuro (Seguro de Vida)</option>
@@ -3430,26 +3641,28 @@ export default function AsesorDashboard() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Canal de Contacto Preferido</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Canal de Contacto Preferido</label>
                           <select
                             value={profileForm.canal_contacto}
                             onChange={e => setProfileForm({ ...profileForm, canal_contacto: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
-                            <option value="WhatsApp">WhatsApp</option>
-                            <option value="Llamada">Llamada Telefónica</option>
-                            <option value="Correo">Correo Electrónico</option>
-                            <option value="Presencial">Reunión Presencial</option>
+                            <option value="WhatsApp">💬 WhatsApp</option>
+                            <option value="Llamada">📞 Llamada Telefónica</option>
+                            <option value="Correo">✉️ Correo Electrónico</option>
+                            <option value="Presencial">🤝 Reunión Presencial</option>
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Horario Preferido</label>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Horario Preferido</label>
                           <select
                             value={profileForm.horario_contacto}
                             onChange={e => setProfileForm({ ...profileForm, horario_contacto: e.target.value })}
-                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                           >
                             <option value="Mañana (8:00 AM - 12:00 PM)">Mañana (8:00 AM - 12:00 PM)</option>
                             <option value="Tarde (1:00 PM - 5:00 PM)">Tarde (1:00 PM - 5:00 PM)</option>
@@ -3463,41 +3676,63 @@ export default function AsesorDashboard() {
 
                   {/* TAB 5: NOTAS DEL ASESOR */}
                   {profileModalTab === 'notas' && (
-                    <div className="space-y-4">
-                      <div className="border-b border-slate-100 pb-2">
-                        <h4 className="text-sm font-black text-slate-800">Bitácora y Notas del Asesor</h4>
-                        <p className="text-xs text-slate-400">Anota compromisos, acuerdos verbales, fechas clave de renovación o detalles personales para seguimiento.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                          Bitácora y Notas del Asesor
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
+                          Anota acuerdos verbales, fechas clave de renovación o detalles para seguimiento comercial.
+                        </p>
                       </div>
 
-                      <div>
+                      <div className="form-group" style={{ margin: 0 }}>
                         <textarea
                           rows={8}
                           value={profileForm.notas_asesor}
                           onChange={e => setProfileForm({ ...profileForm, notas_asesor: e.target.value })}
-                          placeholder="Ej: El cliente solicitó revisar cotización de vida en septiembre. Interesado en asegurar el vehículo de su esposa en la próxima renovación..."
-                          className="w-full p-4 border border-slate-300 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-sans"
+                          placeholder="Ej: El cliente solicitó cotización de vida en septiembre. Muy interesado en asegurar el vehículo de su esposa en la próxima renovación..."
+                          className="form-input"
+                          style={{ margin: 0, padding: '1rem', borderRadius: '12px', minHeight: '180px', fontFamily: 'inherit', fontSize: '0.875rem' }}
                         ></textarea>
                       </div>
                     </div>
                   )}
 
                   {/* Modal Footer */}
-                  <div className="pt-5 border-t border-slate-200/80 flex items-center justify-end gap-3">
+                  <div style={{
+                    paddingTop: '1.25rem',
+                    borderTop: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: '0.75rem'
+                  }}>
                     <button
                       type="button"
                       onClick={() => setProfileModalClient(null)}
-                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition shadow-xs"
+                      className="btn btn-secondary"
+                      style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       disabled={savingProfile}
-                      className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md transition flex items-center gap-2 active:scale-95"
+                      className="btn btn-primary"
+                      style={{
+                        padding: '0.6rem 1.5rem',
+                        fontSize: '0.85rem',
+                        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                        boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
                     >
                       {savingProfile ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <div className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#fff' }}></div>
                           <span>Guardando...</span>
                         </>
                       ) : (
