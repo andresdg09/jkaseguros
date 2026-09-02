@@ -1772,12 +1772,14 @@ export default function AdminDashboard() {
         overflowX: 'auto',
         paddingBottom: '1px'
       }}>
-        {['resumen', 'polizas', 'pagos', 'roles', 'asesores', 'tarifas', 'trazabilidad', 'elearning', 'comisiones'].map((tab) => (
+        {['resumen', 'polizas', 'pagos', 'roles', 'asesores', 'tarifas', 'trazabilidad', 'elearning', 'comisiones', 'analitica'].map((tab) => (
           <button
             key={tab}
             onClick={() => {
               if (tab === 'comisiones') {
                 router.push('/dashboard/admin/comisiones');
+              } else if (tab === 'analitica') {
+                router.push('/dashboard/admin/clientes-analitica');
               } else {
                 setActiveTab(tab);
                 setSearchQuery('');
@@ -1796,7 +1798,7 @@ export default function AdminDashboard() {
               transition: 'var(--transition)'
             }}
           >
-            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'asesores' ? 'Asesores' : tab === 'pagos' ? `Pagos ${payments.filter(p => p.estado_pago === 'en_revision').length > 0 ? `(${payments.filter(p => p.estado_pago === 'en_revision').length}) 🟡` : ''}` : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'analitica' ? '📊 Analítica 360' : tab === 'asesores' ? 'Asesores' : tab === 'pagos' ? `Pagos ${payments.filter(p => p.estado_pago === 'en_revision').length > 0 ? `(${payments.filter(p => p.estado_pago === 'en_revision').length}) 🟡` : ''}` : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>

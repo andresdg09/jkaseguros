@@ -170,6 +170,47 @@ export default function AsesorDashboard() {
   const [selectedClientForDocs, setSelectedClientForDocs] = useState(null);
   const [selectedDocType, setSelectedDocType] = useState('Salud');
   
+  // --- ESTADOS DE FICHA 360 DEL CLIENTE ---
+  const [clientViewMode, setClientViewMode] = useState('tarjetas'); // 'tarjetas' | 'tabla'
+  const [profileModalClient, setProfileModalClient] = useState(null);
+  const [profileModalTab, setProfileModalTab] = useState('socio'); // 'socio', 'familiar', 'patrimonial', 'conductual', 'notas'
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    numero_hijos: 0,
+    estado_civil: 'Soltero',
+    profesion_ocupacion: '',
+    empresa_trabajo: '',
+    nivel_educativo: 'Universitario',
+    ciudad_residencia: '',
+    zona_sector: '',
+    tipo_vivienda: 'Propia',
+    fumador: 'No fumador',
+    practica_deportes: 'Ninguno',
+    frecuencia_viajes: 'No viaja',
+    sosten_principal: true,
+    dependientes_economicos: 0,
+    edades_hijos: '',
+    nombre_conyuge: '',
+    prioridad_familiar: '',
+    rango_ingresos: '$1,000 - $3,000',
+    posee_vehiculos: false,
+    cantidad_vehiculos: 0,
+    detalles_vehiculos: '',
+    posee_inmuebles: false,
+    cantidad_inmuebles: 0,
+    posee_empresa_negocio: false,
+    nombre_empresa_ramo: '',
+    capacidad_ahorro: 'Media',
+    tiene_hipoteca_deuda: false,
+    seguros_actuales: [],
+    experiencia_previa: 'Positiva',
+    perfil_riesgo: 'Moderado',
+    interes_principal: 'Salud Integral',
+    canal_contacto: 'WhatsApp',
+    horario_contacto: 'Tarde (1:00 PM - 5:00 PM)',
+    notas_asesor: ''
+  });
+
   // Formulario de nuevo cliente
   const [newClientForm, setNewClientForm] = useState({
     correo: '',
@@ -340,6 +381,86 @@ export default function AsesorDashboard() {
     }
   };
 
+  // --- HANDLERS DE FICHA 360 ---
+  const handleOpenProfileModal = (c) => {
+    setProfileModalClient(c);
+    setProfileModalTab('socio');
+    const p = c.perfil_360 || {};
+    setProfileForm({
+      numero_hijos: c.numero_hijos || 0,
+      estado_civil: c.estado_civil || 'Soltero',
+      profesion_ocupacion: p.profesion_ocupacion || '',
+      empresa_trabajo: p.empresa_trabajo || '',
+      nivel_educativo: p.nivel_educativo || 'Universitario',
+      ciudad_residencia: p.ciudad_residencia || '',
+      zona_sector: p.zona_sector || '',
+      tipo_vivienda: p.tipo_vivienda || 'Propia',
+      fumador: p.fumador || 'No fumador',
+      practica_deportes: p.practica_deportes || 'Ninguno',
+      frecuencia_viajes: p.frecuencia_viajes || 'No viaja',
+      sosten_principal: p.sosten_principal !== false,
+      dependientes_economicos: p.dependientes_economicos !== undefined ? p.dependientes_economicos : (c.numero_hijos || 0),
+      edades_hijos: p.edades_hijos || '',
+      nombre_conyuge: p.nombre_conyuge || '',
+      prioridad_familiar: p.prioridad_familiar || '',
+      rango_ingresos: p.rango_ingresos || '$1,000 - $3,000',
+      posee_vehiculos: p.posee_vehiculos === true,
+      cantidad_vehiculos: p.cantidad_vehiculos || 0,
+      detalles_vehiculos: p.detalles_vehiculos || '',
+      posee_inmuebles: p.posee_inmuebles === true,
+      cantidad_inmuebles: p.cantidad_inmuebles || 0,
+      posee_empresa_negocio: p.posee_empresa_negocio === true,
+      nombre_empresa_ramo: p.nombre_empresa_ramo || '',
+      capacidad_ahorro: p.capacidad_ahorro || 'Media',
+      tiene_hipoteca_deuda: p.tiene_hipoteca_deuda === true,
+      seguros_actuales: Array.isArray(p.seguros_actuales) ? p.seguros_actuales : [],
+      experiencia_previa: p.experiencia_previa || 'Positiva',
+      perfil_riesgo: p.perfil_riesgo || 'Moderado',
+      interes_principal: p.interes_principal || 'Salud Integral',
+      canal_contacto: p.canal_contacto || 'WhatsApp',
+      horario_contacto: p.horario_contacto || 'Tarde (1:00 PM - 5:00 PM)',
+      notas_asesor: p.notas_asesor || ''
+    });
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!profileModalClient) return;
+    try {
+      setSavingProfile(true);
+      const res = await fetch(`${API_URL}/client-profiles/${profileModalClient.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al guardar perfil 360');
+
+      showToast('¡Ficha 360 del cliente guardada con éxito!', 'success');
+      setProfileModalClient(null);
+      await loadData();
+    } catch (err) {
+      showToast(err.message || 'Error al guardar', 'error');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCopyPublicLink = (tokenPublico) => {
+    if (!tokenPublico) return showToast('No se encontró el token del cliente', 'error');
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const link = `${origin}/actualizar-datos/${tokenPublico}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(link);
+      showToast('¡Enlace de actualización copiado al portapapeles! Envíalo al cliente.', 'success');
+    } else {
+      showToast(`Enlace: ${link}`, 'info');
+    }
+  };
+
   // Redirigir si no es asesor ni admin
   useEffect(() => {
     if (hydrated) {
@@ -357,12 +478,27 @@ export default function AsesorDashboard() {
     if (!token) return;
     setLoading(true);
     try {
-      // 1. Cargar clientes asignados al asesor
-      const resClients = await fetch(`${API_URL}/advisor/clients`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataClients = await resClients.json();
-      setClients(Array.isArray(dataClients) ? dataClients : []);
+      // 1. Cargar clientes asignados al asesor con Ficha 360 y Scoring
+      let dataClients = [];
+      try {
+        const res360 = await fetch(`${API_URL}/client-profiles/my-clients`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res360.ok) {
+          dataClients = await res360.json();
+        }
+      } catch (e) {
+        console.warn('Fallback a /advisor/clients:', e);
+      }
+
+      if (!Array.isArray(dataClients) || dataClients.length === 0) {
+        const resClients = await fetch(`${API_URL}/advisor/clients`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const fallbackClients = await resClients.json();
+        dataClients = Array.isArray(fallbackClients) ? fallbackClients : [];
+      }
+      setClients(dataClients);
 
       // 2. Cargar pólizas del asesor
       const resPols = await fetch(`${API_URL}/policies`, {
@@ -1071,79 +1207,409 @@ export default function AsesorDashboard() {
           {/* TAB: MIS CLIENTES */}
           {activeTab === 'clientes' && (
             <div className="card">
-              <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Directorio de Asegurados Asignados</h3>
-              <div style={{ marginBottom: '1.2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.4rem', margin: 0 }}>
+                    📇 Directorio de Clientes & Fichas 360
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    Segmentación integral, potencialidades de venta cruzada y actualización rápida de asegurados.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  {/* Switcher de Vista */}
+                  <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <button
+                      type="button"
+                      onClick={() => setClientViewMode('tarjetas')}
+                      style={{
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '9px',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        background: clientViewMode === 'tarjetas' ? 'var(--primary)' : 'transparent',
+                        color: clientViewMode === 'tarjetas' ? '#ffffff' : '#64748b',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      📇 Tarjetas 360
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setClientViewMode('tabla')}
+                      style={{
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '9px',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        background: clientViewMode === 'tabla' ? 'var(--primary)' : 'transparent',
+                        color: clientViewMode === 'tabla' ? '#ffffff' : '#64748b',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      📋 Vista Tabla
+                    </button>
+                  </div>
+
+                  <a
+                    href="/dashboard/admin/clientes-analitica"
+                    className="btn"
+                    style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', color: '#ffffff', fontWeight: 800, fontSize: '0.8rem', padding: '0.5rem 1rem', textDecoration: 'none', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)' }}
+                  >
+                    📊 Tablero Analítico 360
+                  </a>
+                </div>
+              </div>
+
+              {/* Buscador Rápido */}
+              <div style={{ marginBottom: '1.75rem' }}>
                 <input
                   type="text"
-                  placeholder="🔍 Buscar asegurado por nombre, documento, correo o móvil..."
+                  placeholder="🔍 Buscar por nombre, cédula, correo, profesión o teléfono..."
                   className="form-input"
-                  style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
+                  style={{ maxWidth: '480px', padding: '0.65rem 1.1rem', margin: 0, fontSize: '0.9rem', borderRadius: '12px' }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Asegurado</th>
-                      <th>Documento</th>
-                      <th>Teléfono</th>
-                      <th>Correo Electrónico</th>
-                      <th>Pólizas Activas</th>
-                      <th>Contacto Directo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredClients.length === 0 ? (
-                      <tr><td colSpan="6" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
-                    ) : (
-                      filteredClients
+
+              {/* VISTA EN TARJETAS 360 */}
+              {clientViewMode === 'tarjetas' && (
+                <div>
+                  {filteredClients.length === 0 ? (
+                    <div className="card" style={{ padding: '3.5rem 2rem', textAlign: 'center', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '3rem', display: 'block', marginBottom: '0.5rem' }}>👤</span>
+                      <h4 style={{ fontWeight: 800, color: '#334155', fontSize: '1.1rem' }}>No se encontraron clientes</h4>
+                      <p style={{ fontSize: '0.85rem' }}>Intenta ajustar el término de búsqueda.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                      {filteredClients
                         .slice((pageClients - 1) * pageSizeClients, pageClients * pageSizeClients)
                         .map((c) => {
-                        const clientPols = policies.filter(p => p.cliente_id === c.id);
-                        return (
-                          <tr key={c.id}>
-                            <td><strong>{c.nombre}</strong></td>
-                            <td>{c.tipo_documento} {c.nro_documento}</td>
-                            <td>{c.telefono}</td>
-                            <td>{c.correo}</td>
-                            <td>
-                              {clientPols.map(p => (
-                                <div key={p.id} style={{ fontSize: '0.8rem', margin: '0.2rem 0' }}>
-                                  <strong>{p.codigo_poliza}</strong> ({p.estado.toUpperCase()})
+                          const clientPols = policies.filter(p => p.cliente_id === c.id);
+                          const p360 = c.perfil_360 || {};
+                          const analisis = c.analisis || {
+                            scores: { vida: 20, salud: 25, patrimonial: 15, retiro: 15 },
+                            topOportunidad: { tipo: 'Seguro de Salud', score: 25 }
+                          };
+                          const cleanPhone = (c.telefono || '').replace(/[^0-9]/g, '');
+                          const waPhone = cleanPhone.startsWith('0') ? '58' + cleanPhone.slice(1) : (cleanPhone.startsWith('58') ? cleanPhone : '58' + cleanPhone);
+                          const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(analisis.mensajeWhatsApp || '')}`;
+                          const initials = (c.nombre || 'C').split(' ').map(n => n[0]).join('').slice(0, 2);
+
+                          return (
+                            <div
+                              key={c.id}
+                              className="card"
+                              style={{
+                                padding: '1.5rem',
+                                borderTop: `4px solid ${analisis.scores?.vida >= 65 ? '#10b981' : (analisis.scores?.salud >= 65 ? '#0284c7' : '#1e3a8a')}`,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                              }}
+                            >
+                              {/* Encabezado de la Tarjeta */}
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{
+                                      width: '46px',
+                                      height: '46px',
+                                      borderRadius: '12px',
+                                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                                      color: '#ffffff',
+                                      fontWeight: 900,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.95rem',
+                                      boxShadow: '0 4px 10px rgba(37,99,235,0.2)'
+                                    }}>
+                                      {initials}
+                                    </div>
+                                    <div>
+                                      <h4 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0, lineHeight: 1.2 }}>
+                                        {c.nombre || `${c.primer_nombre} ${c.primer_apellido}`}
+                                      </h4>
+                                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                                        <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '0.75rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                          {c.tipo_documento} {c.nro_documento}
+                                        </span>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                          {c.telefono}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <span style={{
+                                    backgroundColor: clientPols.length > 0 ? '#ecfdf5' : '#f8fafc',
+                                    color: clientPols.length > 0 ? '#059669' : '#64748b',
+                                    border: `1px solid ${clientPols.length > 0 ? '#a7f3d0' : '#e2e8f0'}`,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    padding: '0.2rem 0.55rem',
+                                    borderRadius: '9999px',
+                                    textTransform: 'uppercase'
+                                  }}>
+                                    {clientPols.length} {clientPols.length === 1 ? 'Póliza' : 'Pólizas'}
+                                  </span>
                                 </div>
-                              ))}
-                              {clientPols.length === 0 && <span style={{ color: 'var(--text-muted)' }}>Ninguna</span>}
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <a 
-                                  href={createWhatsAppLink(c.telefono)} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="btn"
-                                  style={{ background: '#25d366', color: '#fff', border: 'none', fontSize: '0.8rem', padding: '0.2rem 0.5rem', textDecoration: 'none', display: 'inline-block' }}
-                                >
-                                  WhatsApp
-                                </a>
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
-                                  onClick={() => handleOpenSendDocsModal(c)}
-                                >
-                                  Enviar Documentos
-                                </button>
+
+                                {/* Cuadrícula de Datos Sociodemográficos */}
+                                <div style={{ backgroundColor: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.775rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b' }}>💼 Ocupación:</span>
+                                    <strong style={{ color: '#1e293b', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {p360.profesion_ocupacion || 'Sin especificar'}
+                                    </strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b' }}>📍 Ciudad:</span>
+                                    <strong style={{ color: '#1e293b' }}>{p360.ciudad_residencia || 'No especificada'}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b' }}>👨‍👩‍👧 Familia:</span>
+                                    <strong style={{ color: '#1e293b' }}>
+                                      {c.estado_civil || 'Soltero'} • {p360.dependientes_economicos || c.numero_hijos || 0} dep.
+                                    </strong>
+                                  </div>
+                                  {p360.rango_ingresos && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '0.25rem' }}>
+                                      <span style={{ color: '#64748b' }}>💵 Ingresos:</span>
+                                      <strong style={{ color: '#10b981' }}>{p360.rango_ingresos}</strong>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Mini Indicadores de Cross-Selling */}
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                      Potencial de Venta Cruzada
+                                    </span>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4f46e5', background: '#eef2ff', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                      {analisis.topOportunidad?.tipo}
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem', textAlign: 'center' }}>
+                                    {/* Vida */}
+                                    <div style={{ background: '#ecfdf5', padding: '0.4rem 0.2rem', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+                                      <span style={{ display: 'block', fontSize: '0.65rem', color: '#047857', fontWeight: 700 }}>Vida</span>
+                                      <strong style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 900 }}>{analisis.scores?.vida}%</strong>
+                                    </div>
+
+                                    {/* Salud */}
+                                    <div style={{ background: '#f0f9ff', padding: '0.4rem 0.2rem', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                                      <span style={{ display: 'block', fontSize: '0.65rem', color: '#0369a1', fontWeight: 700 }}>Salud</span>
+                                      <strong style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 900 }}>{analisis.scores?.salud}%</strong>
+                                    </div>
+
+                                    {/* Auto */}
+                                    <div style={{ background: '#f5f3ff', padding: '0.4rem 0.2rem', borderRadius: '8px', border: '1px solid #ddd6fe' }}>
+                                      <span style={{ display: 'block', fontSize: '0.65rem', color: '#6d28d9', fontWeight: 700 }}>Auto</span>
+                                      <strong style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: 900 }}>{analisis.scores?.patrimonial}%</strong>
+                                    </div>
+
+                                    {/* Retiro */}
+                                    <div style={{ background: '#fffbeb', padding: '0.4rem 0.2rem', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                                      <span style={{ display: 'block', fontSize: '0.65rem', color: '#b45309', fontWeight: 700 }}>Retiro</span>
+                                      <strong style={{ fontSize: '0.8rem', color: '#d97706', fontWeight: 900 }}>{analisis.scores?.retiro}%</strong>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+
+                              {/* Botones de Acción */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenProfileModal(c)}
+                                    className="btn btn-primary"
+                                    style={{ fontSize: '0.775rem', padding: '0.45rem', justifyContent: 'center' }}
+                                  >
+                                    📝 Ficha 360
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyPublicLink(c.token_publico)}
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.775rem', padding: '0.45rem', justifyContent: 'center' }}
+                                    title="Copiar enlace para el cliente"
+                                  >
+                                    🔗 Link Cliente
+                                  </button>
+                                </div>
+
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    backgroundColor: '#10b981',
+                                    color: '#ffffff',
+                                    padding: '0.5rem',
+                                    borderRadius: '10px',
+                                    fontWeight: 800,
+                                    fontSize: '0.775rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.4rem',
+                                    textDecoration: 'none',
+                                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                >
+                                  <span>💬 WhatsApp (Propuesta)</span>
+                                </a>
+                              </div>
+
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* VISTA EN TABLA TRADICIONAL */}
+              {clientViewMode === 'tabla' && (
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Asegurado</th>
+                        <th>Documento</th>
+                        <th>Contacto</th>
+                        <th>Ocupación & Residencia</th>
+                        <th>Pólizas</th>
+                        <th>Scoring 360</th>
+                        <th style={{ textAlign: 'right' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredClients.length === 0 ? (
+                        <tr><td colSpan="7" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
+                      ) : (
+                        filteredClients
+                          .slice((pageClients - 1) * pageSizeClients, pageClients * pageSizeClients)
+                          .map((c) => {
+                            const clientPols = policies.filter(p => p.cliente_id === c.id);
+                            const p360 = c.perfil_360 || {};
+                            const analisis = c.analisis || {
+                              scores: { vida: 20, salud: 25, patrimonial: 15, retiro: 15 },
+                              topOportunidad: { tipo: 'Seguro de Salud', score: 25 }
+                            };
+                            const cleanPhone = (c.telefono || '').replace(/[^0-9]/g, '');
+                            const waPhone = cleanPhone.startsWith('0') ? '58' + cleanPhone.slice(1) : (cleanPhone.startsWith('58') ? cleanPhone : '58' + cleanPhone);
+                            const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(analisis.mensajeWhatsApp || '')}`;
+
+                            return (
+                              <tr key={c.id}>
+                                <td>
+                                  <strong style={{ color: '#0f172a', display: 'block' }}>
+                                    {c.nombre || `${c.primer_nombre} ${c.primer_apellido}`}
+                                  </strong>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{c.correo}</span>
+                                </td>
+                                <td>
+                                  <span style={{ background: '#f1f5f9', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem' }}>
+                                    {c.tipo_documento} {c.nro_documento}
+                                  </span>
+                                </td>
+                                <td>{c.telefono}</td>
+                                <td>
+                                  <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#1e293b' }}>
+                                    {p360.profesion_ocupacion || 'Sin especificar'}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    {p360.ciudad_residencia || 'No registrada'}
+                                  </div>
+                                </td>
+                                <td>
+                                  {clientPols.length === 0 ? (
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Ninguna</span>
+                                  ) : (
+                                    clientPols.map(p => (
+                                      <div key={p.id} style={{ fontSize: '0.75rem', margin: '0.15rem 0' }}>
+                                        <strong style={{ color: 'var(--primary)' }}>{p.codigo_poliza}</strong>{' '}
+                                        <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700 }}>({p.estado})</span>
+                                      </div>
+                                    ))
+                                  )}
+                                </td>
+                                <td>
+                                  <span style={{
+                                    backgroundColor: '#eef2ff',
+                                    color: '#4f46e5',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    🔥 {analisis.topOportunidad?.tipo}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary"
+                                      style={{ fontSize: '0.725rem', padding: '0.25rem 0.5rem' }}
+                                      onClick={() => handleOpenProfileModal(c)}
+                                    >
+                                      📝 Ficha
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary"
+                                      style={{ fontSize: '0.725rem', padding: '0.25rem 0.5rem' }}
+                                      onClick={() => handleCopyPublicLink(c.token_publico)}
+                                      title="Copiar link para cliente"
+                                    >
+                                      🔗 Link
+                                    </button>
+                                    <a 
+                                      href={waUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        background: '#10b981',
+                                        color: '#ffffff',
+                                        fontSize: '0.725rem',
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '6px',
+                                        textDecoration: 'none',
+                                        fontWeight: 800,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem'
+                                      }}
+                                    >
+                                      💬 WA
+                                    </a>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               <PaginationControls
                 currentPage={pageClients}
                 totalItems={filteredClients.length}
@@ -2453,6 +2919,590 @@ export default function AsesorDashboard() {
                       disabled={loading}
                     >
                       {loading ? 'Enviando Reporte...' : '✓ Enviar Reporte de Pago'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL FICHA 360 DEL CLIENTE */}
+          {profileModalClient && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 9999,
+              padding: '1rem'
+            }}>
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200/90 animate-fadeIn">
+                
+                {/* Modal Header */}
+                <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 text-white font-black flex items-center justify-center text-base border border-white/20 shadow-inner">
+                      {(profileModalClient.nombre || 'C').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/20 text-blue-200 border border-blue-400/30 uppercase tracking-wider">
+                          Ficha 360 del Asegurado
+                        </span>
+                        <span className="text-xs text-slate-300 font-medium">• Modo Asesor</span>
+                      </div>
+                      <h3 className="font-black text-xl tracking-tight text-white mt-0.5">
+                        {profileModalClient.nombre || `${profileModalClient.primer_nombre} ${profileModalClient.primer_apellido}`}
+                      </h3>
+                      <p className="text-xs text-slate-300 font-medium">
+                        {profileModalClient.tipo_documento} {profileModalClient.nro_documento} • {profileModalClient.correo} • {profileModalClient.telefono}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalClient(null)}
+                    className="w-9 h-9 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-sm transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Subheader / Segmented Pill Tabs */}
+                <div className="px-6 py-3 bg-slate-100/90 border-b border-slate-200/80 overflow-x-auto">
+                  <div className="flex gap-1.5 p-1 bg-slate-200/70 rounded-2xl w-fit">
+                    <button
+                      type="button"
+                      onClick={() => setProfileModalTab('socio')}
+                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
+                        profileModalTab === 'socio' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>📌 Sociodemográfico</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProfileModalTab('familiar')}
+                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
+                        profileModalTab === 'familiar' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>👨‍👩‍👧 Familiar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProfileModalTab('patrimonial')}
+                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
+                        profileModalTab === 'patrimonial' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>💼 Patrimonio (Privado)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProfileModalTab('conductual')}
+                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
+                        profileModalTab === 'conductual' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>🎯 Hábitos & Seguros</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProfileModalTab('notas')}
+                      className={`px-3.5 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 ${
+                        profileModalTab === 'notas' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>📝 Notas Asesor</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Body with Scroll */}
+                <form onSubmit={handleSaveProfile} className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+                  
+                  {/* TAB 1: SOCIODEMOGRÁFICO */}
+                  {profileModalTab === 'socio' && (
+                    <div className="space-y-4">
+                      <div className="border-b border-slate-100 pb-2">
+                        <h4 className="text-sm font-black text-slate-800">Datos Sociodemográficos y Residencia</h4>
+                        <p className="text-xs text-slate-400">Información sobre la ocupación, nivel de educación y vivienda del asegurado.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Profesión u Oficio</label>
+                          <input
+                            type="text"
+                            value={profileForm.profesion_ocupacion}
+                            onChange={e => setProfileForm({ ...profileForm, profesion_ocupacion: e.target.value })}
+                            placeholder="Ej: Médico Cirujano, Ingeniero Civil..."
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Empresa / Lugar de Trabajo</label>
+                          <input
+                            type="text"
+                            value={profileForm.empresa_trabajo}
+                            onChange={e => setProfileForm({ ...profileForm, empresa_trabajo: e.target.value })}
+                            placeholder="Ej: Clínica Santa Sofía, Independiente..."
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Nivel Educativo</label>
+                          <select
+                            value={profileForm.nivel_educativo}
+                            onChange={e => setProfileForm({ ...profileForm, nivel_educativo: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Bachillerato">Bachillerato</option>
+                            <option value="Técnico Superior">Técnico Superior</option>
+                            <option value="Universitario">Universitario</option>
+                            <option value="Especialización / Master">Especialización / Master</option>
+                            <option value="Doctorado">Doctorado</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Ciudad de Residencia</label>
+                          <input
+                            type="text"
+                            value={profileForm.ciudad_residencia}
+                            onChange={e => setProfileForm({ ...profileForm, ciudad_residencia: e.target.value })}
+                            placeholder="Ej: Caracas, Lechería, Maracaibo..."
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Zona / Urbanización</label>
+                          <input
+                            type="text"
+                            value={profileForm.zona_sector}
+                            onChange={e => setProfileForm({ ...profileForm, zona_sector: e.target.value })}
+                            placeholder="Ej: Altamira, Los Palos Grandes..."
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Tipo de Vivienda</label>
+                          <select
+                            value={profileForm.tipo_vivienda}
+                            onChange={e => setProfileForm({ ...profileForm, tipo_vivienda: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Propia">Casa / Apartamento Propio</option>
+                            <option value="Alquilada">Alquilada</option>
+                            <option value="Familiar">Familiar / Prestada</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: FAMILIAR */}
+                  {profileModalTab === 'familiar' && (
+                    <div className="space-y-4">
+                      <div className="border-b border-slate-100 pb-2">
+                        <h4 className="text-sm font-black text-slate-800">Estructura y Dependientes Familiares</h4>
+                        <p className="text-xs text-slate-400">Datos determinantes para el cálculo de cobertura en Seguro de Vida y Salud Colectivo.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Estado Civil</label>
+                          <select
+                            value={profileForm.estado_civil}
+                            onChange={e => setProfileForm({ ...profileForm, estado_civil: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Soltero">Soltero(a)</option>
+                            <option value="Casado">Casado(a)</option>
+                            <option value="Divorciado">Divorciado(a)</option>
+                            <option value="Viudo">Viudo(a)</option>
+                            <option value="Unión Libre">Unión Libre</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de Cónyuge (Opcional)</label>
+                          <input
+                            type="text"
+                            value={profileForm.nombre_conyuge}
+                            onChange={e => setProfileForm({ ...profileForm, nombre_conyuge: e.target.value })}
+                            placeholder="Ej: María González"
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Número de Hijos</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={profileForm.numero_hijos}
+                            onChange={e => setProfileForm({ ...profileForm, numero_hijos: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Edades de los Hijos</label>
+                          <input
+                            type="text"
+                            value={profileForm.edades_hijos}
+                            onChange={e => setProfileForm({ ...profileForm, edades_hijos: e.target.value })}
+                            placeholder="Ej: 4, 11, 15 años"
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Dependientes Económicos Totales</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={profileForm.dependientes_economicos}
+                            onChange={e => setProfileForm({ ...profileForm, dependientes_economicos: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                          <span className="text-[10px] text-slate-400 mt-1 block">Hijos, padres mayores o dependientes directos.</span>
+                        </div>
+
+                        <div className="flex items-center pt-3">
+                          <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer text-xs font-bold text-slate-800 w-full hover:bg-slate-100 transition">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.sosten_principal}
+                              onChange={e => setProfileForm({ ...profileForm, sosten_principal: e.target.checked })}
+                              className="w-4 h-4 text-blue-600 rounded"
+                            />
+                            ¿Es el principal sostén económico del hogar?
+                          </label>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Prioridad Familiar Declarada</label>
+                          <input
+                            type="text"
+                            value={profileForm.prioridad_familiar}
+                            onChange={e => setProfileForm({ ...profileForm, prioridad_familiar: e.target.value })}
+                            placeholder="Ej: Asegurar educación universitaria de los hijos, tranquilidad en caso de falta del padre..."
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: PATRIMONIAL & FINANZAS */}
+                  {profileModalTab === 'patrimonial' && (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-900 flex items-start gap-3">
+                        <span className="text-xl">🔒</span>
+                        <div>
+                          <strong className="block font-black">Información de Uso Interno Confidencial:</strong>
+                          <span>Estos datos financieros no son mostrados al cliente. Se utilizan para calcular el potencial de venta cruzada y diseñar propuestas de seguro de vida desgravamen y patrimonio.</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Rango Estimado de Ingresos Mensuales</label>
+                          <select
+                            value={profileForm.rango_ingresos}
+                            onChange={e => setProfileForm({ ...profileForm, rango_ingresos: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Menos de $1,000">Menos de $1,000 USD</option>
+                            <option value="$1,000 - $3,000">$1,000 - $3,000 USD</option>
+                            <option value="$3,000 - $6,000">$3,000 - $6,000 USD</option>
+                            <option value="Más de $6,000">Más de $6,000 USD (Alto Patrimonio)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Capacidad Estimada de Ahorro</label>
+                          <select
+                            value={profileForm.capacidad_ahorro}
+                            onChange={e => setProfileForm({ ...profileForm, capacidad_ahorro: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Baja">Baja (Menos del 10% de ingresos)</option>
+                            <option value="Media">Media (10% - 25% de ingresos)</option>
+                            <option value="Alta">Alta (Más del 25% de ingresos)</option>
+                          </select>
+                        </div>
+
+                        {/* Inmuebles */}
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                          <label className="flex items-center gap-2.5 cursor-pointer font-black text-xs text-slate-900 mb-2">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.posee_inmuebles}
+                              onChange={e => setProfileForm({ ...profileForm, posee_inmuebles: e.target.checked })}
+                              className="w-4 h-4 text-emerald-600 rounded"
+                            />
+                            ¿Posee Inmuebles / Bienes Raíces?
+                          </label>
+                          {profileForm.posee_inmuebles && (
+                            <div className="mt-2">
+                              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Cantidad de Inmuebles</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="50"
+                                value={profileForm.cantidad_inmuebles}
+                                onChange={e => setProfileForm({ ...profileForm, cantidad_inmuebles: parseInt(e.target.value) || 1 })}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Vehículos */}
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                          <label className="flex items-center gap-2.5 cursor-pointer font-black text-xs text-slate-900 mb-2">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.posee_vehiculos}
+                              onChange={e => setProfileForm({ ...profileForm, posee_vehiculos: e.target.checked })}
+                              className="w-4 h-4 text-emerald-600 rounded"
+                            />
+                            ¿Posee Vehículos Automotores?
+                          </label>
+                          {profileForm.posee_vehiculos && (
+                            <div className="space-y-2 mt-2">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Cantidad de Vehículos</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="20"
+                                  value={profileForm.cantidad_vehiculos}
+                                  onChange={e => setProfileForm({ ...profileForm, cantidad_vehiculos: parseInt(e.target.value) || 1 })}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                                />
+                              </div>
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder="Detalle: Toyota Fortuner 2022, Corolla..."
+                                  value={profileForm.detalles_vehiculos}
+                                  onChange={e => setProfileForm({ ...profileForm, detalles_vehiculos: e.target.value })}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Negocio / Empresa */}
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 sm:col-span-2">
+                          <label className="flex items-center gap-2.5 cursor-pointer font-black text-xs text-slate-900 mb-2">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.posee_empresa_negocio}
+                              onChange={e => setProfileForm({ ...profileForm, posee_empresa_negocio: e.target.checked })}
+                              className="w-4 h-4 text-emerald-600 rounded"
+                            />
+                            ¿Es Dueño de Empresa, Comercio o Negocio Propio?
+                          </label>
+                          {profileForm.posee_empresa_negocio && (
+                            <div className="mt-2">
+                              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Ramo de la Empresa / Nro. Empleados</label>
+                              <input
+                                type="text"
+                                placeholder="Ej: Distribuidora de Alimentos, 20 empleados"
+                                value={profileForm.nombre_empresa_ramo}
+                                onChange={e => setProfileForm({ ...profileForm, nombre_empresa_ramo: e.target.value })}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Hipotecas / Deudas */}
+                        <div className="sm:col-span-2">
+                          <label className="flex items-center gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-100 transition">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.tiene_hipoteca_deuda}
+                              onChange={e => setProfileForm({ ...profileForm, tiene_hipoteca_deuda: e.target.checked })}
+                              className="w-4 h-4 text-emerald-600 rounded"
+                            />
+                            ¿Posee deudas, hipotecas o créditos comerciales activos? (Alto potencial de Seguro de Vida Desgravamen)
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 4: CONDUCTUAL & HÁBITOS */}
+                  {profileModalTab === 'conductual' && (
+                    <div className="space-y-4">
+                      <div className="border-b border-slate-100 pb-2">
+                        <h4 className="text-sm font-black text-slate-800">Hábitos, Estilo de Vida y Preferencias</h4>
+                        <p className="text-xs text-slate-400">Información conductual para determinar coberturas internacionales y estilo de comunicación.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Frecuencia de Viajes</label>
+                          <select
+                            value={profileForm.frecuencia_viajes}
+                            onChange={e => setProfileForm({ ...profileForm, frecuencia_viajes: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="No viaja">Rara vez viaja</option>
+                            <option value="Nacional frecuente">Viajes nacionales frecuentes</option>
+                            <option value="Internacional ocasional">Internacional (1-2 veces al año)</option>
+                            <option value="Internacional frecuente">Internacional frecuente (Múltiples al año)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Práctica de Deportes / Fitness</label>
+                          <select
+                            value={profileForm.practica_deportes}
+                            onChange={e => setProfileForm({ ...profileForm, practica_deportes: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Ninguno">Sedentario / No habitual</option>
+                            <option value="Ocasional">Deporte recreativo ocasional</option>
+                            <option value="Frecuente">Gimnasio / Running habitual</option>
+                            <option value="Alto impacto">Deportes extremos o alto impacto</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Hábito Tabáquico</label>
+                          <select
+                            value={profileForm.fumador}
+                            onChange={e => setProfileForm({ ...profileForm, fumador: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="No fumador">No fumador</option>
+                            <option value="Fumador social">Fumador social</option>
+                            <option value="Fumador habitual">Fumador habitual</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Perfil de Aversión al Riesgo</label>
+                          <select
+                            value={profileForm.perfil_riesgo}
+                            onChange={e => setProfileForm({ ...profileForm, perfil_riesgo: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Conservador">Conservador (Prioriza seguridad y respaldo)</option>
+                            <option value="Moderado">Moderado (Balance costo / cobertura)</option>
+                            <option value="Abierto">Abierto / Inversionista</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Área de Mayor Interés de Cobertura</label>
+                          <select
+                            value={profileForm.interes_principal}
+                            onChange={e => setProfileForm({ ...profileForm, interes_principal: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Salud Integral">🏥 Salud Integral (Atención médica y emergencias)</option>
+                            <option value="Protección Familiar (Vida)">👨‍👩‍👧 Protección Familiar & Futuro (Seguro de Vida)</option>
+                            <option value="Patrimonio y Vehículos">🚗 Cobertura Patrimonial (Vehículo, Hogar, PYME)</option>
+                            <option value="Ahorro para Retiro">📈 Plan de Ahorro para Retiro e Inversión</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Canal de Contacto Preferido</label>
+                          <select
+                            value={profileForm.canal_contacto}
+                            onChange={e => setProfileForm({ ...profileForm, canal_contacto: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="Llamada">Llamada Telefónica</option>
+                            <option value="Correo">Correo Electrónico</option>
+                            <option value="Presencial">Reunión Presencial</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Horario Preferido</label>
+                          <select
+                            value={profileForm.horario_contacto}
+                            onChange={e => setProfileForm({ ...profileForm, horario_contacto: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          >
+                            <option value="Mañana (8:00 AM - 12:00 PM)">Mañana (8:00 AM - 12:00 PM)</option>
+                            <option value="Tarde (1:00 PM - 5:00 PM)">Tarde (1:00 PM - 5:00 PM)</option>
+                            <option value="Noche (5:00 PM - 8:00 PM)">Noche (5:00 PM - 8:00 PM)</option>
+                            <option value="Indiferente">Indiferente / Flexible</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 5: NOTAS DEL ASESOR */}
+                  {profileModalTab === 'notas' && (
+                    <div className="space-y-4">
+                      <div className="border-b border-slate-100 pb-2">
+                        <h4 className="text-sm font-black text-slate-800">Bitácora y Notas del Asesor</h4>
+                        <p className="text-xs text-slate-400">Anota compromisos, acuerdos verbales, fechas clave de renovación o detalles personales para seguimiento.</p>
+                      </div>
+
+                      <div>
+                        <textarea
+                          rows={8}
+                          value={profileForm.notas_asesor}
+                          onChange={e => setProfileForm({ ...profileForm, notas_asesor: e.target.value })}
+                          placeholder="Ej: El cliente solicitó revisar cotización de vida en septiembre. Interesado en asegurar el vehículo de su esposa en la próxima renovación..."
+                          className="w-full p-4 border border-slate-300 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-sans"
+                        ></textarea>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modal Footer */}
+                  <div className="pt-5 border-t border-slate-200/80 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setProfileModalClient(null)}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition shadow-xs"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md transition flex items-center gap-2 active:scale-95"
+                    >
+                      {savingProfile ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <span>✓ Guardar Ficha 360</span>
+                      )}
                     </button>
                   </div>
                 </form>

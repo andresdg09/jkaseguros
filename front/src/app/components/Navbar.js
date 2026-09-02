@@ -80,22 +80,40 @@ export default function Navbar() {
         {hydrated && isLoggedIn ? (
           <>
             {user?.rango === 'admin' && (
-              <Link 
-                href="/dashboard/admin" 
-                onClick={handleLinkClick}
-                className={`btn btn-secondary ${pathname.startsWith('/dashboard/admin') ? 'active' : ''}`}
-              >
-                Panel Admin
-              </Link>
+              <>
+                <Link 
+                  href="/dashboard/admin" 
+                  onClick={handleLinkClick}
+                  className={`btn btn-secondary ${pathname === '/dashboard/admin' ? 'active' : ''}`}
+                >
+                  Panel Admin
+                </Link>
+                <Link 
+                  href="/dashboard/admin/clientes-analitica" 
+                  onClick={handleLinkClick}
+                  className={`btn btn-secondary ${pathname.includes('clientes-analitica') ? 'active' : ''}`}
+                >
+                  Analítica 360
+                </Link>
+              </>
             )}
             {user?.rango === 'asesor' && (
-              <Link 
-                href="/dashboard/asesor" 
-                onClick={handleLinkClick}
-                className={`btn btn-secondary ${pathname.startsWith('/dashboard/asesor') ? 'active' : ''}`}
-              >
-                Panel Asesor
-              </Link>
+              <>
+                <Link 
+                  href="/dashboard/asesor" 
+                  onClick={handleLinkClick}
+                  className={`btn btn-secondary ${pathname === '/dashboard/asesor' ? 'active' : ''}`}
+                >
+                  Panel Asesor
+                </Link>
+                <Link 
+                  href="/dashboard/admin/clientes-analitica" 
+                  onClick={handleLinkClick}
+                  className={`btn btn-secondary ${pathname.includes('clientes-analitica') ? 'active' : ''}`}
+                >
+                  Analítica 360
+                </Link>
+              </>
             )}
             {user?.rango === 'cliente' && (
               <Link 

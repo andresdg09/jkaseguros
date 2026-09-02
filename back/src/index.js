@@ -13,6 +13,7 @@ import paymentsRouter from './routes/payments.js';
 import advisorsRouter from './routes/advisors.js';
 import adminRouter from './routes/admin.js';
 import elearningRouter from './routes/elearning.js';
+import clientProfilesRouter from './routes/clientProfiles.js';
 import { procesarRecordatoriosPolizas } from './services/reminderService.js';
 import { iniciarCronComisiones } from './services/commissionService.js';
 
@@ -48,6 +49,7 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api', advisorsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/elearning', elearningRouter);
+app.use('/api/client-profiles', clientProfilesRouter);
 
 // Endpoints para Vercel Cron Jobs (Reemplazo de los crons continuos)
 app.get('/api/cron/reminders', async (req, res) => {

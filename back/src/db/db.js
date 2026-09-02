@@ -80,6 +80,7 @@ function initFallback() {
       if (!fallbackData.corridas_comisiones) fallbackData.corridas_comisiones = [];
       if (!fallbackData.historico_comisiones) fallbackData.historico_comisiones = [];
       if (!fallbackData.cotizaciones) fallbackData.cotizaciones = [];
+      if (!fallbackData.perfiles_clientes_360) fallbackData.perfiles_clientes_360 = [];
       
       // Asegurar campos de comisiones y nuevos campos
       fallbackData.companias_seguros = fallbackData.companias_seguros.map(c => ({
@@ -890,6 +891,7 @@ try {
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_24h BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_48h BOOLEAN DEFAULT FALSE;');
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_5d BOOLEAN DEFAULT FALSE;');
+  await client.query("UPDATE polizas SET estado = 'vigente' WHERE estado IS NULL OR estado NOT IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada');");
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_estado_check;');
   await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_estado_check CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada'));");
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
@@ -950,12 +952,15 @@ try {
   
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS comision_porcentaje NUMERIC;');
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS frecuencia_pago VARCHAR(50) DEFAULT \'contado\';');
+  await client.query("UPDATE polizas SET frecuencia_pago = 'contado' WHERE frecuencia_pago IS NULL OR LOWER(frecuencia_pago) = 'anual' OR frecuencia_pago NOT IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual');");
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
   await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual'));");
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_negocio VARCHAR(50) DEFAULT \'nuevo\';');
+  await client.query("UPDATE polizas SET tipo_negocio = 'nuevo' WHERE tipo_negocio IS NULL OR tipo_negocio NOT IN ('nuevo', 'renovacion');");
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_negocio_check;');
   await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_negocio_check CHECK (tipo_negocio IN (\'nuevo\', \'renovacion\'));');
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_cobertura VARCHAR(50) DEFAULT \'individual\';');
+  await client.query("UPDATE polizas SET tipo_cobertura = 'individual' WHERE tipo_cobertura IS NULL OR tipo_cobertura NOT IN ('individual', 'colectivo');");
   await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check2;');
   await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_cobertura_check2 CHECK (tipo_cobertura IN (\'individual\', \'colectivo\'));');
   await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS bono_pronto_pago BOOLEAN DEFAULT FALSE;');
@@ -968,6 +973,7 @@ try {
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS observaciones TEXT;');
   await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
   await client.query('ALTER TABLE pagos ALTER COLUMN fecha_pago DROP NOT NULL;');
+  await client.query("UPDATE pagos SET estado_pago = 'pendiente' WHERE estado_pago IS NULL OR estado_pago NOT IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado');");
   await client.query('ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_pago_check;');
   await client.query("ALTER TABLE pagos ADD CONSTRAINT pagos_estado_pago_check CHECK (estado_pago IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado'));");
 
@@ -977,6 +983,7 @@ try {
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT \'pendiente\';');
   await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS tipo_asesor VARCHAR(50) DEFAULT \'asesor_3\';');
+  await client.query("UPDATE asesores SET tipo_asesor = 'asesor_3' WHERE tipo_asesor IS NULL OR tipo_asesor NOT IN ('asesor_1', 'asesor_2', 'asesor_3', 'consultor_1', 'consultor_2', 'johans', 'nivel_1_subagente', 'nivel_2_agente');");
   await client.query('ALTER TABLE asesores DROP CONSTRAINT IF EXISTS asesores_tipo_asesor_check;');
   await client.query('ALTER TABLE asesores ADD CONSTRAINT asesores_tipo_asesor_check CHECK (tipo_asesor IN (\'asesor_1\', \'asesor_2\', \'asesor_3\', \'consultor_1\', \'consultor_2\', \'johans\', \'nivel_1_subagente\', \'nivel_2_agente\'));');
 
@@ -1003,8 +1010,6 @@ try {
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
   await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT \'Salud\';');
-  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
-  await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual'));");
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS comisiones_asesores (
@@ -1084,6 +1089,57 @@ try {
         estado VARCHAR(50) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  // Tabla Perfiles 360 de Clientes (Sociodemográfico, Familiar, Patrimonial, Conductual)
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS perfiles_clientes_360 (
+      id SERIAL PRIMARY KEY,
+      cliente_id INT UNIQUE REFERENCES datos_personales(id) ON DELETE CASCADE,
+      token_publico VARCHAR(100) UNIQUE NOT NULL,
+      profesion_ocupacion VARCHAR(150),
+      empresa_trabajo VARCHAR(150),
+      nivel_educativo VARCHAR(100),
+      ciudad_residencia VARCHAR(100),
+      zona_sector VARCHAR(150),
+      tipo_vivienda VARCHAR(50),
+      fumador VARCHAR(50),
+      practica_deportes VARCHAR(100),
+      frecuencia_viajes VARCHAR(100),
+      sosten_principal BOOLEAN DEFAULT TRUE,
+      dependientes_economicos INT DEFAULT 0,
+      edades_hijos VARCHAR(100),
+      nombre_conyuge VARCHAR(150),
+      prioridad_familiar VARCHAR(150),
+      rango_ingresos VARCHAR(100),
+      posee_vehiculos BOOLEAN DEFAULT FALSE,
+      cantidad_vehiculos INT DEFAULT 0,
+      detalles_vehiculos TEXT,
+      posee_inmuebles BOOLEAN DEFAULT FALSE,
+      cantidad_inmuebles INT DEFAULT 0,
+      posee_empresa_negocio BOOLEAN DEFAULT FALSE,
+      nombre_empresa_ramo VARCHAR(150),
+      capacidad_ahorro VARCHAR(100),
+      tiene_hipoteca_deuda BOOLEAN DEFAULT FALSE,
+      seguros_actuales JSONB DEFAULT '[]',
+      experiencia_previa VARCHAR(100),
+      perfil_riesgo VARCHAR(50),
+      interes_principal VARCHAR(150),
+      canal_contacto VARCHAR(50) DEFAULT 'WhatsApp',
+      horario_contacto VARCHAR(50) DEFAULT 'Indiferente',
+      notas_asesor TEXT,
+      actualizado_por_cliente TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Auto-sincronizar perfiles 360 para clientes que no lo tengan
+  await client.query(`
+    INSERT INTO perfiles_clientes_360 (cliente_id, token_publico)
+    SELECT id, md5(random()::text || clock_timestamp()::text || id::text)
+    FROM datos_personales
+    WHERE id NOT IN (SELECT cliente_id FROM perfiles_clientes_360 WHERE cliente_id IS NOT NULL);
   `);
 
   // Seeder de cursos en PostgreSQL si está vacío
