@@ -346,19 +346,51 @@ router.put('/:clienteId', authenticateToken, async (req, res) => {
     experiencia_previa,
     perfil_riesgo,
     interes_principal,
-    canal_contacto,
+    telefono,
+    codigo_area,
+    numero_celular,
     horario_contacto,
     notas_asesor
   } = req.body;
 
   try {
-    if (numero_hijos !== undefined || estado_civil !== undefined) {
+    if (
+      telefono !== undefined ||
+      codigo_area !== undefined ||
+      numero_celular !== undefined ||
+      numero_hijos !== undefined ||
+      estado_civil !== undefined
+    ) {
+      let cArea = codigo_area;
+      let numCel = numero_celular;
+      if (telefono && (!cArea || !numCel)) {
+        const clean = telefono.replace(/[^0-9]/g, '');
+        if (clean.length >= 10) {
+          cArea = clean.slice(0, 4);
+          numCel = clean.slice(4);
+        } else {
+          numCel = clean;
+        }
+      }
+
+      const formattedPhone = (cArea && numCel) ? `${cArea}-${numCel}` : (telefono || numCel || null);
+
       await db.query(`
         UPDATE datos_personales 
         SET numero_hijos = COALESCE($1, numero_hijos),
-            estado_civil = COALESCE($2, estado_civil)
-        WHERE id = $3
-      `, [numero_hijos, estado_civil, parseInt(clienteId)]);
+            estado_civil = COALESCE($2, estado_civil),
+            codigo_area = COALESCE($3, codigo_area),
+            numero_celular = COALESCE($4, numero_celular),
+            telefono = COALESCE($5, telefono)
+        WHERE id = $6
+      `, [
+        numero_hijos !== undefined ? parseInt(numero_hijos) : null,
+        estado_civil || null,
+        cArea || null,
+        numCel || null,
+        formattedPhone,
+        parseInt(clienteId)
+      ]);
     }
 
     const tokenPublico = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
@@ -467,6 +499,58 @@ router.put('/:clienteId', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al guardar perfil 360:', err);
     res.status(500).json({ error: 'Error del servidor al guardar la ficha 360.' });
+  }
+});
+
+// 3.1. Actualizar rápidamente el teléfono de un cliente (Asesor / Admin)
+router.patch('/:clienteId/phone', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'asesor' && req.user.rango !== 'admin') {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  const { clienteId } = req.params;
+  const { telefono, codigo_area, numero_celular } = req.body;
+
+  try {
+    let cArea = codigo_area;
+    let numCel = numero_celular;
+    if (telefono && (!cArea || !numCel)) {
+      const clean = telefono.replace(/[^0-9]/g, '');
+      if (clean.length >= 10) {
+        cArea = clean.slice(0, 4);
+        numCel = clean.slice(4);
+      } else {
+        numCel = clean;
+      }
+    }
+
+    const formattedPhone = (cArea && numCel) ? `${cArea}-${numCel}` : (telefono || numCel);
+
+    await db.query(`
+      UPDATE datos_personales 
+      SET codigo_area = COALESCE($1, codigo_area),
+          numero_celular = COALESCE($2, numero_celular),
+          telefono = COALESCE($3, telefono)
+      WHERE id = $4
+    `, [cArea || null, numCel || null, formattedPhone, parseInt(clienteId)]);
+
+    await registrarAccion(
+      req.user.id,
+      req.user.correo,
+      'ACTUALIZACION_TELEFONO_CLIENTE',
+      `Asesor/Admin actualizó el teléfono del cliente ID ${clienteId} a ${formattedPhone}.`
+    );
+
+    res.json({
+      success: true,
+      message: 'Teléfono actualizado correctamente.',
+      telefono: formattedPhone,
+      codigo_area: cArea,
+      numero_celular: numCel
+    });
+  } catch (err) {
+    console.error('Error al actualizar teléfono del cliente:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar teléfono.' });
   }
 });
 

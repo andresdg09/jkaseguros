@@ -103,11 +103,11 @@ export default function ActualizarDatosClientePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 flex flex-col items-center max-w-sm w-full text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <h3 className="font-extrabold text-slate-800 text-lg">Cargando tu perfil</h3>
-          <p className="text-slate-500 text-xs mt-1">Estamos preparando tu formulario personalizado...</p>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '2.5rem 2rem', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', textAlign: 'center', maxWidth: '380px', width: '100%' }}>
+          <div className="spinner" style={{ width: '40px', height: '40px', margin: '0 auto 1.25rem', borderColor: '#e2e8f0', borderTopColor: 'var(--primary)' }}></div>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Cargando tu Ficha</h3>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.35rem' }}>Estamos preparando tu formulario personalizado...</p>
         </div>
       </div>
     );
@@ -115,14 +115,14 @@ export default function ActualizarDatosClientePage() {
 
   if (errorMsg) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center border border-slate-100">
-          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl font-bold shadow-inner">
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '2.5rem 2rem', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', textAlign: 'center', maxWidth: '440px', width: '100%' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '16px', backgroundColor: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', margin: '0 auto 1rem' }}>
             ⚠️
           </div>
-          <h2 className="text-2xl font-black text-slate-800 mb-2">Enlace no disponible</h2>
-          <p className="text-slate-500 text-sm mb-6 leading-relaxed">{errorMsg}</p>
-          <div className="p-4 bg-slate-50 rounded-2xl text-xs text-slate-500 border border-slate-200">
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Enlace no disponible</h2>
+          <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.5rem 0 1.5rem', lineHeight: 1.5 }}>{errorMsg}</p>
+          <div style={{ padding: '0.85rem 1rem', backgroundColor: '#f8fafc', borderRadius: '12px', fontSize: '0.8rem', color: '#475569', border: '1px solid #e2e8f0' }}>
             Comunícate con tu asesor de seguros asignado para que te proporcione un nuevo enlace seguro.
           </div>
         </div>
@@ -132,25 +132,27 @@ export default function ActualizarDatosClientePage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50/50 to-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center border border-slate-100 animate-fadeIn">
-          <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner border border-emerald-100">
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '3rem 2rem', borderRadius: '24px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', textAlign: 'center', maxWidth: '480px', width: '100%' }}>
+          <div style={{ width: '70px', height: '70px', borderRadius: '20px', backgroundColor: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', margin: '0 auto 1.25rem', border: '1px solid #a7f3d0', fontWeight: 900 }}>
             ✓
           </div>
-          <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-extrabold uppercase tracking-wider">
+          <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Actualización Exitosa
           </span>
-          <h2 className="text-2xl font-black text-slate-900 mt-3 mb-2">¡Muchas gracias, {formData.primer_nombre}!</h2>
-          <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+            ¡Muchas gracias, {formData.primer_nombre}!
+          </h2>
+          <p style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.6, marginBottom: '1.5rem' }}>
             Tu información ha sido sincronizada de forma segura en nuestro sistema. Tu asesor la revisará para adaptar tus coberturas y recordatorios.
           </p>
-          <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-2xl text-left border border-blue-100/80">
-            <div className="flex items-center gap-2 text-blue-900 font-extrabold text-sm mb-1">
+          <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', borderRadius: '16px', textAlign: 'left', border: '1px solid #bbf7d0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#065f46', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.25rem' }}>
               <span>🛡️</span>
               <span>JKA Seguros & Protección 360</span>
             </div>
-            <p className="text-xs text-blue-700 leading-relaxed">
-              Siempre protegemos tu privacidad. Puedes cerrar esta ventana con total tranquilidad.
+            <p style={{ fontSize: '0.775rem', color: '#047857', margin: 0, lineHeight: 1.4 }}>
+              Tus datos están protegidos bajo estricto secreto profesional. Puedes cerrar esta ventana con total tranquilidad.
             </p>
           </div>
         </div>
@@ -166,41 +168,66 @@ export default function ActualizarDatosClientePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-blue-50/40 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0f172a 0%, #1e3a8a 380px, #f1f5f9 380px, #f8fafc 100%)', padding: '2.5rem 1rem 4rem' }}>
+      <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
         
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/60 shadow-xs">
-            <span className="text-base">🛡️</span>
-            <span className="text-xs font-extrabold text-blue-800 tracking-wider uppercase">JKA Seguros • Ficha de Asegurado</span>
+        <div style={{ textAlign: 'center', color: '#ffffff' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.4rem 1rem',
+            borderRadius: '9999px',
+            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            backdropFilter: 'blur(4px)',
+            marginBottom: '0.75rem'
+          }}>
+            <span style={{ fontSize: '1rem' }}>🛡️</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              JKA Seguros • Ficha de Asegurado
+            </span>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Actualiza tus Datos de Contacto</h1>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
-            Hola <strong className="text-slate-800 font-bold">{formData.primer_nombre} {formData.primer_apellido}</strong>. Completa estos sencillos datos para garantizar una atención rápida en caso de emergencias o renovaciones.
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 900, margin: '0 0 0.4rem', letterSpacing: '-0.5px' }}>
+            Actualiza tus Datos de Contacto
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: '#cbd5e1', maxWidth: '520px', margin: '0 auto', lineHeight: 1.5 }}>
+            Hola <strong style={{ color: '#ffffff' }}>{formData.primer_nombre} {formData.primer_apellido}</strong>. Completa estos sencillos datos para garantizar una atención rápida ante cualquier emergencia o renovación.
           </p>
         </div>
 
         {/* Form Container */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 overflow-hidden">
+        <form onSubmit={handleSubmit} style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '24px',
+          boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.12)',
+          border: '1px solid #e2e8f0',
+          overflow: 'hidden'
+        }}>
           
-          <div className="p-6 sm:p-8 space-y-8">
+          <div style={{ padding: '2rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             
             {/* Bloque 1: Contacto */}
-            <div>
-              <div className="flex items-center gap-2.5 mb-4 pb-2 border-b border-slate-100">
-                <span className="w-7 h-7 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-xs">1</span>
-                <h2 className="text-base font-extrabold text-slate-900">¿Cómo nos comunicamos contigo?</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <span style={{ width: '30px', height: '30px', borderRadius: '10px', backgroundColor: '#eff6ff', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                  1
+                </span>
+                <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  ¿Cómo nos comunicamos contigo?
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Teléfono / WhatsApp *</label>
-                  <div className="flex gap-2">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Teléfono / WhatsApp *</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <select
                       value={formData.codigo_area}
                       onChange={(e) => setFormData({ ...formData, codigo_area: e.target.value })}
-                      className="w-24 px-3 py-2.5 border border-slate-300 rounded-xl text-sm bg-slate-50 font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="form-input"
+                      style={{ width: '90px', margin: 0, padding: '0.65rem 0.6rem', borderRadius: '10px', fontWeight: 700, background: '#f8fafc' }}
                     >
                       <option value="0412">0412</option>
                       <option value="0414">0414</option>
@@ -214,28 +241,31 @@ export default function ActualizarDatosClientePage() {
                       value={formData.numero_celular}
                       onChange={(e) => setFormData({ ...formData, numero_celular: e.target.value.replace(/\D/g, '') })}
                       placeholder="1234567"
-                      className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="form-input"
+                      style={{ flex: 1, margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Ciudad de Residencia</label>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Ciudad de Residencia</label>
                   <input
                     type="text"
                     value={formData.ciudad_residencia}
                     onChange={(e) => setFormData({ ...formData, ciudad_residencia: e.target.value })}
                     placeholder="Ej: Caracas, Valencia, Maracaibo..."
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Canal de Contacto Preferido</label>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Canal de Contacto Preferido</label>
                   <select
                     value={formData.canal_contacto}
                     onChange={(e) => setFormData({ ...formData, canal_contacto: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                   >
                     <option value="WhatsApp">💬 Mensaje de WhatsApp</option>
                     <option value="Llamada">📞 Llamada Telefónica</option>
@@ -243,12 +273,13 @@ export default function ActualizarDatosClientePage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Horario Recomendado</label>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Horario Recomendado</label>
                   <select
                     value={formData.horario_contacto}
                     onChange={(e) => setFormData({ ...formData, horario_contacto: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                   >
                     <option value="Mañana (8:00 AM - 12:00 PM)">Mañana (8:00 AM - 12:00 PM)</option>
                     <option value="Tarde (1:00 PM - 5:00 PM)">Tarde (1:00 PM - 5:00 PM)</option>
@@ -260,30 +291,36 @@ export default function ActualizarDatosClientePage() {
             </div>
 
             {/* Bloque 2: Actividad y Familia */}
-            <div>
-              <div className="flex items-center gap-2.5 mb-4 pb-2 border-b border-slate-100">
-                <span className="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs">2</span>
-                <h2 className="text-base font-extrabold text-slate-900">Tu núcleo y actividad</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <span style={{ width: '30px', height: '30px', borderRadius: '10px', backgroundColor: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                  2
+                </span>
+                <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Tu núcleo y actividad
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Profesión u Ocupación</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Profesión u Ocupación</label>
                   <input
                     type="text"
                     value={formData.profesion_ocupacion}
                     onChange={(e) => setFormData({ ...formData, profesion_ocupacion: e.target.value })}
                     placeholder="Ej: Odontólogo, Administrador, Comerciante..."
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Estado Civil</label>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Estado Civil</label>
                   <select
                     value={formData.estado_civil}
                     onChange={(e) => setFormData({ ...formData, estado_civil: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#fff' }}
                   >
                     <option value="Soltero">Soltero(a)</option>
                     <option value="Casado">Casado(a)</option>
@@ -293,59 +330,74 @@ export default function ActualizarDatosClientePage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Número de Hijos</label>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Número de Hijos</label>
                   <input
                     type="number"
                     min="0"
                     max="20"
                     value={formData.numero_hijos}
                     onChange={(e) => setFormData({ ...formData, numero_hijos: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Personas que dependen de ti</label>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Personas que dependen de ti</label>
                   <input
                     type="number"
                     min="0"
                     max="20"
                     value={formData.dependientes_economicos}
                     onChange={(e) => setFormData({ ...formData, dependientes_economicos: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="form-input"
+                    style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
                   />
-                  <span className="text-[10px] text-slate-400 mt-1 block">Hijos, cónyuge o padres a tu cargo.</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.25rem', display: 'block' }}>
+                    Hijos, cónyuge o padres a tu cargo.
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Bloque 3: Interés Principal */}
-            <div>
-              <div className="flex items-center gap-2.5 mb-4 pb-2 border-b border-slate-100">
-                <span className="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xs">3</span>
-                <h2 className="text-base font-extrabold text-slate-900">¿Qué área de protección es más importante hoy?</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <span style={{ width: '30px', height: '30px', borderRadius: '10px', backgroundColor: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                  3
+                </span>
+                <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  ¿Qué área de protección es más importante para ti hoy?
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
                 {interestOptions.map((opt) => {
                   const isSelected = formData.interes_principal === opt.key;
                   return (
                     <div
                       key={opt.key}
                       onClick={() => setFormData({ ...formData, interes_principal: opt.key })}
-                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-start gap-3 ${
-                        isSelected
-                          ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-1 ring-blue-500'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                      }`}
+                      style={{
+                        padding: '1.1rem 1.25rem',
+                        borderRadius: '16px',
+                        border: isSelected ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                        backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.85rem',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isSelected ? '0 4px 12px rgba(37, 99, 235, 0.15)' : 'none'
+                      }}
                     >
-                      <span className="text-2xl flex-shrink-0">{opt.icon}</span>
+                      <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>{opt.icon}</span>
                       <div>
-                        <h4 className={`text-xs font-black ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: isSelected ? '#1e3a8a' : '#1e293b', margin: 0 }}>
                           {opt.title}
                         </h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
                           {opt.desc}
                         </p>
                       </div>
@@ -358,26 +410,36 @@ export default function ActualizarDatosClientePage() {
           </div>
 
           {/* Bottom Bar Action */}
-          <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col items-center">
+          <div style={{ padding: '1.75rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <button
               type="submit"
               disabled={saving}
-              className={`w-full max-w-md py-4 px-6 rounded-2xl font-black text-white shadow-xl transition-all flex items-center justify-center space-x-2 text-sm ${
-                saving
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/25 active:scale-[0.99]'
-              }`}
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                maxWidth: '420px',
+                padding: '0.85rem 1.5rem',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
             >
               {saving ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="spinner" style={{ width: '18px', height: '18px', borderTopColor: '#fff' }}></div>
                   <span>Guardando tu perfil...</span>
                 </>
               ) : (
                 <span>✓ Guardar y Actualizar Información</span>
               )}
             </button>
-            <p className="text-[11px] text-slate-400 text-center mt-3">
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', marginTop: '0.75rem', margin: 0 }}>
               🔒 Datos protegidos bajo estricto secreto profesional.
             </p>
           </div>
@@ -388,3 +450,4 @@ export default function ActualizarDatosClientePage() {
     </div>
   );
 }
+

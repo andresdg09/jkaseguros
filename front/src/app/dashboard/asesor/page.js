@@ -211,6 +211,11 @@ export default function AsesorDashboard() {
     notas_asesor: ''
   });
 
+  // Estado para edición rápida de teléfono del cliente
+  const [editPhoneModalClient, setEditPhoneModalClient] = useState(null);
+  const [editPhoneForm, setEditPhoneForm] = useState({ codigo_area: '0414', numero_celular: '' });
+  const [savingPhone, setSavingPhone] = useState(false);
+
   // Formulario de nuevo cliente
   const [newClientForm, setNewClientForm] = useState({
     correo: '',
@@ -381,12 +386,25 @@ export default function AsesorDashboard() {
     }
   };
 
-  // --- HANDLERS DE FICHA 360 ---
+  // --- HANDLERS DE FICHA 360 & TELÉFONO ---
   const handleOpenProfileModal = (c) => {
     setProfileModalClient(c);
     setProfileModalTab('socio');
     const p = c.perfil_360 || {};
+    let cArea = c.codigo_area || '0414';
+    let numCel = c.numero_celular || '';
+    if (!numCel && c.telefono) {
+      const clean = c.telefono.replace(/[^0-9]/g, '');
+      if (clean.length >= 10) {
+        cArea = clean.slice(0, 4);
+        numCel = clean.slice(4);
+      } else {
+        numCel = clean;
+      }
+    }
     setProfileForm({
+      codigo_area: cArea,
+      numero_celular: numCel,
       numero_hijos: c.numero_hijos || 0,
       estado_civil: c.estado_civil || 'Soltero',
       profesion_ocupacion: p.profesion_ocupacion || '',
@@ -421,6 +439,48 @@ export default function AsesorDashboard() {
       horario_contacto: p.horario_contacto || 'Tarde (1:00 PM - 5:00 PM)',
       notas_asesor: p.notas_asesor || ''
     });
+  };
+
+  const handleOpenEditPhone = (c) => {
+    setEditPhoneModalClient(c);
+    let cArea = c.codigo_area || '0414';
+    let numCel = c.numero_celular || '';
+    if (!numCel && c.telefono) {
+      const clean = c.telefono.replace(/[^0-9]/g, '');
+      if (clean.length >= 10) {
+        cArea = clean.slice(0, 4);
+        numCel = clean.slice(4);
+      } else {
+        numCel = clean;
+      }
+    }
+    setEditPhoneForm({ codigo_area: cArea, numero_celular: numCel });
+  };
+
+  const handleSavePhone = async (e) => {
+    e.preventDefault();
+    if (!editPhoneModalClient) return;
+    try {
+      setSavingPhone(true);
+      const res = await fetch(`${API_URL}/client-profiles/${editPhoneModalClient.id}/phone`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editPhoneForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar teléfono');
+
+      showToast('¡Teléfono del cliente actualizado con éxito!', 'success');
+      setEditPhoneModalClient(null);
+      await loadData();
+    } catch (err) {
+      showToast(err.message || 'Error al guardar teléfono', 'error');
+    } finally {
+      setSavingPhone(false);
+    }
   };
 
   const handleSaveProfile = async (e) => {
@@ -1343,8 +1403,25 @@ export default function AsesorDashboard() {
                                         <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '0.75rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
                                           {c.tipo_documento} {c.nro_documento}
                                         </span>
-                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                          {c.telefono}
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                                          📞 {c.telefono}
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEditPhone(c)}
+                                            title="Editar teléfono del cliente"
+                                            style={{
+                                              background: '#eff6ff',
+                                              border: '1px solid #bfdbfe',
+                                              borderRadius: '6px',
+                                              color: '#1d4ed8',
+                                              cursor: 'pointer',
+                                              fontSize: '0.65rem',
+                                              padding: '0.1rem 0.35rem',
+                                              fontWeight: 800
+                                            }}
+                                          >
+                                            ✏️ Editar
+                                          </button>
                                         </span>
                                       </div>
                                     </div>
@@ -1528,7 +1605,28 @@ export default function AsesorDashboard() {
                                     {c.tipo_documento} {c.nro_documento}
                                   </span>
                                 </td>
-                                <td>{c.telefono}</td>
+                                <td>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                                    <span>{c.telefono}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditPhone(c)}
+                                      title="Editar teléfono del cliente"
+                                      style={{
+                                        background: '#eff6ff',
+                                        border: '1px solid #bfdbfe',
+                                        borderRadius: '4px',
+                                        color: '#1d4ed8',
+                                        cursor: 'pointer',
+                                        fontSize: '0.65rem',
+                                        padding: '0.1rem 0.35rem',
+                                        fontWeight: 800
+                                      }}
+                                    >
+                                      ✏️
+                                    </button>
+                                  </div>
+                                </td>
                                 <td>
                                   <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#1e293b' }}>
                                     {p360.profesion_ocupacion || 'Sin especificar'}
@@ -3155,6 +3253,32 @@ export default function AsesorDashboard() {
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
                         <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Teléfono / WhatsApp de Contacto</label>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <select
+                              value={profileForm.codigo_area || '0414'}
+                              onChange={e => setProfileForm({ ...profileForm, codigo_area: e.target.value })}
+                              className="form-input"
+                              style={{ width: '90px', margin: 0, padding: '0.65rem 0.6rem', borderRadius: '10px', fontWeight: 700, background: '#f8fafc' }}
+                            >
+                              <option value="0412">0412</option>
+                              <option value="0414">0414</option>
+                              <option value="0424">0424</option>
+                              <option value="0416">0416</option>
+                              <option value="0426">0426</option>
+                            </select>
+                            <input
+                              type="tel"
+                              value={profileForm.numero_celular || ''}
+                              onChange={e => setProfileForm({ ...profileForm, numero_celular: e.target.value.replace(/\D/g, '') })}
+                              placeholder="1234567"
+                              className="form-input"
+                              style={{ flex: 1, margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
                           <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Profesión u Oficio</label>
                           <input
                             type="text"
@@ -3738,6 +3862,119 @@ export default function AsesorDashboard() {
                       ) : (
                         <span>✓ Guardar Ficha 360</span>
                       )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL EDICIÓN RÁPIDA DE TELÉFONO */}
+          {editPhoneModalClient && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 99999,
+              padding: '1rem'
+            }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+                width: '100%',
+                maxWidth: '440px',
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  padding: '1.25rem 1.5rem',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+                      📞 Modificar Teléfono
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: '#bfdbfe', margin: '0.15rem 0 0 0' }}>
+                      {editPhoneModalClient.nombre || `${editPhoneModalClient.primer_nombre} ${editPhoneModalClient.primer_apellido}`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditPhoneModalClient(null)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSavePhone} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Número de Teléfono / WhatsApp *</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <select
+                        value={editPhoneForm.codigo_area}
+                        onChange={e => setEditPhoneForm({ ...editPhoneForm, codigo_area: e.target.value })}
+                        className="form-input"
+                        style={{ width: '90px', margin: 0, padding: '0.65rem 0.6rem', borderRadius: '10px', fontWeight: 700, background: '#f8fafc' }}
+                      >
+                        <option value="0412">0412</option>
+                        <option value="0414">0414</option>
+                        <option value="0424">0424</option>
+                        <option value="0416">0416</option>
+                        <option value="0426">0426</option>
+                      </select>
+                      <input
+                        type="tel"
+                        required
+                        value={editPhoneForm.numero_celular}
+                        onChange={e => setEditPhoneForm({ ...editPhoneForm, numero_celular: e.target.value.replace(/\D/g, '') })}
+                        placeholder="1234567"
+                        className="form-input"
+                        style={{ flex: 1, margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px' }}
+                      />
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem', display: 'block' }}>
+                      Se actualizará el número para el envío de recordatorios y WhatsApp.
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditPhoneModalClient(null)}
+                      className="btn btn-secondary"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingPhone}
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1.25rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
+                    >
+                      {savingPhone ? 'Guardando...' : '✓ Guardar Teléfono'}
                     </button>
                   </div>
                 </form>
