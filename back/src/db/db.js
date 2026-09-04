@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { companiasSemilla, tarifasSemilla, asesoresSemilla, clientesSemilla } from './seedData.js';
+import { SCHEMA_SQL } from './schemaSql.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,7 +35,10 @@ let fallbackData = {
   comisiones_asesores: [],
   matriz_comisiones: [],
   corridas_comisiones: [],
-  historico_comisiones: []
+  historico_comisiones: [],
+  cotizaciones: [],
+  perfiles_clientes_360: [],
+  renovaciones_polizas: []
 };
 
 function getFallbackFilePath() {
@@ -81,6 +85,7 @@ function initFallback() {
       if (!fallbackData.historico_comisiones) fallbackData.historico_comisiones = [];
       if (!fallbackData.cotizaciones) fallbackData.cotizaciones = [];
       if (!fallbackData.perfiles_clientes_360) fallbackData.perfiles_clientes_360 = [];
+      if (!fallbackData.renovaciones_polizas) fallbackData.renovaciones_polizas = [];
       
       // Asegurar campos de comisiones y nuevos campos
       fallbackData.companias_seguros = fallbackData.companias_seguros.map(c => ({
@@ -161,8 +166,47 @@ function initFallback() {
         ];
       }
 
-      if (!fallbackData.polizas) fallbackData.polizas = [];
-      if (!fallbackData.pagos) fallbackData.pagos = [];
+      if (!fallbackData.polizas || fallbackData.polizas.length === 0) {
+        fallbackData.polizas = [
+          {
+            id: 1,
+            codigo_poliza: 'POL-882731',
+            cliente_id: 1,
+            asesor_id: 1,
+            compania_id: 1,
+            plan: 'ACCESS',
+            area: 'Salud',
+            suma_asegurada: 50000,
+            deducible: 0,
+            prima_anual: 612,
+            estado: 'vigente',
+            pago_estado: 'en_revision',
+            frecuencia_pago: 'mensual',
+            tipo_negocio: 'nuevo',
+            tipo_cobertura: 'individual',
+            bono_pronto_pago: false,
+            emision_online: false,
+            created_at: new Date().toISOString()
+          }
+        ];
+      }
+
+      if (!fallbackData.pagos || fallbackData.pagos.length === 0) {
+        fallbackData.pagos = [
+          { id: 1, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'pagado', referencia: '789456', fecha_vencimiento: '2026-09-25', cuota_numero: 1, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+          { id: 2, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '457892', fecha_vencimiento: '2026-10-25', cuota_numero: 2, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+          { id: 3, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '123456', fecha_vencimiento: '2026-11-25', cuota_numero: 3, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
+          { id: 4, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2026-12-25', cuota_numero: 4, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 5, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-01-25', cuota_numero: 5, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 6, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-02-25', cuota_numero: 6, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 7, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-03-25', cuota_numero: 7, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 8, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-04-25', cuota_numero: 8, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 9, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-05-25', cuota_numero: 9, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 10, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-06-25', cuota_numero: 10, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 11, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-07-25', cuota_numero: 11, cuota_total: 12, created_at: new Date().toISOString() },
+          { id: 12, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-08-25', cuota_numero: 12, cuota_total: 12, created_at: new Date().toISOString() }
+        ];
+      }
 
       if (!fallbackData.tarifas || fallbackData.tarifas.length === 0) {
         fallbackData.tarifas = tarifasSemilla.map((t, index) => {
@@ -765,6 +809,22 @@ function saveFallback() {
   }
 }
 
+// Helper para ejecutar migraciones de forma segura e idempotente sin fallar por duplicados
+async function safeQuery(client, sql, params = []) {
+  try {
+    return await client.query(sql, params);
+  } catch (err) {
+    // 42710: duplicate_object / constraint already exists
+    // 42701: duplicate_column / column already exists
+    // 42P07: duplicate_table / table already exists
+    if (['42710', '42701', '42P07'].includes(err.code) || (err.message && err.message.includes('already exists'))) {
+      return null;
+    }
+    console.warn(`⚠️ Aviso en migración [${sql.slice(0, 45).trim()}...]:`, err.message);
+    return null;
+  }
+}
+
 // Conexión a PostgreSQL, expuesta como función explícita (en vez de código top-level)
 // para que index.js pueda hacer `await initDb()` y garantizar que el esquema base y
 // las migraciones terminen ANTES de levantar rutas, el cron de recordatorios o
@@ -776,67 +836,111 @@ try {
   const client = await pool.connect();
   console.log('✅ Conexión establecida con PostgreSQL.');
 
-  // Asegurar que el esquema base exista antes de intentar cualquier migración/ALTER TABLE.
-  // Sin esto, una base de datos nueva (ej. Neon recién creada) no tiene ninguna tabla todavía
-  // y las migraciones de abajo fallan con "relation ... does not exist".
-  const schemaPath = path.join(__dirname, 'schema.sql');
+  // Verificar si las tablas base ya existen (ej. restauradas con backup o dump previo)
+  let tablesExist = false;
   try {
-    if (fs.existsSync(schemaPath)) {
-      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-      await client.query(schemaSql);
-      console.log('📋 Esquema base verificado/creado.');
-    }
-  } catch (schemaErr) {
-    console.warn('⚠️ No se pudo cargar schema.sql, continuando con migraciones:', schemaErr.message);
+    const checkTable = await client.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'usuarios' LIMIT 1;");
+    tablesExist = (checkTable.rows && checkTable.rows.length > 0);
+  } catch (e) {
+    tablesExist = false;
   }
 
-  await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL;');
-  await client.query('ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS numero_hijos INT DEFAULT 0;');
+  if (!tablesExist) {
+    try {
+      let schemaSql = SCHEMA_SQL;
+      const schemaPath = path.join(__dirname, 'schema.sql');
+      if (fs.existsSync(schemaPath)) {
+        schemaSql = fs.readFileSync(schemaPath, 'utf8');
+      }
+      await client.query(schemaSql);
+      console.log('📋 Esquema base verificado/creado exitosamente.');
+    } catch (schemaErr) {
+      console.warn('⚠️ Nota al aplicar esquema base:', schemaErr.message);
+    }
+  } else {
+    console.log('📋 Tablas existentes detectadas (base de datos restaurada).');
+  }
+
+  await safeQuery(client, 'ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL;');
+  await safeQuery(client, 'ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS numero_hijos INT DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE datos_personales ADD COLUMN IF NOT EXISTS cliente_desde DATE;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS fecha_renovacion DATE;');
+  await safeQuery(client, `
+    CREATE TABLE IF NOT EXISTS renovaciones_polizas (
+      id SERIAL PRIMARY KEY,
+      poliza_id INT REFERENCES polizas(id) ON DELETE CASCADE,
+      cliente_id INT REFERENCES datos_personales(id) ON DELETE CASCADE,
+      asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
+      fecha_renovacion DATE NOT NULL,
+      frecuencia_anterior VARCHAR(50),
+      frecuencia_nueva VARCHAR(50) NOT NULL,
+      prima_anual NUMERIC NOT NULL,
+      suma_asegurada NUMERIC,
+      observaciones TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 
   // Migración de la Matriz de Tarifas: nueva estructura por plan/edad/suma asegurada con beneficios
-  await client.query('ALTER TABLE tarifas DROP CONSTRAINT IF EXISTS tarifas_tipo_cobertura_check;');
-  await client.query('ALTER TABLE tarifas DROP COLUMN IF EXISTS tipo_cobertura;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS deducible NUMERIC DEFAULT 0;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago VARCHAR(100);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_costo VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl_costo VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS funeral_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS funeral_costo VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS at_situ_medicamentos VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas_medicas VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS examenes_lab_imagenologia VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ambulancia VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_bimestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_4_cuotas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS rehabilitacion BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS protesis BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muleta_silla_ruedas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_costo VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
-  await client.query("ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT 'Salud';");
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS reembolso_carta_aval BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas DROP CONSTRAINT IF EXISTS tarifas_tipo_cobertura_check;');
+  await safeQuery(client, 'ALTER TABLE tarifas DROP COLUMN IF EXISTS tipo_cobertura;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS deducible NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago VARCHAR(100);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS funeral_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS funeral_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS at_situ_medicamentos VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas_medicas VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS examenes_lab_imagenologia VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ambulancia VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_bimestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_4_cuotas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS rehabilitacion BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS protesis BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muleta_silla_ruedas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
+  await safeQuery(client, "ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT 'Salud';");
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS reembolso_carta_aval BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS examenes_especiales BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_intl BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_medica_primaria_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS asist_medica_primaria_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odonto_oftal_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odonto_oftal_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS fisio_psico_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS fisio_psico_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS dermato_nutricion_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS dermato_nutricion_costo VARCHAR(50);');
 
   // Pólizas: la modalidad colectivo/individual se reemplaza por el nombre de plan contratado
-  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check;');
-  await client.query(`
+  await safeQuery(client, 'ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check;');
+  await safeQuery(client, `
     DO $$
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='polizas' AND column_name='tipo_cobertura')
@@ -845,20 +949,19 @@ try {
       END IF;
     END $$;
   `);
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
-  await client.query('ALTER TABLE polizas ALTER COLUMN plan DROP NOT NULL;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS plan VARCHAR(100);');
+  await safeQuery(client, 'ALTER TABLE polizas ALTER COLUMN plan DROP NOT NULL;');
 
   // Migración para recordatorios y estado 'anulada'
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_24h BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_48h BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_5d BOOLEAN DEFAULT FALSE;');
-  await client.query("UPDATE polizas SET estado = 'vigente' WHERE estado IS NULL OR estado NOT IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada');");
-  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_estado_check;');
-  await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_estado_check CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada'));");
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_24h BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_48h BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS recordatorio_5d BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_estado_check;');
+  await safeQuery(client, "ALTER TABLE polizas ADD CONSTRAINT polizas_estado_check CHECK (estado IN ('negociacion', 'vigente', 'vencido', 'rechazado', 'anulada'));");
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
 
   // Tabla de metadatos de tarifario
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS tarifario_metadata (
       id SERIAL PRIMARY KEY,
       version VARCHAR(50) NOT NULL,
@@ -867,14 +970,14 @@ try {
     );
   `);
   // Insertar por defecto si está vacía
-  await client.query(`
+  await safeQuery(client, `
     INSERT INTO tarifario_metadata (version, usuario_correo)
     SELECT '1.0.0', 'admin@jkaseguros.com'
     WHERE NOT EXISTS (SELECT 1 FROM tarifario_metadata);
   `);
 
   // Migraciones de E-Learning
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS elearning_cursos (
       id SERIAL PRIMARY KEY,
       titulo VARCHAR(255) NOT NULL,
@@ -882,7 +985,7 @@ try {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS elearning_modulos (
       id SERIAL PRIMARY KEY,
       curso_id INT REFERENCES elearning_cursos(id) ON DELETE CASCADE,
@@ -893,7 +996,7 @@ try {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS elearning_intentos (
       id SERIAL PRIMARY KEY,
       usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -907,72 +1010,69 @@ try {
   `);
 
   // Migraciones de Comisiones y Nuevos Campos
-  await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_estandar NUMERIC DEFAULT 0;');
-  await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_compania NUMERIC DEFAULT 0;');
-  await client.query('ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_asesor_estandar NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_estandar NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_compania NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE companias_seguros ADD COLUMN IF NOT EXISTS comision_asesor_estandar NUMERIC DEFAULT 0;');
   
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS comision_porcentaje NUMERIC;');
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS frecuencia_pago VARCHAR(50) DEFAULT \'contado\';');
-  await client.query("UPDATE polizas SET frecuencia_pago = 'contado' WHERE frecuencia_pago IS NULL OR LOWER(frecuencia_pago) = 'anual' OR frecuencia_pago NOT IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual');");
-  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
-  await client.query("ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual'));");
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_negocio VARCHAR(50) DEFAULT \'nuevo\';');
-  await client.query("UPDATE polizas SET tipo_negocio = 'nuevo' WHERE tipo_negocio IS NULL OR tipo_negocio NOT IN ('nuevo', 'renovacion');");
-  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_negocio_check;');
-  await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_negocio_check CHECK (tipo_negocio IN (\'nuevo\', \'renovacion\'));');
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_cobertura VARCHAR(50) DEFAULT \'individual\';');
-  await client.query("UPDATE polizas SET tipo_cobertura = 'individual' WHERE tipo_cobertura IS NULL OR tipo_cobertura NOT IN ('individual', 'colectivo');");
-  await client.query('ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check2;');
-  await client.query('ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_cobertura_check2 CHECK (tipo_cobertura IN (\'individual\', \'colectivo\'));');
-  await client.query('ALTER TABLE polizas ADD COLUMN IF NOT EXISTS bono_pronto_pago BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_numero INT;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_total INT;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS recordatorio_2d BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS recordatorio_vencido BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS monto_reportado NUMERIC;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS moneda_pago VARCHAR(10) DEFAULT \'VES\';');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS observaciones TEXT;');
-  await client.query('ALTER TABLE pagos ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
-  await client.query('ALTER TABLE pagos ALTER COLUMN fecha_pago DROP NOT NULL;');
-  await client.query("UPDATE pagos SET estado_pago = 'pendiente' WHERE estado_pago IS NULL OR estado_pago NOT IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado');");
-  await client.query('ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_pago_check;');
-  await client.query("ALTER TABLE pagos ADD CONSTRAINT pagos_estado_pago_check CHECK (estado_pago IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado'));");
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS comision_porcentaje NUMERIC;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS frecuencia_pago VARCHAR(50) DEFAULT \'contado\';');
+  await safeQuery(client, 'ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
+  await safeQuery(client, "ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual'));");
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_negocio VARCHAR(50) DEFAULT \'nuevo\';');
+  await safeQuery(client, 'ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_negocio_check;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_negocio_check CHECK (tipo_negocio IN (\'nuevo\', \'renovacion\'));');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS tipo_cobertura VARCHAR(50) DEFAULT \'individual\';');
+  await safeQuery(client, 'ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_tipo_cobertura_check2;');
+  await safeQuery(client, 'ALTER TABLE polizas ADD CONSTRAINT polizas_tipo_cobertura_check2 CHECK (tipo_cobertura IN (\'individual\', \'colectivo\'));');
+  await safeQuery(client, 'ALTER TABLE polizas ADD COLUMN IF NOT EXISTS bono_pronto_pago BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_numero INT;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS cuota_total INT;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS recordatorio_2d BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS recordatorio_vencido BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS monto_reportado NUMERIC;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS moneda_pago VARCHAR(10) DEFAULT \'VES\';');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS observaciones TEXT;');
+  await safeQuery(client, 'ALTER TABLE pagos ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;');
+  await safeQuery(client, 'ALTER TABLE pagos ALTER COLUMN fecha_pago DROP NOT NULL;');
+  await safeQuery(client, 'ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_pago_check;');
+  await safeQuery(client, "ALTER TABLE pagos ADD CONSTRAINT pagos_estado_pago_check CHECK (estado_pago IN ('pendiente', 'en_revision', 'pagado', 'vencido', 'rechazado'));");
 
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS cedula VARCHAR(50);');
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;');
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS banco VARCHAR(100);');
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT \'pendiente\';');
-  await client.query('ALTER TABLE asesores ADD COLUMN IF NOT EXISTS tipo_asesor VARCHAR(50) DEFAULT \'asesor_3\';');
-  await client.query("UPDATE asesores SET tipo_asesor = 'asesor_3' WHERE tipo_asesor IS NULL OR tipo_asesor NOT IN ('asesor_1', 'asesor_2', 'asesor_3', 'consultor_1', 'consultor_2', 'johans', 'nivel_1_subagente', 'nivel_2_agente');");
-  await client.query('ALTER TABLE asesores DROP CONSTRAINT IF EXISTS asesores_tipo_asesor_check;');
-  await client.query('ALTER TABLE asesores ADD CONSTRAINT asesores_tipo_asesor_check CHECK (tipo_asesor IN (\'asesor_1\', \'asesor_2\', \'asesor_3\', \'consultor_1\', \'consultor_2\', \'johans\', \'nivel_1_subagente\', \'nivel_2_agente\'));');
+  await safeQuery(client, 'ALTER TABLE asesores ADD COLUMN IF NOT EXISTS cedula VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE asesores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;');
+  await safeQuery(client, 'ALTER TABLE asesores ADD COLUMN IF NOT EXISTS banco VARCHAR(100);');
+  await safeQuery(client, 'ALTER TABLE asesores ADD COLUMN IF NOT EXISTS numero_cuenta VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE asesores ADD COLUMN IF NOT EXISTS estado VARCHAR(50) DEFAULT \'pendiente\';');
+  await safeQuery(client, 'ALTER TABLE asesores ADD COLUMN IF NOT EXISTS tipo_asesor VARCHAR(50) DEFAULT \'asesor_3\';');
+  await safeQuery(client, 'ALTER TABLE asesores DROP CONSTRAINT IF EXISTS asesores_tipo_asesor_check;');
+  await safeQuery(client, 'ALTER TABLE asesores ADD CONSTRAINT asesores_tipo_asesor_check CHECK (tipo_asesor IN (\'asesor_1\', \'asesor_2\', \'asesor_3\', \'consultor_1\', \'consultor_2\', \'johans\', \'nivel_1_subagente\', \'nivel_2_agente\'));');
 
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_bimestral BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_4_cuotas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS rehabilitacion BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS protesis BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muleta_silla_ruedas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_costo VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente BOOLEAN DEFAULT FALSE;');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
-  await client.query('ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT \'Salud\';');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_contado BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_semestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_cuatrimestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_trimestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_bimestral BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_4_cuotas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS pago_mensual BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS atencion_medica_primaria BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS medicinas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS rehabilitacion BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS protesis BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muleta_silla_ruedas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS consultas BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS maternidad BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS oftalmologia BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS odontologia BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS muerte_accidental_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_suma VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS invalidez_permanente_costo VARCHAR(50);');
+  await safeQuery(client, 'ALTER TABLE tarifas ADD COLUMN IF NOT EXISTS ramo VARCHAR(100) DEFAULT \'Salud\';');
+  await safeQuery(client, 'ALTER TABLE polizas DROP CONSTRAINT IF EXISTS polizas_frecuencia_pago_check;');
+  await safeQuery(client, "ALTER TABLE polizas ADD CONSTRAINT polizas_frecuencia_pago_check CHECK (frecuencia_pago IN ('contado', 'semestral', 'cuatrimestral', 'trimestral', 'bimestral', '4_cuotas', 'cuatro_cuotas', 'mensual'));");
 
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS comisiones_asesores (
       id SERIAL PRIMARY KEY,
       asesor_id INT REFERENCES asesores(id) ON DELETE CASCADE,
@@ -982,7 +1082,7 @@ try {
     );
   `);
 
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS matriz_comisiones (
       id SERIAL PRIMARY KEY,
       mercado VARCHAR(100) NOT NULL,
@@ -1001,11 +1101,11 @@ try {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  await client.query('ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_1 NUMERIC DEFAULT 0;');
-  await client.query('ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_2 NUMERIC DEFAULT 0;');
-  await client.query('ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_3 NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_1 NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_2 NUMERIC DEFAULT 0;');
+  await safeQuery(client, 'ALTER TABLE matriz_comisiones ADD COLUMN IF NOT EXISTS asesor_3 NUMERIC DEFAULT 0;');
 
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS corridas_comisiones (
       id SERIAL PRIMARY KEY,
       fecha_ejecucion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1017,7 +1117,7 @@ try {
     );
   `);
 
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS historico_comisiones (
       id SERIAL PRIMARY KEY,
       pago_id INT REFERENCES pagos(id) ON DELETE CASCADE,
@@ -1036,7 +1136,7 @@ try {
     );
   `);
 
-  await client.query(`
+  await safeQuery(client, `
     CREATE TABLE IF NOT EXISTS cotizaciones (
         id SERIAL PRIMARY KEY,
         token VARCHAR(100) UNIQUE NOT NULL,
@@ -1048,9 +1148,19 @@ try {
         comparativa JSONB NOT NULL DEFAULT '[]',
         comparativa_2 JSONB DEFAULT '[]',
         estado VARCHAR(50) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada')),
+        recordatorio_24h BOOLEAN DEFAULT FALSE,
+        recordatorio_48h BOOLEAN DEFAULT FALSE,
+        recordatorio_5d BOOLEAN DEFAULT FALSE,
+        notas_seguimiento TEXT,
+        ultimo_contacto TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  await safeQuery(client, 'ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS recordatorio_24h BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS recordatorio_48h BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS recordatorio_5d BOOLEAN DEFAULT FALSE;');
+  await safeQuery(client, 'ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS notas_seguimiento TEXT;');
+  await safeQuery(client, 'ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS ultimo_contacto TIMESTAMP;');
 
   // Tabla Perfiles 360 de Clientes (Sociodemográfico, Familiar, Patrimonial, Conductual)
   await client.query(`
@@ -1301,22 +1411,39 @@ function fallbackQuery(text, params = []) {
 
   // 8. UPDATE datos_personales (columnas y WHERE leídos dinámicamente del SQL)
   if (cleanSql.startsWith('UPDATE datos_personales SET')) {
-    const setMatch = cleanSql.match(/UPDATE datos_personales SET (.+) WHERE usuario_id = \$(\d+)/i);
-    if (!setMatch) return { rows: [] };
+    let idx = -1;
+    const userMatch = cleanSql.match(/WHERE usuario_id = \$(\d+)/i);
+    const idMatch = cleanSql.match(/WHERE id = \$(\d+)/i);
 
-    const whereParamIdx = parseInt(setMatch[2]) - 1;
-    const usuario_id = parseInt(params[whereParamIdx]);
-    const idx = fallbackData.datos_personales.findIndex(d => d.usuario_id === usuario_id);
+    if (userMatch) {
+      const whereParamIdx = parseInt(userMatch[1]) - 1;
+      const usuario_id = parseInt(params[whereParamIdx]);
+      idx = fallbackData.datos_personales.findIndex(d => d.usuario_id === usuario_id);
+    } else if (idMatch) {
+      const whereParamIdx = parseInt(idMatch[1]) - 1;
+      const id = parseInt(params[whereParamIdx]);
+      idx = fallbackData.datos_personales.findIndex(d => d.id === id);
+    }
+
     if (idx !== -1) {
-      const assignments = setMatch[1].split(',').map(s => s.trim());
-      assignments.forEach(assignment => {
-        const [col, placeholder] = assignment.split('=').map(s => s.trim());
-        const paramIdx = parseInt(placeholder.replace('$', '')) - 1;
-        let val = params[paramIdx];
-        if (col === 'numero_hijos') val = (val !== undefined && val !== null && val !== '') ? parseInt(val) : 0;
-        fallbackData.datos_personales[idx][col] = val;
-      });
-
+      const setMatch = cleanSql.match(/UPDATE datos_personales SET (.+) WHERE /i);
+      if (setMatch) {
+        const assignments = setMatch[1].split(',').map(s => s.trim());
+        assignments.forEach(assignment => {
+          const parts = assignment.split('=').map(s => s.trim());
+          const col = parts[0];
+          const placeholder = parts[1];
+          const paramNumMatch = placeholder ? placeholder.match(/\$(\d+)/) : null;
+          if (paramNumMatch) {
+            const paramIdx = parseInt(paramNumMatch[1]) - 1;
+            let val = params[paramIdx];
+            if (val !== undefined && val !== null) {
+              if (col === 'numero_hijos') val = parseInt(val) || 0;
+              fallbackData.datos_personales[idx][col] = val;
+            }
+          }
+        });
+      }
       saveFallback();
       return { rows: [fallbackData.datos_personales[idx]] };
     }
@@ -2010,12 +2137,49 @@ function fallbackQuery(text, params = []) {
     return { rows: quote ? [quote] : [] };
   }
 
+  // 28.1 SELECT * FROM cotizaciones (with optional asesor_id filter)
+  if (cleanSql.includes('FROM cotizaciones') && !cleanSql.startsWith('INSERT') && !cleanSql.startsWith('UPDATE') && !cleanSql.startsWith('DELETE')) {
+    let list = [...(fallbackData.cotizaciones || [])];
+    if (cleanSql.includes('WHERE asesor_id =') || cleanSql.includes('WHERE c.asesor_id =')) {
+      const aId = parseInt(params[0]);
+      list = list.filter(c => c.asesor_id === aId);
+    }
+    // Join with asesor if requested
+    const formatted = list.map(c => {
+      const ase = c.asesor_id ? fallbackData.asesores?.find(a => a.id === c.asesor_id) : null;
+      return {
+        ...c,
+        asesor_nombre: ase ? `${ase.primer_nombre || ''} ${ase.primer_apellido || ''}`.trim() : null,
+        asesor_codigo: ase ? ase.codigo_asesor : null
+      };
+    });
+    formatted.sort((a, b) => (b.id || 0) - (a.id || 0));
+    return { rows: formatted };
+  }
+
   // 29. UPDATE cotizaciones SET estado = $1 WHERE token = $2
   if (cleanSql.startsWith('UPDATE cotizaciones SET estado =')) {
     const [estado, tokenVal] = params;
     const idx = fallbackData.cotizaciones.findIndex(c => c.token === tokenVal);
     if (idx !== -1) {
       fallbackData.cotizaciones[idx].estado = estado;
+      saveFallback();
+      return { rows: [fallbackData.cotizaciones[idx]], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // 29.1 UPDATE cotizaciones reminders and notes
+  if (cleanSql.startsWith('UPDATE cotizaciones SET') && cleanSql.includes('recordatorio_24h =')) {
+    const qId = parseInt(params[params.length - 1]);
+    const idx = fallbackData.cotizaciones.findIndex(c => c.id === qId);
+    if (idx !== -1) {
+      const [r24, r48, r5d, notas, contacto] = params;
+      fallbackData.cotizaciones[idx].recordatorio_24h = !!r24;
+      fallbackData.cotizaciones[idx].recordatorio_48h = !!r48;
+      fallbackData.cotizaciones[idx].recordatorio_5d = !!r5d;
+      fallbackData.cotizaciones[idx].notas_seguimiento = notas || '';
+      fallbackData.cotizaciones[idx].ultimo_contacto = contacto || new Date().toISOString();
       saveFallback();
       return { rows: [fallbackData.cotizaciones[idx]], rowCount: 1 };
     }
@@ -2061,12 +2225,58 @@ function fallbackQuery(text, params = []) {
     return { rowCount: prev };
   }
 
-  // 34. DELETE FROM corridas_comisiones
-  if (cleanSql.startsWith('DELETE FROM corridas_comisiones')) {
-    const prev = (fallbackData.corridas_comisiones || []).length;
-    fallbackData.corridas_comisiones = [];
+  // 35. INSERT INTO renovaciones_polizas
+  if (cleanSql.startsWith('INSERT INTO renovaciones_polizas')) {
+    const [poliza_id, cliente_id, asesor_id, fecha_renovacion, frecuencia_anterior, frecuencia_nueva, prima_anual, suma_asegurada, observaciones] = params;
+    const newId = (fallbackData.renovaciones_polizas || []).length ? Math.max(...fallbackData.renovaciones_polizas.map(r => r.id)) + 1 : 1;
+    const newRen = {
+      id: newId,
+      poliza_id: parseInt(poliza_id),
+      cliente_id: parseInt(cliente_id),
+      asesor_id: asesor_id ? parseInt(asesor_id) : null,
+      fecha_renovacion: fecha_renovacion || new Date().toISOString().split('T')[0],
+      frecuencia_anterior: frecuencia_anterior || null,
+      frecuencia_nueva: frecuencia_nueva || 'contado',
+      prima_anual: parseFloat(prima_anual || 0),
+      suma_asegurada: suma_asegurada ? parseFloat(suma_asegurada) : null,
+      observaciones: observaciones || null,
+      created_at: new Date().toISOString()
+    };
+    if (!fallbackData.renovaciones_polizas) fallbackData.renovaciones_polizas = [];
+    fallbackData.renovaciones_polizas.push(newRen);
     saveFallback();
-    return { rowCount: prev };
+    return { rows: [newRen], rowCount: 1 };
+  }
+
+  // 36. SELECT FROM renovaciones_polizas
+  if (cleanSql.includes('FROM renovaciones_polizas')) {
+    let result = [...(fallbackData.renovaciones_polizas || [])];
+    if (cleanSql.includes('WHERE cliente_id = $1') || cleanSql.includes('WHERE r.cliente_id = $1')) {
+      const cId = parseInt(params[0]);
+      result = result.filter(r => parseInt(r.cliente_id) === cId);
+    } else if (cleanSql.includes('WHERE poliza_id = $1') || cleanSql.includes('WHERE r.poliza_id = $1')) {
+      const pId = parseInt(params[0]);
+      result = result.filter(r => parseInt(r.poliza_id) === pId);
+    } else if (cleanSql.includes('WHERE asesor_id = $1') || cleanSql.includes('WHERE r.asesor_id = $1')) {
+      const aId = parseInt(params[0]);
+      result = result.filter(r => parseInt(r.asesor_id) === aId);
+    }
+    result = result.map(r => {
+      const pol = (fallbackData.polizas || []).find(p => p.id === r.poliza_id);
+      const adv = (fallbackData.asesores || []).find(a => a.id === r.asesor_id);
+      const cli = (fallbackData.datos_personales || []).find(c => c.id === r.cliente_id);
+      const comp = pol ? (fallbackData.companias_seguros || []).find(c => c.id === pol.compania_id) : null;
+      return {
+        ...r,
+        poliza_codigo: pol ? pol.codigo_poliza : `POL-${r.poliza_id}`,
+        plan: pol ? pol.plan : '',
+        compania_nombre: comp ? comp.nombre : 'Seguros',
+        asesor_nombre: adv ? adv.nombre : 'Asesor',
+        cliente_nombre: cli ? `${cli.primer_nombre} ${cli.primer_apellido}` : 'Cliente'
+      };
+    });
+    result.sort((a, b) => b.id - a.id);
+    return { rows: result };
   }
 
   console.log(`⚠️ Consulta SQL no emulada en fallback: "${cleanSql}"`);

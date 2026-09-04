@@ -49,7 +49,7 @@ export default function Navbar() {
         </div>
       </Link>
       
-      {/* Botón de Hamburguesa para Móvil */}
+      {/* Botón de Hamburguesa para Móvil .*/}
       <button 
         className="hamburger-btn" 
         onClick={() => setIsOpen(!isOpen)}

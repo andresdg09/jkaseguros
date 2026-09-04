@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastProvider';
 import { useRouter } from 'next/navigation';
@@ -208,13 +208,48 @@ export default function AsesorDashboard() {
     interes_principal: 'Salud Integral',
     canal_contacto: 'WhatsApp',
     horario_contacto: 'Tarde (1:00 PM - 5:00 PM)',
-    notas_asesor: ''
+    notas_asesor: '',
+    cliente_desde: ''
   });
+
+  // --- ESTADOS DE HISTÓRICO Y RENOVACIÓN DE PÓLIZAS ---
+  const [clientHistoryData, setClientHistoryData] = useState({ polizas: [], renovaciones: [], pagos: [] });
+  const [loadingClientHistory, setLoadingClientHistory] = useState(false);
+
+  // Estado para modal de Renovación de Póliza
+  const [renewModalPolicy, setRenewModalPolicy] = useState(null);
+  const [renewForm, setRenewForm] = useState({
+    fecha_renovacion: new Date().toISOString().split('T')[0],
+    frecuencia_pago: 'contado',
+    prima_anual: '',
+    suma_asegurada: '',
+    deducible: 0,
+    observaciones: ''
+  });
+  const [renewing, setRenewing] = useState(false);
+
+  // Estado para edición rápida de fecha "Cliente desde"
+  const [editClienteDesdeClient, setEditClienteDesdeClient] = useState(null);
+  const [editClienteDesdeVal, setEditClienteDesdeVal] = useState('');
+  const [savingClienteDesde, setSavingClienteDesde] = useState(false);
 
   // Estado para edición rápida de teléfono del cliente
   const [editPhoneModalClient, setEditPhoneModalClient] = useState(null);
   const [editPhoneForm, setEditPhoneForm] = useState({ codigo_area: '0414', numero_celular: '' });
   const [savingPhone, setSavingPhone] = useState(false);
+
+  // --- ESTADOS DE MIS PROPUESTAS / COTIZACIONES & RECORDATORIOS ---
+  const [quotesList, setQuotesList] = useState([]);
+  const [quotesSummary, setQuotesSummary] = useState({ totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 });
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [quotesSearch, setQuotesSearch] = useState('');
+  const [quotesStatusFilter, setQuotesStatusFilter] = useState('todos');
+  const [quotesReminderFilter, setQuotesReminderFilter] = useState('todos');
+  const [pageQuotes, setPageQuotes] = useState(1);
+  const [pageSizeQuotes, setPageSizeQuotes] = useState(10);
+  const [reminderModalQuote, setReminderModalQuote] = useState(null);
+  const [reminderForm, setReminderForm] = useState({ recordatorio_24h: false, recordatorio_48h: false, recordatorio_5d: false, notas_seguimiento: '' });
+  const [savingReminder, setSavingReminder] = useState(false);
 
   // Formulario de nuevo cliente
   const [newClientForm, setNewClientForm] = useState({
@@ -386,13 +421,34 @@ export default function AsesorDashboard() {
     }
   };
 
-  // --- HANDLERS DE FICHA 360 & TELÉFONO ---
-  const handleOpenProfileModal = (c) => {
-    setProfileModalClient(c);
-    setProfileModalTab('socio');
-    const p = c.perfil_360 || {};
-    let cArea = c.codigo_area || '0414';
-    let numCel = c.numero_celular || '';
+  // --- HANDLERS DE FICHA 360, HISTORIAL & RENOVACIÓN ---
+  const loadClientHistory = async (clientId) => {
+    if (!clientId) return;
+    try {
+      setLoadingClientHistory(true);
+      const res = await fetch(`${API_URL}/client-profiles/${clientId}/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClientHistoryData({
+          polizas: Array.isArray(data.polizas) ? data.polizas : [],
+          renovaciones: Array.isArray(data.renovaciones) ? data.renovaciones : [],
+          pagos: Array.isArray(data.pagos) ? data.pagos : []
+        });
+      }
+    } catch (e) {
+      console.warn('Error al cargar historial del cliente:', e);
+    } finally {
+      setLoadingClientHistory(false);
+    }
+  };
+
+  const populateProfileForm = (c) => {
+    if (!c) return;
+    const p = c.perfil_360 || c || {};
+    let cArea = c.codigo_area || p.codigo_area || '0414';
+    let numCel = c.numero_celular || p.numero_celular || '';
     if (!numCel && c.telefono) {
       const clean = c.telefono.replace(/[^0-9]/g, '');
       if (clean.length >= 10) {
@@ -402,11 +458,13 @@ export default function AsesorDashboard() {
         numCel = clean;
       }
     }
+    const cDesde = c.cliente_desde || p.cliente_desde || (c.created_at ? c.created_at.split('T')[0] : new Date().toISOString().split('T')[0]);
     setProfileForm({
-      codigo_area: cArea,
-      numero_celular: numCel,
-      numero_hijos: c.numero_hijos || 0,
-      estado_civil: c.estado_civil || 'Soltero',
+      cliente_desde: cDesde || '',
+      codigo_area: cArea || '0414',
+      numero_celular: numCel || '',
+      numero_hijos: c.numero_hijos !== undefined ? c.numero_hijos : (p.numero_hijos || 0),
+      estado_civil: c.estado_civil || p.estado_civil || 'Soltero',
       profesion_ocupacion: p.profesion_ocupacion || '',
       empresa_trabajo: p.empresa_trabajo || '',
       nivel_educativo: p.nivel_educativo || 'Universitario',
@@ -416,21 +474,21 @@ export default function AsesorDashboard() {
       fumador: p.fumador || 'No fumador',
       practica_deportes: p.practica_deportes || 'Ninguno',
       frecuencia_viajes: p.frecuencia_viajes || 'No viaja',
-      sosten_principal: p.sosten_principal !== false,
-      dependientes_economicos: p.dependientes_economicos !== undefined ? p.dependientes_economicos : (c.numero_hijos || 0),
+      sosten_principal: p.sosten_principal !== undefined ? p.sosten_principal !== false : true,
+      dependientes_economicos: p.dependientes_economicos !== undefined ? p.dependientes_economicos : (c.numero_hijos || p.numero_hijos || 0),
       edades_hijos: p.edades_hijos || '',
       nombre_conyuge: p.nombre_conyuge || '',
       prioridad_familiar: p.prioridad_familiar || '',
       rango_ingresos: p.rango_ingresos || '$1,000 - $3,000',
-      posee_vehiculos: p.posee_vehiculos === true,
+      posee_vehiculos: p.posee_vehiculos === true || p.posee_vehiculos === 'true',
       cantidad_vehiculos: p.cantidad_vehiculos || 0,
       detalles_vehiculos: p.detalles_vehiculos || '',
-      posee_inmuebles: p.posee_inmuebles === true,
+      posee_inmuebles: p.posee_inmuebles === true || p.posee_inmuebles === 'true',
       cantidad_inmuebles: p.cantidad_inmuebles || 0,
-      posee_empresa_negocio: p.posee_empresa_negocio === true,
+      posee_empresa_negocio: p.posee_empresa_negocio === true || p.posee_empresa_negocio === 'true',
       nombre_empresa_ramo: p.nombre_empresa_ramo || '',
       capacidad_ahorro: p.capacidad_ahorro || 'Media',
-      tiene_hipoteca_deuda: p.tiene_hipoteca_deuda === true,
+      tiene_hipoteca_deuda: p.tiene_hipoteca_deuda === true || p.tiene_hipoteca_deuda === 'true',
       seguros_actuales: Array.isArray(p.seguros_actuales) ? p.seguros_actuales : [],
       experiencia_previa: p.experiencia_previa || 'Positiva',
       perfil_riesgo: p.perfil_riesgo || 'Moderado',
@@ -439,6 +497,108 @@ export default function AsesorDashboard() {
       horario_contacto: p.horario_contacto || 'Tarde (1:00 PM - 5:00 PM)',
       notas_asesor: p.notas_asesor || ''
     });
+  };
+
+  const handleOpenProfileModal = async (c, initialTab = 'socio') => {
+    setProfileModalClient(c);
+    setProfileModalTab(initialTab);
+    populateProfileForm(c);
+    loadClientHistory(c.id);
+
+    // Cargar perfil completo si está disponible en backend
+    if (token) {
+      try {
+        const res = await fetch(`${API_URL}/client-profiles/${c.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.cliente) {
+            setProfileModalClient(prev => prev && prev.id === c.id ? { ...prev, ...data.cliente } : prev);
+            populateProfileForm(data.cliente);
+          }
+        }
+      } catch (e) {
+        console.warn('Error al obtener perfil fresco:', e);
+      }
+    }
+  };
+
+  const handleOpenRenewModal = (policy) => {
+    setRenewModalPolicy(policy);
+    setRenewForm({
+      fecha_renovacion: new Date().toISOString().split('T')[0],
+      frecuencia_pago: policy.frecuencia_pago || 'contado',
+      prima_anual: policy.prima_anual !== undefined ? policy.prima_anual : '',
+      suma_asegurada: policy.suma_asegurada !== undefined ? policy.suma_asegurada : '',
+      deducible: policy.deducible || 0,
+      observaciones: ''
+    });
+  };
+
+  const handleConfirmRenewal = async (e) => {
+    e.preventDefault();
+    if (!renewModalPolicy) return;
+    try {
+      setRenewing(true);
+      const res = await fetch(`${API_URL}/policies/${renewModalPolicy.id}/renew`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(renewForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al renovar póliza');
+
+      showToast(data.message || '¡Póliza renovada con éxito! Se han generado las nuevas cuotas de pago.', 'success');
+      setRenewModalPolicy(null);
+      await loadData();
+      if (profileModalClient) {
+        await loadClientHistory(profileModalClient.id);
+      }
+    } catch (err) {
+      showToast(err.message || 'Error al procesar renovación', 'error');
+    } finally {
+      setRenewing(false);
+    }
+  };
+
+  const handleOpenEditClienteDesde = (c) => {
+    setEditClienteDesdeClient(c);
+    const cDesde = c.cliente_desde || (c.created_at ? c.created_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setEditClienteDesdeVal(cDesde);
+  };
+
+  const handleSaveClienteDesde = async (e) => {
+    e.preventDefault();
+    if (!editClienteDesdeClient || !editClienteDesdeVal) return;
+    try {
+      setSavingClienteDesde(true);
+      const res = await fetch(`${API_URL}/client-profiles/${editClienteDesdeClient.id}/cliente-desde`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ cliente_desde: editClienteDesdeVal })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar fecha');
+
+      showToast('¡Fecha "Cliente desde" actualizada con éxito!', 'success');
+      setEditClienteDesdeClient(null);
+      await loadData();
+      if (profileModalClient && profileModalClient.id === editClienteDesdeClient.id) {
+        setProfileForm(prev => ({ ...prev, cliente_desde: editClienteDesdeVal }));
+        setProfileModalClient(prev => ({ ...prev, cliente_desde: editClienteDesdeVal }));
+      }
+    } catch (err) {
+      showToast(err.message || 'Error al guardar fecha', 'error');
+    } finally {
+      setSavingClienteDesde(false);
+    }
   };
 
   const handleOpenEditPhone = (c) => {
@@ -635,11 +795,85 @@ export default function AsesorDashboard() {
       }
       setTariffs(loadedTariffs);
 
+      // Cargar propuestas y cotizaciones del asesor
+      try {
+        const resQuotes = await fetch(`${API_URL}/quotes/all`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (resQuotes.ok) {
+          const dataQuotes = await resQuotes.json();
+          if (dataQuotes && dataQuotes.quotes) {
+            setQuotesList(dataQuotes.quotes);
+            setQuotesSummary(dataQuotes.summary || { totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 });
+          }
+        }
+      } catch (err) {
+        console.error('Error al cargar propuestas del asesor:', err);
+      }
+
     } catch (err) {
       console.error('Error al cargar datos de asesor:', err);
       showToast('Error al conectar con la base de datos.', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadQuotes = async () => {
+    if (!token) return;
+    setLoadingQuotes(true);
+    try {
+      const res = await fetch(`${API_URL}/quotes/all`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (data && data.quotes) {
+        setQuotesList(data.quotes);
+        setQuotesSummary(data.summary || { totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 });
+      }
+    } catch (err) {
+      console.error('Error al recargar propuestas:', err);
+    } finally {
+      setLoadingQuotes(false);
+    }
+  };
+
+  const handleOpenReminderModal = (q) => {
+    setReminderModalQuote(q);
+    setReminderForm({
+      recordatorio_24h: !!q.recordatorio_24h,
+      recordatorio_48h: !!q.recordatorio_48h,
+      recordatorio_5d: !!q.recordatorio_5d,
+      notas_seguimiento: q.notas_seguimiento || ''
+    });
+  };
+
+  const handleSaveReminder = async (e) => {
+    if (e) e.preventDefault();
+    if (!reminderModalQuote || !token) return;
+    setSavingReminder(true);
+    try {
+      const res = await fetch(`${API_URL}/quotes/${reminderModalQuote.id}/reminders`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(reminderForm)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('✓ Recordatorios y seguimiento actualizados.');
+        setQuotesList(prev => prev.map(item => item.id === reminderModalQuote.id ? {
+          ...item,
+          ...reminderForm,
+          ultimo_contacto: new Date().toISOString()
+        } : item));
+        setReminderModalQuote(null);
+      } else {
+        alert(data.error || 'Error al guardar recordatorios.');
+      }
+    } catch (err) {
+      console.error('Error al guardar recordatorios:', err);
+      alert('Error de conexión con el servidor.');
+    } finally {
+      setSavingReminder(false);
     }
   };
 
@@ -1052,6 +1286,34 @@ export default function AsesorDashboard() {
     c.correo?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Propuestas filtradas para el asesor
+  const filteredQuotes = useMemo(() => {
+    return quotesList.filter(q => {
+      if (quotesStatusFilter !== 'todos' && q.estado !== quotesStatusFilter) {
+        return false;
+      }
+      if (quotesReminderFilter === 'pendientes') {
+        if (q.recordatorio_24h && q.recordatorio_48h && q.recordatorio_5d) return false;
+      } else if (quotesReminderFilter === '24h_pendiente' && q.recordatorio_24h) {
+        return false;
+      } else if (quotesReminderFilter === '48h_pendiente' && q.recordatorio_48h) {
+        return false;
+      } else if (quotesReminderFilter === '5d_pendiente' && q.recordatorio_5d) {
+        return false;
+      }
+
+      if (!quotesSearch) return true;
+      const s = quotesSearch.toLowerCase().trim();
+      return (
+        q.cliente_nombre?.toLowerCase().includes(s) ||
+        q.cliente_documento?.toLowerCase().includes(s) ||
+        q.cliente_correo?.toLowerCase().includes(s) ||
+        q.cliente_telefono?.includes(s) ||
+        q.token?.toLowerCase().includes(s)
+      );
+    });
+  }, [quotesList, quotesStatusFilter, quotesReminderFilter, quotesSearch]);
+
   // Agrupación de pagos por póliza con filtrado inteligente
   const groupedPaymentsByPolicy = (() => {
     const map = new Map();
@@ -1237,6 +1499,13 @@ export default function AsesorDashboard() {
           📋 Gestión de Pólizas
         </button>
         <button
+          onClick={() => { setActiveTab('propuestas'); setSearchQuery(''); }}
+          className={`btn ${activeTab === 'propuestas' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ borderRadius: '8px 8px 0 0', border: 'none', padding: '0.75rem 1.25rem' }}
+        >
+          📑 Mis Propuestas {quotesSummary.totalRemindersPending > 0 ? `(${quotesSummary.totalRemindersPending}) ⏰` : ''}
+        </button>
+        <button
           onClick={() => { 
             setActiveTab('solicitar-poliza'); 
             setSearchQuery(''); 
@@ -1420,7 +1689,40 @@ export default function AsesorDashboard() {
                                               fontWeight: 800
                                             }}
                                           >
-                                            ✏️ Editar
+                                            ✏️
+                                          </button>
+                                        </span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                                        <span style={{
+                                          backgroundColor: '#f8fafc',
+                                          color: '#334155',
+                                          fontSize: '0.72rem',
+                                          fontWeight: 700,
+                                          padding: '0.15rem 0.45rem',
+                                          borderRadius: '6px',
+                                          border: '1px solid #e2e8f0',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.3rem'
+                                        }}>
+                                          📅 Cliente desde: <strong style={{ color: '#0f172a' }}>{c.cliente_desde || 'Reciente'}</strong>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEditClienteDesde(c)}
+                                            title="Modificar fecha cliente desde"
+                                            style={{
+                                              background: '#eff6ff',
+                                              border: '1px solid #bfdbfe',
+                                              color: '#1d4ed8',
+                                              borderRadius: '4px',
+                                              cursor: 'pointer',
+                                              fontSize: '0.65rem',
+                                              padding: '0.05rem 0.3rem',
+                                              fontWeight: 800
+                                            }}
+                                          >
+                                            ✏️
                                           </button>
                                         </span>
                                       </div>
@@ -1511,12 +1813,35 @@ export default function AsesorDashboard() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                   <button
                                     type="button"
-                                    onClick={() => handleOpenProfileModal(c)}
+                                    onClick={() => handleOpenProfileModal(c, 'socio')}
                                     className="btn btn-primary"
                                     style={{ fontSize: '0.775rem', padding: '0.45rem', justifyContent: 'center' }}
                                   >
                                     📝 Ficha 360
                                   </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenProfileModal(c, 'historial')}
+                                    style={{
+                                      fontSize: '0.775rem',
+                                      padding: '0.45rem',
+                                      justifyContent: 'center',
+                                      background: '#f0fdf4',
+                                      border: '1px solid #bbf7d0',
+                                      color: '#15803d',
+                                      borderRadius: '8px',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.3rem'
+                                    }}
+                                  >
+                                    📜 Historial
+                                  </button>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                   <button
                                     type="button"
                                     onClick={() => handleCopyPublicLink(c.token_publico)}
@@ -1526,30 +1851,29 @@ export default function AsesorDashboard() {
                                   >
                                     🔗 Link Cliente
                                   </button>
+                                  <a
+                                    href={waUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      backgroundColor: '#10b981',
+                                      color: '#ffffff',
+                                      padding: '0.45rem',
+                                      borderRadius: '8px',
+                                      fontWeight: 800,
+                                      fontSize: '0.775rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '0.3rem',
+                                      textDecoration: 'none',
+                                      boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    <span>💬 WhatsApp</span>
+                                  </a>
                                 </div>
-
-                                <a
-                                  href={waUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    backgroundColor: '#10b981',
-                                    color: '#ffffff',
-                                    padding: '0.5rem',
-                                    borderRadius: '10px',
-                                    fontWeight: 800,
-                                    fontSize: '0.775rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.4rem',
-                                    textDecoration: 'none',
-                                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                >
-                                  <span>💬 WhatsApp (Propuesta)</span>
-                                </a>
                               </div>
 
                             </div>
@@ -1599,6 +1923,19 @@ export default function AsesorDashboard() {
                                     {c.nombre || `${c.primer_nombre} ${c.primer_apellido}`}
                                   </strong>
                                   <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{c.correo}</span>
+                                  <div style={{ marginTop: '0.2rem' }}>
+                                    <span style={{ fontSize: '0.7rem', color: '#475569', background: '#f8fafc', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                      📅 Desde: <strong style={{ color: '#0f172a' }}>{c.cliente_desde || 'Reciente'}</strong>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditClienteDesde(c)}
+                                        title="Modificar fecha cliente desde"
+                                        style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.1rem' }}
+                                      >
+                                        ✏️
+                                      </button>
+                                    </span>
+                                  </div>
                                 </td>
                                 <td>
                                   <span style={{ background: '#f1f5f9', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem' }}>
@@ -1666,9 +2003,26 @@ export default function AsesorDashboard() {
                                       type="button"
                                       className="btn btn-primary"
                                       style={{ fontSize: '0.725rem', padding: '0.25rem 0.5rem' }}
-                                      onClick={() => handleOpenProfileModal(c)}
+                                      onClick={() => handleOpenProfileModal(c, 'socio')}
                                     >
                                       📝 Ficha
+                                    </button>
+                                    <button
+                                      type="button"
+                                      style={{
+                                        fontSize: '0.725rem',
+                                        padding: '0.25rem 0.5rem',
+                                        background: '#f0fdf4',
+                                        border: '1px solid #bbf7d0',
+                                        color: '#15803d',
+                                        borderRadius: '6px',
+                                        fontWeight: 800,
+                                        cursor: 'pointer'
+                                      }}
+                                      onClick={() => handleOpenProfileModal(c, 'historial')}
+                                      title="Ver historial de pólizas, pagos y renovaciones"
+                                    >
+                                      📜 Historial
                                     </button>
                                     <button
                                       type="button"
@@ -2117,22 +2471,23 @@ export default function AsesorDashboard() {
                 <table className="table" style={{ minWidth: '1250px' }}>
                   <thead>
                     <tr>
-                      <th>Código</th>
-                      <th>Cliente</th>
                       <th>Aseguradora</th>
-                      <th>Plan</th>
+                      <th>Póliza</th>
+                      <th>Tipo</th>
+                      <th>Cliente</th>
+                      <th>Fecha de Emisión</th>
                       <th>Suma Asegurada ($)</th>
                       <th>Deducible ($)</th>
                       <th>Prima Anual ($)</th>
                       <th>Frecuencia</th>
                       <th>Estado</th>
                       <th>Motivo Rechazo</th>
-                      <th style={{ textAlign: 'center', width: '130px' }}>Estado Edición</th>
+                      <th style={{ textAlign: 'center', width: '100px' }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="11" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="12" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies
                         .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
@@ -2140,9 +2495,8 @@ export default function AsesorDashboard() {
                         const isModified = !!modifiedPolicies[p.id];
                         return (
                           <tr key={p.id} style={{ background: isModified ? '#fffaf0' : 'transparent' }}>
-                            <td><strong>{p.codigo_poliza}</strong></td>
-                            <td>{p.cliente_nombre || 'Asociado'}</td>
-                            <td>{p.compania_nombre || 'Seguros'}</td>
+                            <td><strong>{p.compania_nombre || 'Seguros'}</strong></td>
+                            <td><strong style={{ color: 'var(--primary)' }}>{p.codigo_poliza}</strong></td>
                             <td>
                               <input
                                 type="text"
@@ -2150,6 +2504,12 @@ export default function AsesorDashboard() {
                                 onChange={(e) => handlePolicyCellChange(p.id, 'plan', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '110px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem' }}
                               />
+                            </td>
+                            <td>{p.cliente_nombre || 'Asociado'}</td>
+                            <td>
+                              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
+                                {p.created_at ? new Date(p.created_at).toLocaleDateString('es-VE') : (p.fecha_inicio || '—')}
+                              </span>
                             </td>
                             <td>
                               <input
@@ -2221,13 +2581,26 @@ export default function AsesorDashboard() {
                               )}
                             </td>
                             <td style={{ textAlign: 'center' }}>
-                              {isModified ? (
-                                <span className="badge" style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
-                                  Modificado
-                                </span>
-                              ) : (
-                                <span style={{ color: 'var(--text-muted)' }}>—</span>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenRenewModal(p)}
+                                title="Renovar póliza y regenerar cuotas de pago"
+                                style={{
+                                  background: '#f0fdf4',
+                                  border: '1px solid #bbf7d0',
+                                  color: '#15803d',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.725rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem'
+                                }}
+                              >
+                                🔄 Renovar
+                              </button>
                             </td>
                           </tr>
                         );
@@ -2268,6 +2641,405 @@ export default function AsesorDashboard() {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* --- TAB: MIS PROPUESTAS & COTIZACIONES ENVIADAS --- */}
+          {activeTab === 'propuestas' && (
+            <div>
+              {/* Encabezado */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    📑 Mis Propuestas y Cotizaciones Compartidas
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    Gestiona el seguimiento comercial de tus cotizaciones, verifica primas totales y marca los recordatorios de contacto (24h / 48h / 5d).
+                  </p>
+                </div>
+                <button
+                  onClick={loadQuotes}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                  disabled={loadingQuotes}
+                >
+                  {loadingQuotes ? 'Sincronizando...' : '🔄 Actualizar Propuestas'}
+                </button>
+              </div>
+
+              {/* KPI CARDS: TOTALES DEL ASESOR */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '1.25rem',
+                marginBottom: '1.75rem'
+              }}>
+                {/* Total Primas Cotizadas */}
+                <div className="card" style={{
+                  padding: '1.3rem',
+                  borderLeft: '5px solid #2563eb',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)',
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    💵 Total Primas Cotizadas
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e3a8a', margin: '0.35rem 0 0.15rem 0' }}>
+                    ${quotesSummary.totalPrimas.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>USD</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Volumen de primas en tus cotizaciones
+                  </div>
+                </div>
+
+                {/* Total Propuestas Emitidas */}
+                <div className="card" style={{
+                  padding: '1.3rem',
+                  borderLeft: '5px solid #059669',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+                  boxShadow: '0 4px 12px rgba(5,150,105,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    📄 Propuestas Enviadas
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#065f46', margin: '0.35rem 0 0.15rem 0' }}>
+                    {quotesSummary.totalQuotes} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>emitidas</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Cotizaciones compartidas por WhatsApp/Web
+                  </div>
+                </div>
+
+                {/* Propuestas Aceptadas */}
+                <div className="card" style={{
+                  padding: '1.3rem',
+                  borderLeft: '5px solid #10b981',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%)',
+                  boxShadow: '0 4px 12px rgba(16,185,129,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🟢 Aceptadas / Formalizadas
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#047857', margin: '0.35rem 0 0.15rem 0' }}>
+                    {quotesSummary.totalAccepted} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>({quotesSummary.totalQuotes > 0 ? ((quotesSummary.totalAccepted / quotesSummary.totalQuotes) * 100).toFixed(1) : '0.0'}%)</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    En negociación: <strong>{quotesSummary.totalPending}</strong>
+                  </div>
+                </div>
+
+                {/* Recordatorios Pendientes */}
+                <div className="card" style={{
+                  padding: '1.3rem',
+                  borderLeft: '5px solid #f59e0b',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+                  boxShadow: '0 4px 12px rgba(245,158,11,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    ⏰ Recordatorios Pendientes
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#d97706', margin: '0.35rem 0 0.15rem 0' }}>
+                    {quotesSummary.totalRemindersPending} <span style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 600 }}>por contactar</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Prospectos que requieren seguimiento hoy
+                  </div>
+                </div>
+              </div>
+
+              {/* FILTROS Y BÚSQUEDA */}
+              <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                  
+                  {/* Buscador */}
+                  <div style={{ flex: '1 1 280px', minWidth: '260px' }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Buscar por prospecto, cédula, teléfono o token..."
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 1rem', width: '100%', borderRadius: '8px' }}
+                      value={quotesSearch}
+                      onChange={(e) => { setQuotesSearch(e.target.value); setPageQuotes(1); }}
+                    />
+                  </div>
+
+                  {/* Filtro por Estado */}
+                  <div style={{ minWidth: '160px' }}>
+                    <select
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 0.9rem', borderRadius: '8px', fontWeight: 600 }}
+                      value={quotesStatusFilter}
+                      onChange={(e) => { setQuotesStatusFilter(e.target.value); setPageQuotes(1); }}
+                    >
+                      <option value="todos">Todos los Estados</option>
+                      <option value="pendiente">🟡 Pendientes</option>
+                      <option value="aceptada">🟢 Aceptadas</option>
+                    </select>
+                  </div>
+
+                  {/* Filtro por Recordatorios */}
+                  <div style={{ minWidth: '180px' }}>
+                    <select
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 0.9rem', borderRadius: '8px', fontWeight: 600 }}
+                      value={quotesReminderFilter}
+                      onChange={(e) => { setQuotesReminderFilter(e.target.value); setPageQuotes(1); }}
+                    >
+                      <option value="todos">Todos los Recordatorios</option>
+                      <option value="pendientes">⚠️ Recordatorios Pendientes</option>
+                      <option value="24h_pendiente">⏱️ 24h Pendiente</option>
+                      <option value="48h_pendiente">⏱️ 48h Pendiente</option>
+                      <option value="5d_pendiente">⏱️ 5 Días Pendiente</option>
+                    </select>
+                  </div>
+
+                  {(quotesSearch || quotesStatusFilter !== 'todos' || quotesReminderFilter !== 'todos') && (
+                    <button
+                      onClick={() => {
+                        setQuotesSearch('');
+                        setQuotesStatusFilter('todos');
+                        setQuotesReminderFilter('todos');
+                        setPageQuotes(1);
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '0.55rem 1rem', fontSize: '0.8rem', color: '#ef4444', borderColor: '#fca5a5' }}
+                    >
+                      ✕ Limpiar Filtros
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* TABLA DE MIS PROPUESTAS */}
+              <div className="card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                <div className="table-container">
+                  <table className="table" style={{ margin: 0, minWidth: '1250px' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <th style={{ width: '110px' }}>Fecha Envío</th>
+                        <th>Prospecto / Asegurado</th>
+                        <th>Suma Asegurada</th>
+                        <th>Prima Referencial ($)</th>
+                        <th style={{ minWidth: '320px' }}>Seguimiento & Recordatorios</th>
+                        <th>Estado</th>
+                        <th style={{ textAlign: 'center', width: '190px' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredQuotes.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                            {loadingQuotes ? 'Cargando propuestas...' : 'No se encontraron propuestas o cotizaciones con los criterios actuales.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredQuotes
+                          .slice((pageQuotes - 1) * pageSizeQuotes, pageQuotes * pageSizeQuotes)
+                          .map((q) => {
+                            const dateFormatted = q.created_at ? new Date(q.created_at).toLocaleDateString('es-VE') : '—';
+                            const whatsAppPhone = q.cliente_telefono ? q.cliente_telefono.replace(/\D/g, '') : '';
+                            const waLink = whatsAppPhone ? `https://wa.me/${whatsAppPhone.startsWith('58') ? whatsAppPhone : `58${whatsAppPhone.replace(/^0/, '')}`}?text=${encodeURIComponent(`Hola ${q.cliente_nombre}, te saluda tu asesor de Protección y Seguros 360. Te comparto nuevamente el enlace para consultar tu propuesta de cobertura de salud: ${window.location.origin}/cotizar/share/${q.token}`)}` : null;
+
+                            return (
+                              <tr key={q.id} style={{ background: q.estado === 'aceptada' ? '#f0fdf4' : 'transparent' }}>
+                                
+                                {/* Fecha Envío */}
+                                <td>
+                                  <strong style={{ fontSize: '0.85rem', color: '#1e293b' }}>{dateFormatted}</strong>
+                                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                    {q.created_at ? new Date(q.created_at).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                  </div>
+                                </td>
+
+                                {/* Prospecto / Cliente */}
+                                <td>
+                                  <strong style={{ fontSize: '0.9rem', color: '#1e3a8a' }}>{q.cliente_nombre}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    {q.cliente_documento} • {q.cliente_correo}
+                                  </div>
+                                  {q.cliente_telefono && (
+                                    <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>
+                                      📞 {q.cliente_telefono}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Suma Asegurada */}
+                                <td>
+                                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                                    ${q.suma_asegurada?.toLocaleString('en-US')} USD
+                                  </span>
+                                  {q.suma_asegurada_2 && (
+                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                      Opción 2: ${q.suma_asegurada_2?.toLocaleString('en-US')}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Prima Cotizada */}
+                                <td>
+                                  <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#16a34a' }}>
+                                    ${q.prima_representativa ? q.prima_representativa.toFixed(2) : '0.00'} USD
+                                  </div>
+                                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                    {q.opciones_cotizadas} {q.opciones_cotizadas === 1 ? 'plan evaluado' : 'planes comparados'}
+                                  </div>
+                                </td>
+
+                                {/* Sistema de Recordatorios Comercial */}
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {/* 24h Badge */}
+                                    <span style={{
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      backgroundColor: q.recordatorio_24h ? '#dcfce7' : '#fef3c7',
+                                      color: q.recordatorio_24h ? '#15803d' : '#b45309',
+                                      border: q.recordatorio_24h ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                    }}>
+                                      ⏱️ 24h: {q.recordatorio_24h ? '✓ Contactado' : 'Pendiente'}
+                                    </span>
+
+                                    {/* 48h Badge */}
+                                    <span style={{
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      backgroundColor: q.recordatorio_48h ? '#dcfce7' : '#fef3c7',
+                                      color: q.recordatorio_48h ? '#15803d' : '#b45309',
+                                      border: q.recordatorio_48h ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                    }}>
+                                      ⏱️ 48h: {q.recordatorio_48h ? '✓ Aclaratoria' : 'Pendiente'}
+                                    </span>
+
+                                    {/* 5d Badge */}
+                                    <span style={{
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      backgroundColor: q.recordatorio_5d ? '#dcfce7' : '#fef3c7',
+                                      color: q.recordatorio_5d ? '#15803d' : '#b45309',
+                                      border: q.recordatorio_5d ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                    }}>
+                                      ⏱️ 5d: {q.recordatorio_5d ? '✓ Cierre' : 'Pendiente'}
+                                    </span>
+                                  </div>
+
+                                  {q.notas_seguimiento && (
+                                    <div style={{ fontSize: '0.725rem', color: '#475569', fontStyle: 'italic', marginTop: '0.35rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                                      💬 "{q.notas_seguimiento.slice(0, 45)}{q.notas_seguimiento.length > 45 ? '...' : ''}"
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Estado */}
+                                <td>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.6rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.725rem',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    backgroundColor: q.estado === 'aceptada' ? '#dcfce7' : '#fffbeb',
+                                    color: q.estado === 'aceptada' ? '#15803d' : '#b45309',
+                                    border: q.estado === 'aceptada' ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                  }}>
+                                    {q.estado === 'aceptada' ? '🟢 Aceptada' : '🟡 Pendiente'}
+                                  </span>
+                                </td>
+
+                                {/* Acciones */}
+                                <td style={{ textAlign: 'center' }}>
+                                  <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                                    <a
+                                      href={`/cotizar/share/${q.token}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Ver cotización interactiva compartida"
+                                      style={{
+                                        background: '#eff6ff',
+                                        border: '1px solid #bfdbfe',
+                                        color: '#1d4ed8',
+                                        padding: '0.3rem 0.55rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        textDecoration: 'none',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.2rem'
+                                      }}
+                                    >
+                                      🔗 Ver
+                                    </a>
+
+                                    {waLink && (
+                                      <a
+                                        href={waLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Enviar recordatorio por WhatsApp"
+                                        style={{
+                                          background: '#f0fdf4',
+                                          border: '1px solid #bbf7d0',
+                                          color: '#15803d',
+                                          padding: '0.3rem 0.55rem',
+                                          borderRadius: '6px',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 700,
+                                          textDecoration: 'none',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.2rem'
+                                        }}
+                                      >
+                                        💬 WhatsApp
+                                      </a>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenReminderModal(q)}
+                                      title="Gestionar recordatorios y bitácora"
+                                      style={{
+                                        background: '#f8fafc',
+                                        border: '1px solid #cbd5e1',
+                                        color: '#334155',
+                                        padding: '0.3rem 0.55rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.2rem'
+                                      }}
+                                    >
+                                      ⏰ Bitácora
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <PaginationControls
+                  currentPage={pageQuotes}
+                  totalItems={filteredQuotes.length}
+                  pageSize={pageSizeQuotes}
+                  onPageChange={setPageQuotes}
+                  onPageSizeChange={setPageSizeQuotes}
+                />
+              </div>
             </div>
           )}
 
@@ -3234,6 +4006,25 @@ export default function AsesorDashboard() {
                   >
                     📝 Bitácora Asesor
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalTab('historial')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      border: profileModalTab === 'historial' ? 'none' : '1px solid #bbf7d0',
+                      cursor: 'pointer',
+                      backgroundColor: profileModalTab === 'historial' ? '#16a34a' : '#f0fdf4',
+                      color: profileModalTab === 'historial' ? '#ffffff' : '#15803d',
+                      boxShadow: profileModalTab === 'historial' ? '0 2px 6px rgba(22, 163, 74, 0.25)' : 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    📜 Historial & Renovaciones
+                  </button>
                 </div>
 
                 {/* Form Body with Scroll */}
@@ -3247,11 +4038,28 @@ export default function AsesorDashboard() {
                           Datos Sociodemográficos y Residencia
                         </h4>
                         <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
-                          Información sobre la ocupación, nivel de educación y lugar de residencia del asegurado.
+                          Información sobre la ocupación, nivel de educación, fecha de inicio y lugar de residencia del asegurado.
                         </p>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 800, fontSize: '0.8rem', color: '#1e3a8a' }}>
+                            📅 Cliente Desde (Fecha de Inicio) *
+                          </label>
+                          <input
+                            type="date"
+                            value={profileForm.cliente_desde || ''}
+                            onChange={e => setProfileForm({ ...profileForm, cliente_desde: e.target.value })}
+                            className="form-input"
+                            style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#f0f7ff', border: '1.5px solid #bfdbfe', fontWeight: 700, color: '#1e3a8a' }}
+                            required
+                          />
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>
+                            Fecha oficial desde la cual es cliente (editable).
+                          </span>
+                        </div>
+
                         <div className="form-group" style={{ margin: 0 }}>
                           <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem' }}>Teléfono / WhatsApp de Contacto</label>
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -3823,6 +4631,248 @@ export default function AsesorDashboard() {
                     </div>
                   )}
 
+                  {/* TAB 6: HISTORIAL, PÓLIZAS & RENOVACIONES */}
+                  {profileModalTab === 'historial' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                            📜 Historial de Pólizas, Pagos y Renovaciones
+                          </h4>
+                          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.2rem 0 0 0' }}>
+                            Registro cronológico de contrataciones, renovaciones anuales y auditoría de cuotas de pago.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => loadClientHistory(profileModalClient.id)}
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                          disabled={loadingClientHistory}
+                        >
+                          {loadingClientHistory ? 'Actualizando...' : '🔄 Actualizar Historial'}
+                        </button>
+                      </div>
+
+                      {/* Resumen del Cliente */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+                        <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Cliente Desde</span>
+                          <strong style={{ fontSize: '1rem', color: '#0f172a' }}>{profileForm.cliente_desde || 'Reciente'}</strong>
+                        </div>
+                        <div style={{ background: '#eff6ff', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#1e40af', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Pólizas Totales</span>
+                          <strong style={{ fontSize: '1rem', color: '#1d4ed8' }}>{clientHistoryData.polizas.length}</strong>
+                        </div>
+                        <div style={{ background: '#f0fdf4', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#15803d', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Renovaciones</span>
+                          <strong style={{ fontSize: '1rem', color: '#16a34a' }}>{clientHistoryData.renovaciones.length}</strong>
+                        </div>
+                        <div style={{ background: '#fdf4ff', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #f5d0fe' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#86198f', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Cuotas / Pagos</span>
+                          <strong style={{ fontSize: '1rem', color: '#a21caf' }}>{clientHistoryData.pagos.length}</strong>
+                        </div>
+                      </div>
+
+                      {/* SECCIÓN 1: PÓLIZAS ACTIVAS DEL CLIENTE Y BOTÓN DE RENOVACIÓN */}
+                      <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                          <h5 style={{ margin: 0, fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            🛡️ Pólizas Asociadas al Asegurado
+                          </h5>
+                        </div>
+
+                        {clientHistoryData.polizas.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                            Este cliente no posee pólizas registradas aún.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {clientHistoryData.polizas.map(p => (
+                              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '0.85rem 1rem', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <strong style={{ fontSize: '0.95rem', color: '#1e3a8a' }}>{p.codigo_poliza}</strong>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: p.estado === 'vigente' ? '#059669' : '#d97706', background: p.estado === 'vigente' ? '#ecfdf5' : '#fffbeb', padding: '0.1rem 0.45rem', borderRadius: '9999px', textTransform: 'capitalize' }}>
+                                      {p.estado}
+                                    </span>
+                                    <span style={{ fontSize: '0.72rem', background: '#e0e7ff', color: '#3730a3', padding: '0.1rem 0.45rem', borderRadius: '4px', fontWeight: 700 }}>
+                                      {p.tipo_negocio === 'renovacion' ? '🔄 Renovación' : '✨ Nuevo Negocio'}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '0.25rem' }}>
+                                    <strong>{p.compania_nombre || 'Aseguradora'}</strong> {p.plan ? `• Plan ${p.plan}` : ''} • Suma: ${p.suma_asegurada || 0} USD • Prima Anual: <strong>${p.prima_anual || 0} USD</strong> • Frecuencia: <span style={{ textTransform: 'capitalize' }}>{p.frecuencia_pago || 'contado'}</span>
+                                  </div>
+                                  {p.fecha_renovacion && (
+                                    <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: '0.2rem' }}>
+                                      📅 Última fecha de renovación: {p.fecha_renovacion}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRenewModal(p)}
+                                  style={{
+                                    backgroundColor: '#10b981',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    fontWeight: 800,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    boxShadow: '0 2px 6px rgba(16,185,129,0.25)'
+                                  }}
+                                >
+                                  🔄 Renovar Póliza
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SECCIÓN 2: HISTORIAL DE RENOVACIONES */}
+                      <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '1.25rem' }}>
+                        <h5 style={{ margin: '0 0 1rem 0', fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          📅 Historial y Auditoría de Renovaciones
+                        </h5>
+
+                        {clientHistoryData.renovaciones.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                            No se han registrado renovaciones previas para este cliente.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {clientHistoryData.renovaciones.map(r => (
+                              <div key={r.id} style={{ padding: '0.85rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <span style={{ background: '#16a34a', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                                        Renovación #{r.id}
+                                      </span>
+                                      <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>
+                                        Fecha de Renovación: {r.fecha_renovacion}
+                                      </strong>
+                                      <span style={{ fontSize: '0.8rem', color: '#475569' }}>
+                                        ({r.poliza_codigo || `Póliza ID ${r.poliza_id}`})
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#166534', marginTop: '0.35rem' }}>
+                                      Frecuencia: <span style={{ textTransform: 'capitalize', fontWeight: 700 }}>{r.frecuencia_anterior || 'contado'}</span> ➔ <span style={{ textTransform: 'capitalize', fontWeight: 800, color: '#047857' }}>{r.frecuencia_nueva}</span> • Prima Renovada: <strong>${r.prima_anual} USD</strong>
+                                    </div>
+                                    {r.observaciones && (
+                                      <div style={{ fontSize: '0.775rem', color: '#374151', fontStyle: 'italic', marginTop: '0.35rem', background: 'rgba(255,255,255,0.7)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                                        📝 "{r.observaciones}"
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div style={{ textAlign: 'right', fontSize: '0.725rem', color: '#64748b' }}>
+                                    <span>Por: {r.asesor_nombre || 'Asesor'}</span>
+                                    <span style={{ display: 'block', marginTop: '0.1rem' }}>{r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SECCIÓN 3: HISTÓRICO COMPLETO DE PAGOS & CUOTAS */}
+                      <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '1.25rem' }}>
+                        <h5 style={{ margin: '0 0 1rem 0', fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          💵 Histórico de Pagos y Cuotas de Cobranza
+                        </h5>
+
+                        {clientHistoryData.pagos.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                            No hay cuotas o pagos registrados.
+                          </div>
+                        ) : (
+                          <div style={{ overflowX: 'auto' }}>
+                            <table className="table" style={{ margin: 0, fontSize: '0.8rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f8fafc' }}>
+                                  <th>Póliza</th>
+                                  <th>Cuota</th>
+                                  <th>Monto USD</th>
+                                  <th>Reportado (Bs.)</th>
+                                  <th>Referencia</th>
+                                  <th>Vencimiento</th>
+                                  <th>Fecha Pago</th>
+                                  <th>Estado</th>
+                                  <th style={{ textAlign: 'center' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {clientHistoryData.pagos.map(pa => (
+                                  <tr key={pa.id} style={{ background: pa.estado_pago === 'pagado' ? '#f0fdf4' : (pa.estado_pago === 'en_revision' ? '#fffbeb' : 'transparent') }}>
+                                    <td>
+                                      <strong style={{ color: '#1e3a8a' }}>{pa.poliza_codigo}</strong>
+                                      <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{pa.compania_nombre}</div>
+                                    </td>
+                                    <td><strong>#{pa.cuota_numero || 1}/{pa.cuota_total || 1}</strong></td>
+                                    <td><strong>${parseFloat(pa.monto || 0).toFixed(2)}</strong></td>
+                                    <td>
+                                      {pa.monto_reportado ? (
+                                        <span style={{ fontWeight: 700, color: '#1e40af' }}>
+                                          Bs. {parseFloat(pa.monto_reportado).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: '#94a3b8' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {pa.referencia ? (
+                                        <code style={{ background: '#e2e8f0', padding: '0.1rem 0.35rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                          {pa.referencia}
+                                        </code>
+                                      ) : (
+                                        <span style={{ color: '#94a3b8' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td>{pa.fecha_vencimiento || '—'}</td>
+                                    <td>{pa.fecha_pago || '—'}</td>
+                                    <td>
+                                      <span style={{
+                                        display: 'inline-block',
+                                        padding: '0.2rem 0.5rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 800,
+                                        backgroundColor: pa.estado_pago === 'pagado' ? '#dcfce7' : (pa.estado_pago === 'en_revision' ? '#fef3c7' : (pa.estado_pago === 'rechazado' ? '#fee2e2' : '#f1f5f9')),
+                                        color: pa.estado_pago === 'pagado' ? '#15803d' : (pa.estado_pago === 'en_revision' ? '#b45309' : (pa.estado_pago === 'rechazado' ? '#b91c1c' : '#475569')),
+                                        textTransform: 'uppercase'
+                                      }}>
+                                        {pa.estado_pago === 'pagado' ? '🟢 Pagado' : (pa.estado_pago === 'en_revision' ? '🟡 En Revisión' : (pa.estado_pago === 'rechazado' ? '🔴 Rechazado' : '⚪ Pendiente'))}
+                                      </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      {pa.estado_pago !== 'pagado' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenReportPayModal(pa)}
+                                          className="btn btn-primary"
+                                          style={{ fontSize: '0.7rem', padding: '0.25rem 0.5rem' }}
+                                        >
+                                          💵 Reportar
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Modal Footer */}
                   <div style={{
                     paddingTop: '1.25rem',
@@ -3832,37 +4882,50 @@ export default function AsesorDashboard() {
                     justifyContent: 'flex-end',
                     gap: '0.75rem'
                   }}>
-                    <button
-                      type="button"
-                      onClick={() => setProfileModalClient(null)}
-                      className="btn btn-secondary"
-                      style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingProfile}
-                      className="btn btn-primary"
-                      style={{
-                        padding: '0.6rem 1.5rem',
-                        fontSize: '0.85rem',
-                        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-                        boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                    >
-                      {savingProfile ? (
-                        <>
-                          <div className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#fff' }}></div>
-                          <span>Guardando...</span>
-                        </>
-                      ) : (
-                        <span>✓ Guardar Ficha 360</span>
-                      )}
-                    </button>
+                    {profileModalTab === 'historial' ? (
+                      <button
+                        type="button"
+                        onClick={() => setProfileModalClient(null)}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.6rem 1.5rem', fontSize: '0.85rem' }}
+                      >
+                        Cerrar Historial
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setProfileModalClient(null)}
+                          className="btn btn-secondary"
+                          style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={savingProfile}
+                          className="btn btn-primary"
+                          style={{
+                            padding: '0.6rem 1.5rem',
+                            fontSize: '0.85rem',
+                            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                            boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          {savingProfile ? (
+                            <>
+                              <div className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#fff' }}></div>
+                              <span>Guardando...</span>
+                            </>
+                          ) : (
+                            <span>✓ Guardar Ficha 360</span>
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </form>
               </div>
@@ -3975,6 +5038,613 @@ export default function AsesorDashboard() {
                       style={{ padding: '0.5rem 1.25rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
                     >
                       {savingPhone ? 'Guardando...' : '✓ Guardar Teléfono'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL DE RENOVACIÓN DE PÓLIZA */}
+          {renewModalPolicy && (() => {
+            const freq = (renewForm.frecuencia_pago || 'contado').toLowerCase();
+            const numCuotas = freq === 'contado' ? 1 : 
+                              freq === 'semestral' ? 2 : 
+                              freq === 'cuatrimestral' ? 3 : 
+                              (freq === 'trimestral' || freq === '4_cuotas' || freq === 'cuatro_cuotas') ? 4 : 
+                              freq === 'bimestral' ? 6 : 12;
+
+            const mesesIntervalo = freq === 'contado' ? 0 : 
+                                   freq === 'semestral' ? 6 : 
+                                   freq === 'cuatrimestral' ? 4 : 
+                                   (freq === 'trimestral' || freq === '4_cuotas' || freq === 'cuatro_cuotas') ? 3 : 
+                                   freq === 'bimestral' ? 2 : 1;
+
+            const primaNum = parseFloat(renewForm.prima_anual || 0);
+            const montoBase = parseFloat((primaNum / numCuotas).toFixed(2));
+            
+            let baseDate = new Date();
+            if (renewForm.fecha_renovacion) {
+              const parsed = new Date(renewForm.fecha_renovacion + 'T12:00:00');
+              if (!isNaN(parsed.getTime())) baseDate = parsed;
+            }
+
+            const cuotasPreview = [];
+            for (let i = 1; i <= numCuotas; i++) {
+              const monto = (i === numCuotas)
+                ? parseFloat((primaNum - (montoBase * (numCuotas - 1))).toFixed(2))
+                : montoBase;
+                
+              const dueDate = new Date(baseDate.getTime());
+              if (i > 1 && mesesIntervalo > 0) {
+                dueDate.setMonth(dueDate.getMonth() + ((i - 1) * mesesIntervalo));
+              }
+              const fechaVencimiento = dueDate.toISOString().split('T')[0];
+              cuotasPreview.push({ cuota: i, monto, fechaVencimiento });
+            }
+
+            return (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 999999,
+                padding: '1rem'
+              }}>
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '20px',
+                  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+                  width: '100%',
+                  maxWidth: '680px',
+                  maxHeight: '92vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  {/* Modal Header */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
+                    padding: '1.25rem 1.75rem',
+                    color: '#ffffff',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                        <span style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '9999px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Renovación de Contrato
+                        </span>
+                      </div>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+                        🔄 Renovar Póliza — {renewModalPolicy.codigo_poliza}
+                      </h3>
+                      <p style={{ fontSize: '0.75rem', color: '#d1fae5', margin: '0.15rem 0 0 0' }}>
+                        {renewModalPolicy.cliente_nombre || 'Cliente'} • {renewModalPolicy.compania_nombre || 'Aseguradora'} {renewModalPolicy.plan ? `• Plan ${renewModalPolicy.plan}` : ''}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRenewModalPolicy(null)}
+                      style={{
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '10px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        border: 'none',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.9rem',
+                        fontWeight: 700
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <form onSubmit={handleConfirmRenewal} style={{ padding: '1.75rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    
+                    <div style={{ backgroundColor: '#f0fdf4', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #bbf7d0', fontSize: '0.825rem', color: '#166534' }}>
+                      💡 <strong>Regla del Negocio:</strong> Al renovar, el estado de la póliza pasará a <strong>Vigente</strong> con tipo de negocio <strong>Renovación</strong>. Las fechas de vencimiento de las nuevas cuotas se generarán a partir de la <strong>Fecha de Renovación</strong> seleccionada según la frecuencia de pago.
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+                      
+                      {/* Fecha de Renovación */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.825rem', color: '#065f46' }}>
+                          📅 Fecha de Renovación *
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={renewForm.fecha_renovacion}
+                          onChange={e => setRenewForm({ ...renewForm, fecha_renovacion: e.target.value })}
+                          className="form-input"
+                          style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#f8fafc', fontWeight: 700 }}
+                        />
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                          Fecha base desde la cual iniciará el nuevo ciclo de cobro.
+                        </span>
+                      </div>
+
+                      {/* Frecuencia de Pago (sugiriendo la anterior) */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.825rem', color: '#065f46' }}>
+                          🔁 Frecuencia de Pago (Sugerida: {renewModalPolicy.frecuencia_pago || 'contado'}) *
+                        </label>
+                        <select
+                          required
+                          value={renewForm.frecuencia_pago}
+                          onChange={e => setRenewForm({ ...renewForm, frecuencia_pago: e.target.value })}
+                          className="form-input"
+                          style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#ffffff', fontWeight: 700, color: '#065f46' }}
+                        >
+                          <option value="contado">Contado (Anual - 1 Cuota)</option>
+                          <option value="semestral">Semestral (2 Cuotas - Cada 6 meses)</option>
+                          <option value="cuatrimestral">Cuatrimestral (3 Cuotas - Cada 4 meses)</option>
+                          <option value="trimestral">Trimestral (4 Cuotas - Cada 3 meses)</option>
+                          <option value="bimestral">Bimestral (6 Cuotas - Cada 2 meses)</option>
+                          <option value="mensual">Mensual (12 Cuotas - Cada mes)</option>
+                        </select>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                          Puedes cambiar la frecuencia de pago si el cliente lo acordó.
+                        </span>
+                      </div>
+
+                      {/* Prima Anual */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.825rem', color: '#065f46' }}>
+                          💵 Prima Anual ($ USD) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={renewForm.prima_anual}
+                          onChange={e => setRenewForm({ ...renewForm, prima_anual: e.target.value })}
+                          className="form-input"
+                          style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#f8fafc', fontWeight: 800, color: '#0f172a' }}
+                        />
+                      </div>
+
+                      {/* Suma Asegurada */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.825rem' }}>
+                          🛡️ Suma Asegurada ($ USD)
+                        </label>
+                        <input
+                          type="number"
+                          value={renewForm.suma_asegurada}
+                          onChange={e => setRenewForm({ ...renewForm, suma_asegurada: e.target.value })}
+                          className="form-input"
+                          style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#f8fafc' }}
+                        />
+                      </div>
+
+                      {/* Deducible */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.825rem' }}>
+                          🏷️ Deducible ($ USD)
+                        </label>
+                        <input
+                          type="number"
+                          value={renewForm.deducible}
+                          onChange={e => setRenewForm({ ...renewForm, deducible: e.target.value })}
+                          className="form-input"
+                          style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#f8fafc' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Observaciones */}
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.825rem' }}>
+                        📝 Observaciones de la Renovación (Opcional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={renewForm.observaciones}
+                        onChange={e => setRenewForm({ ...renewForm, observaciones: e.target.value })}
+                        placeholder="Ej: Cliente acordó cambio de frecuencia semestral a trimestral. Incluye anexo familiar..."
+                        className="form-input"
+                        style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', fontFamily: 'inherit', fontSize: '0.825rem' }}
+                      ></textarea>
+                    </div>
+
+                    {/* VISTA PREVIA DEL NUEVO CRONOGRAMA DE CUOTAS */}
+                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          📊 Vista Previa de Nuevas Cuotas Generadas ({numCuotas} {numCuotas === 1 ? 'Cuota' : 'Cuotas'})
+                        </span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669' }}>
+                          Total: ${primaNum.toFixed(2)} USD
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', maxHeight: '160px', overflowY: 'auto' }}>
+                        {cuotasPreview.map(c => (
+                          <div key={c.cuota} style={{ background: '#ffffff', padding: '0.5rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.75rem' }}>
+                            <div style={{ fontWeight: 800, color: '#1e3a8a' }}>Cuota #{c.cuota}</div>
+                            <div style={{ color: '#059669', fontWeight: 700, margin: '0.15rem 0' }}>${c.monto.toFixed(2)} USD</div>
+                            <div style={{ color: '#64748b', fontSize: '0.7rem' }}>Vence: {c.fechaVencimiento}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Modal Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                      <button
+                        type="button"
+                        onClick={() => setRenewModalPolicy(null)}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem' }}
+                        disabled={renewing}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={renewing || !renewForm.fecha_renovacion}
+                        className="btn btn-primary"
+                        style={{
+                          padding: '0.6rem 1.5rem',
+                          fontSize: '0.85rem',
+                          background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)',
+                          boxShadow: '0 4px 12px rgba(5,150,105,0.25)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem'
+                        }}
+                      >
+                        {renewing ? (
+                          <>
+                            <div className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#fff' }}></div>
+                            <span>Renovando Póliza...</span>
+                          </>
+                        ) : (
+                          <span>✓ Confirmar Renovación y Generar Pagos</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* MODAL EDICIÓN RÁPIDA DE FECHA "CLIENTE DESDE" */}
+          {editClienteDesdeClient && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 999999,
+              padding: '1rem'
+            }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+                width: '100%',
+                maxWidth: '440px',
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  padding: '1.25rem 1.5rem',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+                      📅 Modificar "Cliente Desde"
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: '#bfdbfe', margin: '0.15rem 0 0 0' }}>
+                      {editClienteDesdeClient.nombre || `${editClienteDesdeClient.primer_nombre} ${editClienteDesdeClient.primer_apellido}`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditClienteDesdeClient(null)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveClienteDesde} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1e3a8a' }}>
+                      Fecha Desde Que Es Cliente *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={editClienteDesdeVal}
+                      onChange={e => setEditClienteDesdeVal(e.target.value)}
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.65rem 0.9rem', borderRadius: '10px', background: '#f8fafc', fontWeight: 700, color: '#0f172a' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem', display: 'block' }}>
+                      Esta fecha se reflejará en la ficha del cliente, tarjetas y reportes de antigüedad.
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditClienteDesdeClient(null)}
+                      className="btn btn-secondary"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingClienteDesde || !editClienteDesdeVal}
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1.25rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
+                    >
+                      {savingClienteDesde ? 'Guardando...' : '✓ Guardar Fecha'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL DE GESTIÓN DE RECORDATORIOS Y BITÁCORA COMERCIAL (ASESOR) */}
+          {reminderModalQuote && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 99999,
+              padding: '1rem'
+            }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '20px',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+                width: '100%',
+                maxWidth: '560px',
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0'
+              }}>
+                {/* Modal Header */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  padding: '1.25rem 1.75rem',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <span style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: '#ffffff',
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Seguimiento de Propuesta
+                    </span>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0.25rem 0 0 0', color: '#ffffff' }}>
+                      ⏰ {reminderModalQuote.cliente_nombre}
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: '#bfdbfe', margin: '0.1rem 0 0 0' }}>
+                      {reminderModalQuote.cliente_documento} • {reminderModalQuote.cliente_telefono || 'Sin teléfono'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReminderModalQuote(null)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <form onSubmit={handleSaveReminder} style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  
+                  {/* Info resumen */}
+                  <div style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div><strong>Suma:</strong> ${reminderModalQuote.suma_asegurada?.toLocaleString('en-US')} USD</div>
+                      <div><strong>Prima Base:</strong> ${reminderModalQuote.prima_representativa?.toFixed(2)} USD</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div><strong>Estado:</strong> <span style={{ textTransform: 'capitalize', fontWeight: 700, color: reminderModalQuote.estado === 'aceptada' ? '#16a34a' : '#d97706' }}>{reminderModalQuote.estado}</span></div>
+                      <div style={{ color: '#64748b', fontSize: '0.75rem' }}>Token: {reminderModalQuote.token.slice(0, 8)}...</div>
+                    </div>
+                  </div>
+
+                  {/* Hitos de Recordatorio */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+                      Checklist de Contactos Comerciales:
+                    </label>
+
+                    {/* Recordatorio 24h */}
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '10px',
+                      background: reminderForm.recordatorio_24h ? '#f0fdf4' : '#ffffff',
+                      border: reminderForm.recordatorio_24h ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                      cursor: 'pointer'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={reminderForm.recordatorio_24h}
+                        onChange={e => setReminderForm({ ...reminderForm, recordatorio_24h: e.target.checked })}
+                        style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                      />
+                      <div>
+                        <strong style={{ fontSize: '0.85rem', color: reminderForm.recordatorio_24h ? '#15803d' : '#1e293b' }}>
+                          ⏱️ Recordatorio 24 Horas (Primer Contacto)
+                        </strong>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          Confirmar que el prospecto pudo abrir y revisar la cotización en su teléfono/PC.
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Recordatorio 48h */}
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '10px',
+                      background: reminderForm.recordatorio_48h ? '#f0fdf4' : '#ffffff',
+                      border: reminderForm.recordatorio_48h ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                      cursor: 'pointer'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={reminderForm.recordatorio_48h}
+                        onChange={e => setReminderForm({ ...reminderForm, recordatorio_48h: e.target.checked })}
+                        style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                      />
+                      <div>
+                        <strong style={{ fontSize: '0.85rem', color: reminderForm.recordatorio_48h ? '#15803d' : '#1e293b' }}>
+                          ⏱️ Recordatorio 48 Horas (Aclaratoria de Dudas)
+                        </strong>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          Explicar diferencias de deducible, clínicas de convenio y formas de pago.
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Recordatorio 5 Días */}
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '10px',
+                      background: reminderForm.recordatorio_5d ? '#f0fdf4' : '#ffffff',
+                      border: reminderForm.recordatorio_5d ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                      cursor: 'pointer'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={reminderForm.recordatorio_5d}
+                        onChange={e => setReminderForm({ ...reminderForm, recordatorio_5d: e.target.checked })}
+                        style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                      />
+                      <div>
+                        <strong style={{ fontSize: '0.85rem', color: reminderForm.recordatorio_5d ? '#15803d' : '#1e293b' }}>
+                          ⏱️ Recordatorio 5 Días (Cierre y Decisión)
+                        </strong>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          Reactivación comercial y solicitud de documentos para emisión de póliza.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Notas de Seguimiento */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 800, fontSize: '0.8rem', color: '#1e3a8a' }}>
+                      📝 Bitácora Comercial & Objeciones
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={reminderForm.notas_seguimiento}
+                      onChange={e => setReminderForm({ ...reminderForm, notas_seguimiento: e.target.value })}
+                      placeholder="Escribe comentarios, dudas del cliente o acuerdos alcanzados..."
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.75rem', borderRadius: '10px', fontSize: '0.825rem', fontFamily: 'inherit' }}
+                    ></textarea>
+                  </div>
+
+                  {/* Modal Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                    <button
+                      type="button"
+                      onClick={() => setReminderModalQuote(null)}
+                      className="btn btn-secondary"
+                      style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingReminder}
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1.5rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
+                    >
+                      {savingReminder ? 'Guardando...' : '💾 Guardar Seguimiento'}
                     </button>
                   </div>
                 </form>

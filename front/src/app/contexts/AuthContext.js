@@ -12,6 +12,23 @@ function normalizeApiUrl(url) {
 }
 const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api');
 
+// Helper para parsear respuestas y dar mensajes claros si el servidor devuelve HTML en vez de JSON
+async function parseJsonResponse(res) {
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return await res.json();
+  }
+  const text = await res.text();
+  if (text.trim().startsWith('<')) {
+    throw new Error(`El servidor respondió con HTML (Status ${res.status}). Verifica que NEXT_PUBLIC_API_URL esté configurado con la URL de tu backend (${API_URL}).`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(text || `Error en la respuesta del servidor (Status ${res.status})`);
+  }
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
@@ -63,7 +80,7 @@ export function AuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ correo, contrasena })
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Error en el inicio de sesión');
 
       localStorage.setItem('jka_token', data.token);
@@ -92,7 +109,7 @@ export function AuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Error en el registro');
 
       localStorage.setItem('jka_token', data.token);
@@ -162,7 +179,7 @@ export function AuthProvider({ children }) {
         },
         body: JSON.stringify(profileData)
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Error al actualizar perfil');
 
       if (data.cliente) {

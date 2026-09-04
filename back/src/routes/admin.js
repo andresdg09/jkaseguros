@@ -88,14 +88,16 @@ function extractTariffBenefits(body) {
   const prot = isTrue(body.protesis !== undefined ? body.protesis : (body.protesis_quirurgicas !== undefined ? body.protesis_quirurgicas : body.prótesis));
   const muletaSilla = isTrue(body.muleta_silla_ruedas !== undefined ? body.muleta_silla_ruedas : (body.muletas !== undefined ? body.muletas : (body.silla_ruedas !== undefined ? body.silla_ruedas : body.muleta_silla)));
   const reembolsoCartaAval = isTrue(body.reembolso_carta_aval !== undefined ? body.reembolso_carta_aval : (body.reembolso !== undefined ? body.reembolso : body.carta_aval));
-  const consult = isTrue(body.consultas !== undefined ? body.consultas : (body.consultas_especialistas !== undefined ? body.consultas_especialistas : body.consultas_especialista));
+  const consult = isTrue(body.consultas !== undefined ? body.consultas : (body.consultas_especialistas !== undefined ? body.consultas_especialistas : body.consultas_especialista)) || hasValue(body.consultas_suma);
   const mat = isTrue(body.maternidad) || hasValue(body.maternidad_suma);
-  const oftalmo = isTrue(body.oftalmologia !== undefined ? body.oftalmologia : body.oftalmología);
-  const odonto = isTrue(body.odontologia !== undefined ? body.odontologia : body.odontología);
+  const oftalmo = isTrue(body.oftalmologia !== undefined ? body.oftalmologia : body.oftalmología) || hasValue(body.oftalmologia_suma);
+  const odonto = isTrue(body.odontologia !== undefined ? body.odontologia : body.odontología) || hasValue(body.odontologia_suma);
   const muerteAcc = isTrue(body.muerte_accidental) || hasValue(body.muerte_accidental_suma);
   const invalidezPerm = isTrue(body.invalidez_permanente) || hasValue(body.invalidez_permanente_suma);
   const amb = typeof body.ambulancia === 'boolean' ? (body.ambulancia ? 'INCL' : '') : (body.ambulancia || (isTrue(body.ambulancia) ? 'INCL' : ''));
   const exam = typeof body.examenes_lab_imagenologia === 'boolean' ? (body.examenes_lab_imagenologia ? 'INCL' : '') : (body.examenes_lab_imagenologia || (isTrue(body.examenes_lab_imagenologia) ? 'INCL' : ''));
+  const examEspeciales = isTrue(body.examenes_especiales);
+  const asistViajes = isTrue(body.asist_intl) || hasValue(body.asist_intl_suma);
 
   return {
     atencion_medica_primaria: atMedPrim,
@@ -111,7 +113,13 @@ function extractTariffBenefits(body) {
     maternidad_suma: body.maternidad_suma || '',
     maternidad_costo: body.maternidad_costo || '',
     oftalmologia: oftalmo,
+    oftalmologia_suma: body.oftalmologia_suma || '',
+    oftalmologia_costo: body.oftalmologia_costo || '',
     odontologia: odonto,
+    odontologia_suma: body.odontologia_suma || '',
+    odontologia_costo: body.odontologia_costo || '',
+    consultas_suma: body.consultas_suma || '',
+    consultas_costo: body.consultas_costo || '',
     muerte_accidental: muerteAcc,
     muerte_accidental_suma: body.muerte_accidental_suma || '',
     muerte_accidental_costo: body.muerte_accidental_costo || '',
@@ -123,7 +131,17 @@ function extractTariffBenefits(body) {
     asist_intl_costo: body.asist_intl_costo || '',
     funeral_suma: body.funeral_suma || '',
     funeral_costo: body.funeral_costo || '',
-    reembolso_carta_aval: reembolsoCartaAval
+    asist_medica_primaria_suma: body.asist_medica_primaria_suma || '',
+    asist_medica_primaria_costo: body.asist_medica_primaria_costo || '',
+    odonto_oftal_suma: body.odonto_oftal_suma || '',
+    odonto_oftal_costo: body.odonto_oftal_costo || '',
+    fisio_psico_suma: body.fisio_psico_suma || '',
+    fisio_psico_costo: body.fisio_psico_costo || '',
+    dermato_nutricion_suma: body.dermato_nutricion_suma || '',
+    dermato_nutricion_costo: body.dermato_nutricion_costo || '',
+    reembolso_carta_aval: reembolsoCartaAval,
+    examenes_especiales: examEspeciales,
+    asist_intl: asistViajes
   };
 }
 
@@ -217,6 +235,7 @@ router.get('/clients', authenticateToken, async (req, res) => {
     const polsRes = await db.query('SELECT * FROM polizas');
     const paysRes = await db.query('SELECT * FROM pagos');
     const usersRes = await db.query('SELECT id, correo FROM usuarios');
+    const advsRes = await db.query('SELECT id, nombre, codigo_asesor FROM asesores');
 
     const mapped = clientsRes.rows.map(c => {
       const cliPols = polsRes.rows.filter(p => parseInt(p.cliente_id) === parseInt(c.id));
@@ -224,6 +243,7 @@ router.get('/clients', authenticateToken, async (req, res) => {
       const cliPays = paysRes.rows.filter(pa => cliPolIds.includes(parseInt(pa.poliza_id)) && pa.estado_pago === 'pagado');
       const totalPagado = cliPays.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
       const userObj = usersRes.rows.find(u => parseInt(u.id) === parseInt(c.usuario_id));
+      const asesorObj = advsRes.rows.find(a => parseInt(a.id) === parseInt(c.asesor_id));
 
       return {
         id: c.id,
@@ -238,9 +258,18 @@ router.get('/clients', authenticateToken, async (req, res) => {
         estado_civil: c.estado_civil,
         tipo_documento: c.tipo_documento,
         nro_documento: c.nro_documento,
-        telefono: `${c.codigo_area}-${c.numero_celular}`,
+        telefono: `${c.codigo_area || ''}-${c.numero_celular || ''}`.replace(/^-/, ''),
+        numero_celular: c.numero_celular,
+        codigo_area: c.codigo_area,
         correo: userObj ? userObj.correo : 'N/A',
+        asesor_id: c.asesor_id || null,
+        asesor_nombre: asesorObj ? asesorObj.nombre : 'Sin Asesor',
+        asesor_codigo: asesorObj ? asesorObj.codigo_asesor : null,
+        polizas_count: cliPols.length,
+        polizas_vigentes: cliPols.filter(p => p.estado === 'vigente').length,
+        polizas_negociacion: cliPols.filter(p => p.estado === 'negociacion').length,
         polizas: cliPols.map(p => p.codigo_poliza).join(', ') || 'Ninguna',
+        total_aportado: totalPagado,
         historial_pagos: `$${totalPagado.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
       };
     });
@@ -737,11 +766,17 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
             funeral_suma, funeral_costo, at_situ_medicamentos, atencion_medica_primaria, medicinas, consultas_medicas,
             rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
             oftalmologia, odontologia, muerte_accidental, muerte_accidental_suma, muerte_accidental_costo,
-            invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval
+            invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval,
+            examenes_especiales, asist_intl,
+            oftalmologia_suma, oftalmologia_costo, odontologia_suma, odontologia_costo, consultas_suma, consultas_costo,
+            asist_medica_primaria_suma, asist_medica_primaria_costo, odonto_oftal_suma, odonto_oftal_costo,
+            fisio_psico_suma, fisio_psico_costo, dermato_nutricion_suma, dermato_nutricion_costo
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
             $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-            $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
+            $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44,
+            $45, $46, $47, $48, $49, $50,
+            $51, $52, $53, $54, $55, $56, $57, $58
           )
         `;
 
@@ -760,7 +795,11 @@ router.post('/data', authenticateToken, upload.single('archivo'), async (req, re
           benefits.muerte_accidental, benefits.muerte_accidental_suma, benefits.muerte_accidental_costo,
           benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
           benefits.ambulancia,
-          t.ramo || 'Salud', benefits.reembolso_carta_aval
+          t.ramo || 'Salud', benefits.reembolso_carta_aval,
+          benefits.examenes_especiales, benefits.asist_intl,
+          benefits.oftalmologia_suma, benefits.oftalmologia_costo, benefits.odontologia_suma, benefits.odontologia_costo, benefits.consultas_suma, benefits.consultas_costo,
+          benefits.asist_medica_primaria_suma, benefits.asist_medica_primaria_costo, benefits.odonto_oftal_suma, benefits.odonto_oftal_costo,
+          benefits.fisio_psico_suma, benefits.fisio_psico_costo, benefits.dermato_nutricion_suma, benefits.dermato_nutricion_costo
         ]);
         loadedCount++;
       }
@@ -816,9 +855,12 @@ const TARIFF_BENEFIT_FIELDS = [
   'plan', 'pago', 'maternidad_suma', 'maternidad_costo', 'asist_intl_suma', 'asist_intl_costo',
   'funeral_suma', 'funeral_costo', 'at_situ_medicamentos', 'atencion_medica_primaria', 'medicinas', 'consultas_medicas',
   'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'examenes_lab_imagenologia', 'consultas', 'maternidad',
-  'oftalmologia', 'odontologia', 'ambulancia', 'reembolso_carta_aval',
+  'oftalmologia', 'oftalmologia_suma', 'oftalmologia_costo', 'odontologia', 'odontologia_suma', 'odontologia_costo',
+  'ambulancia', 'reembolso_carta_aval', 'examenes_especiales', 'asist_intl', 'consultas_suma', 'consultas_costo',
   'muerte_accidental', 'muerte_accidental_suma', 'muerte_accidental_costo',
   'invalidez_permanente', 'invalidez_permanente_suma', 'invalidez_permanente_costo',
+  'asist_medica_primaria_suma', 'asist_medica_primaria_costo', 'odonto_oftal_suma', 'odonto_oftal_costo',
+  'fisio_psico_suma', 'fisio_psico_costo', 'dermato_nutricion_suma', 'dermato_nutricion_costo',
   'pago_contado', 'pago_semestral', 'pago_cuatrimestral', 'pago_trimestral', 'pago_bimestral', 'pago_4_cuotas', 'pago_mensual',
   'ramo'
 ];
@@ -873,11 +915,17 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
           funeral_suma, funeral_costo, at_situ_medicamentos, atencion_medica_primaria, medicinas, consultas_medicas,
           rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
           oftalmologia, odontologia, muerte_accidental, muerte_accidental_suma, muerte_accidental_costo,
-          invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval
+          invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval,
+          examenes_especiales, asist_intl,
+          oftalmologia_suma, oftalmologia_costo, odontologia_suma, odontologia_costo, consultas_suma, consultas_costo,
+          asist_medica_primaria_suma, asist_medica_primaria_costo, odonto_oftal_suma, odonto_oftal_costo,
+          fisio_psico_suma, fisio_psico_costo, dermato_nutricion_suma, dermato_nutricion_costo
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
           $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-          $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
+          $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44,
+          $45, $46, $47, $48, $49, $50,
+          $51, $52, $53, $54, $55, $56, $57, $58
         )
         RETURNING *
       `;
@@ -896,7 +944,11 @@ router.post('/tariffs', authenticateToken, async (req, res) => {
         benefits.muerte_accidental, benefits.muerte_accidental_suma, benefits.muerte_accidental_costo,
         benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
         benefits.ambulancia,
-        req.body.ramo || 'Salud', benefits.reembolso_carta_aval
+        req.body.ramo || 'Salud', benefits.reembolso_carta_aval,
+        benefits.examenes_especiales, benefits.asist_intl,
+        benefits.oftalmologia_suma, benefits.oftalmologia_costo, benefits.odontologia_suma, benefits.odontologia_costo, benefits.consultas_suma, benefits.consultas_costo,
+        benefits.asist_medica_primaria_suma, benefits.asist_medica_primaria_costo, benefits.odonto_oftal_suma, benefits.odonto_oftal_costo,
+        benefits.fisio_psico_suma, benefits.fisio_psico_costo, benefits.dermato_nutricion_suma, benefits.dermato_nutricion_costo
       ]);
       createdTariff = insRes.rows[0];
     }
@@ -965,8 +1017,12 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
             rehabilitacion = $26, protesis = $27, muleta_silla_ruedas = $28, examenes_lab_imagenologia = $29, consultas = $30, maternidad = $31,
             oftalmologia = $32, odontologia = $33, muerte_accidental = $34, muerte_accidental_suma = $35, muerte_accidental_costo = $36,
             invalidez_permanente = $37, invalidez_permanente_suma = $38, invalidez_permanente_costo = $39, ambulancia = $40, ramo = $41,
-            reembolso_carta_aval = $42
-        WHERE id = $43
+            reembolso_carta_aval = $42, examenes_especiales = $43, asist_intl = $44,
+            oftalmologia_suma = $45, oftalmologia_costo = $46, odontologia_suma = $47, odontologia_costo = $48,
+            consultas_suma = $49, consultas_costo = $50,
+            asist_medica_primaria_suma = $51, asist_medica_primaria_costo = $52, odonto_oftal_suma = $53, odonto_oftal_costo = $54,
+            fisio_psico_suma = $55, fisio_psico_costo = $56, dermato_nutricion_suma = $57, dermato_nutricion_costo = $58
+        WHERE id = $59
         RETURNING *
       `;
       const resUp = await db.query(q, [
@@ -986,6 +1042,10 @@ router.put('/tariffs/:id', authenticateToken, async (req, res) => {
         benefits.ambulancia,
         req.body.ramo || 'Salud',
         benefits.reembolso_carta_aval,
+        benefits.examenes_especiales, benefits.asist_intl,
+        benefits.oftalmologia_suma, benefits.oftalmologia_costo, benefits.odontologia_suma, benefits.odontologia_costo, benefits.consultas_suma, benefits.consultas_costo,
+        benefits.asist_medica_primaria_suma, benefits.asist_medica_primaria_costo, benefits.odonto_oftal_suma, benefits.odonto_oftal_costo,
+        benefits.fisio_psico_suma, benefits.fisio_psico_costo, benefits.dermato_nutricion_suma, benefits.dermato_nutricion_costo,
         parseInt(id)
       ]);
       if (resUp.rowCount === 0) return res.status(404).json({ error: 'Tarifa no encontrada.' });
@@ -1101,11 +1161,17 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
               funeral_suma, funeral_costo, at_situ_medicamentos, atencion_medica_primaria, medicinas, consultas_medicas,
               rehabilitacion, protesis, muleta_silla_ruedas, examenes_lab_imagenologia, consultas, maternidad,
               oftalmologia, odontologia, muerte_accidental, muerte_accidental_suma, muerte_accidental_costo,
-              invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval
+              invalidez_permanente, invalidez_permanente_suma, invalidez_permanente_costo, ambulancia, ramo, reembolso_carta_aval,
+              examenes_especiales, asist_intl,
+              oftalmologia_suma, oftalmologia_costo, odontologia_suma, odontologia_costo, consultas_suma, consultas_costo,
+              asist_medica_primaria_suma, asist_medica_primaria_costo, odonto_oftal_suma, odonto_oftal_costo,
+              fisio_psico_suma, fisio_psico_costo, dermato_nutricion_suma, dermato_nutricion_costo
             ) VALUES (
               $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
               $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-              $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
+              $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44,
+              $45, $46, $47, $48, $49, $50,
+              $51, $52, $53, $54, $55, $56, $57, $58
             )
           `;
           await db.query(q, [
@@ -1123,7 +1189,11 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             benefits.muerte_accidental, benefits.muerte_accidental_suma, benefits.muerte_accidental_costo,
             benefits.invalidez_permanente, benefits.invalidez_permanente_suma, benefits.invalidez_permanente_costo,
             benefits.ambulancia,
-            t.ramo || 'Salud', benefits.reembolso_carta_aval
+            t.ramo || 'Salud', benefits.reembolso_carta_aval,
+            benefits.examenes_especiales, benefits.asist_intl,
+            benefits.oftalmologia_suma, benefits.oftalmologia_costo, benefits.odontologia_suma, benefits.odontologia_costo, benefits.consultas_suma, benefits.consultas_costo,
+            benefits.asist_medica_primaria_suma, benefits.asist_medica_primaria_costo, benefits.odonto_oftal_suma, benefits.odonto_oftal_costo,
+            benefits.fisio_psico_suma, benefits.fisio_psico_costo, benefits.dermato_nutricion_suma, benefits.dermato_nutricion_costo
           ]);
           savedCount++;
         } else {
@@ -1137,8 +1207,12 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
                 rehabilitacion = $26, protesis = $27, muleta_silla_ruedas = $28, examenes_lab_imagenologia = $29, consultas = $30, maternidad = $31,
                 oftalmologia = $32, odontologia = $33, muerte_accidental = $34, muerte_accidental_suma = $35, muerte_accidental_costo = $36,
                 invalidez_permanente = $37, invalidez_permanente_suma = $38, invalidez_permanente_costo = $39, ambulancia = $40, ramo = $41,
-                reembolso_carta_aval = $42
-            WHERE id = $43
+                reembolso_carta_aval = $42, examenes_especiales = $43, asist_intl = $44,
+                oftalmologia_suma = $45, oftalmologia_costo = $46, odontologia_suma = $47, odontologia_costo = $48,
+                consultas_suma = $49, consultas_costo = $50,
+                asist_medica_primaria_suma = $51, asist_medica_primaria_costo = $52, odonto_oftal_suma = $53, odonto_oftal_costo = $54,
+                fisio_psico_suma = $55, fisio_psico_costo = $56, dermato_nutricion_suma = $57, dermato_nutricion_costo = $58
+            WHERE id = $59
           `;
           await db.query(q, [
             parseInt(compania_id), edadMin, edadMax, sumaAsegurada, deducibleVal, primaVal,
@@ -1157,6 +1231,10 @@ router.post('/tariffs/bulk', authenticateToken, async (req, res) => {
             benefits.ambulancia,
             t.ramo || 'Salud',
             benefits.reembolso_carta_aval,
+            benefits.examenes_especiales, benefits.asist_intl,
+            benefits.oftalmologia_suma, benefits.oftalmologia_costo, benefits.odontologia_suma, benefits.odontologia_costo, benefits.consultas_suma, benefits.consultas_costo,
+            benefits.asist_medica_primaria_suma, benefits.asist_medica_primaria_costo, benefits.odonto_oftal_suma, benefits.odonto_oftal_costo,
+            benefits.fisio_psico_suma, benefits.fisio_psico_costo, benefits.dermato_nutricion_suma, benefits.dermato_nutricion_costo,
             parseInt(id)
           ]);
           savedCount++;

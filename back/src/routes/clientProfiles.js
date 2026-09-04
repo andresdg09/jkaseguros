@@ -205,6 +205,10 @@ router.get('/my-clients', authenticateToken, async (req, res) => {
       
       const analisis = calcularPotencialidades(row, row, clientPolizas);
 
+      const clienteDesdeVal = row.cliente_desde 
+        ? (typeof row.cliente_desde === 'string' ? row.cliente_desde.split('T')[0] : new Date(row.cliente_desde).toISOString().split('T')[0])
+        : (row.created_at ? (typeof row.created_at === 'string' ? row.created_at.split('T')[0] : new Date(row.created_at).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]);
+
       return {
         id: row.id,
         nombre_completo: `${row.primer_nombre} ${row.primer_apellido}`,
@@ -213,6 +217,7 @@ router.get('/my-clients', authenticateToken, async (req, res) => {
         primer_apellido: row.primer_apellido,
         segundo_apellido: row.segundo_apellido,
         fecha_nacimiento: row.fecha_nacimiento,
+        cliente_desde: clienteDesdeVal,
         tipo_documento: row.tipo_documento,
         nro_documento: row.nro_documento,
         genero: row.genero,
@@ -295,10 +300,17 @@ router.get('/:clienteId', authenticateToken, async (req, res) => {
     const polRes = await db.query('SELECT * FROM polizas WHERE cliente_id = $1', [parseInt(clienteId)]);
     const clientPolizas = polRes.rows;
 
+    const clienteDesdeVal = row.cliente_desde 
+      ? (typeof row.cliente_desde === 'string' ? row.cliente_desde.split('T')[0] : new Date(row.cliente_desde).toISOString().split('T')[0])
+      : (row.created_at ? (typeof row.created_at === 'string' ? row.created_at.split('T')[0] : new Date(row.created_at).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]);
+
     const analisis = calcularPotencialidades(row, row, clientPolizas);
 
     res.json({
-      cliente: row,
+      cliente: {
+        ...row,
+        cliente_desde: clienteDesdeVal
+      },
       polizas: clientPolizas,
       analisis
     });
@@ -316,6 +328,7 @@ router.put('/:clienteId', authenticateToken, async (req, res) => {
 
   const { clienteId } = req.params;
   const {
+    cliente_desde,
     numero_hijos,
     estado_civil,
     profesion_ocupacion,
@@ -355,6 +368,7 @@ router.put('/:clienteId', authenticateToken, async (req, res) => {
 
   try {
     if (
+      cliente_desde !== undefined ||
       telefono !== undefined ||
       codigo_area !== undefined ||
       numero_celular !== undefined ||
@@ -381,14 +395,16 @@ router.put('/:clienteId', authenticateToken, async (req, res) => {
             estado_civil = COALESCE($2, estado_civil),
             codigo_area = COALESCE($3, codigo_area),
             numero_celular = COALESCE($4, numero_celular),
-            telefono = COALESCE($5, telefono)
-        WHERE id = $6
+            telefono = COALESCE($5, telefono),
+            cliente_desde = COALESCE($6, cliente_desde)
+        WHERE id = $7
       `, [
         numero_hijos !== undefined ? parseInt(numero_hijos) : null,
         estado_civil || null,
         cArea || null,
         numCel || null,
         formattedPhone,
+        cliente_desde ? (typeof cliente_desde === 'string' ? cliente_desde.split('T')[0] : cliente_desde) : null,
         parseInt(clienteId)
       ]);
     }
@@ -551,6 +567,115 @@ router.patch('/:clienteId/phone', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error al actualizar teléfono del cliente:', err);
     res.status(500).json({ error: 'Error del servidor al actualizar teléfono.' });
+  }
+});
+
+// 3.2. Actualizar rápidamente la fecha "Cliente desde" (Asesor / Admin)
+router.patch('/:clienteId/cliente-desde', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'asesor' && req.user.rango !== 'admin') {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  const { clienteId } = req.params;
+  const { cliente_desde } = req.body;
+
+  if (!cliente_desde) {
+    return res.status(400).json({ error: 'La fecha "cliente_desde" es requerida.' });
+  }
+
+  try {
+    const formattedDate = typeof cliente_desde === 'string' ? cliente_desde.split('T')[0] : new Date(cliente_desde).toISOString().split('T')[0];
+
+    await db.query(`
+      UPDATE datos_personales
+      SET cliente_desde = $1
+      WHERE id = $2
+    `, [formattedDate, parseInt(clienteId)]);
+
+    await registrarAccion(
+      req.user.id,
+      req.user.correo,
+      'ACTUALIZACION_FECHA_CLIENTE_DESDE',
+      `Asesor/Admin actualizó "Cliente desde" del cliente ID ${clienteId} a ${formattedDate}.`
+    );
+
+    res.json({
+      success: true,
+      message: 'Fecha "Cliente desde" actualizada correctamente.',
+      cliente_desde: formattedDate
+    });
+  } catch (err) {
+    console.error('Error al actualizar fecha cliente desde:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar fecha.' });
+  }
+});
+
+// 3.3. Obtener Histórico Completo de Pagos y Renovaciones de un Cliente (Asesor / Admin)
+router.get('/:clienteId/history', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'asesor' && req.user.rango !== 'admin') {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  const { clienteId } = req.params;
+  const cid = parseInt(clienteId);
+
+  try {
+    const cliRes = await db.query('SELECT * FROM datos_personales WHERE id = $1', [cid]);
+    if (cliRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado.' });
+    }
+    const cliente = cliRes.rows[0];
+
+    // Pólizas del cliente
+    const polRes = await db.query('SELECT p.*, comp.nombre as compania_nombre FROM polizas p LEFT JOIN companias_seguros comp ON p.compania_id = comp.id WHERE p.cliente_id = $1 ORDER BY p.id DESC', [cid]);
+    const polizas = polRes.rows;
+    const polIds = polizas.map(p => p.id);
+
+    // Renovaciones del cliente
+    let renovaciones = [];
+    try {
+      const renRes = await db.query('SELECT r.*, a.nombre as asesor_nombre, p.codigo_poliza, p.plan FROM renovaciones_polizas r LEFT JOIN asesores a ON r.asesor_id = a.id LEFT JOIN polizas p ON r.poliza_id = p.id WHERE r.cliente_id = $1 ORDER BY r.fecha_renovacion DESC, r.id DESC', [cid]);
+      renovaciones = renRes.rows;
+    } catch (e) {
+      console.warn('Error al consultar renovaciones_polizas:', e);
+    }
+
+    // Pagos de las pólizas del cliente
+    let pagos = [];
+    if (polIds.length > 0) {
+      const payRes = await db.query('SELECT * FROM pagos ORDER BY cuota_numero ASC, id ASC');
+      pagos = payRes.rows
+        .filter(pa => polIds.includes(parseInt(pa.poliza_id)))
+        .map(pa => {
+          const pol = polizas.find(p => parseInt(p.id) === parseInt(pa.poliza_id));
+          return {
+            ...pa,
+            poliza_codigo: pol ? pol.codigo_poliza : `POL-${pa.poliza_id}`,
+            poliza_plan: pol ? pol.plan : '',
+            poliza_frecuencia: pol ? pol.frecuencia_pago : 'contado',
+            compania_nombre: pol ? pol.compania_nombre : 'Seguros'
+          };
+        });
+      pagos.sort((a, b) => new Date(b.created_at || b.fecha_vencimiento || 0) - new Date(a.created_at || a.fecha_vencimiento || 0));
+    }
+
+    const clienteDesdeVal = cliente.cliente_desde 
+      ? (typeof cliente.cliente_desde === 'string' ? cliente.cliente_desde.split('T')[0] : new Date(cliente.cliente_desde).toISOString().split('T')[0])
+      : (cliente.created_at ? (typeof cliente.created_at === 'string' ? cliente.created_at.split('T')[0] : new Date(cliente.created_at).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]);
+
+    res.json({
+      cliente: {
+        ...cliente,
+        cliente_desde: clienteDesdeVal
+      },
+      polizas,
+      renovaciones,
+      pagos
+    });
+
+  } catch (err) {
+    console.error('Error al obtener histórico del cliente:', err);
+    res.status(500).json({ error: 'Error del servidor al obtener historial del cliente.' });
   }
 });
 

@@ -20,11 +20,10 @@ export default function Home() {
   const router = useRouter();
 
   // --- ESTADOS DE LA INTERFAZ ---
-  const DEFAULT_SUMS = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000];
   const [loading, setLoading] = useState(false);
   const [quotingResults, setQuotingResults] = useState(null);
   const [advisorsList, setAdvisorsList] = useState([]);
-  const [sumsList, setSumsList] = useState(DEFAULT_SUMS);
+  const [sumsList, setSumsList] = useState([]);
   const [isManualSum1, setIsManualSum1] = useState(false);
   const [isManualSum2, setIsManualSum2] = useState(false);
   const [step, setStep] = useState(1); // 1: Datos de contacto, 2: Datos personales
@@ -81,8 +80,8 @@ export default function Home() {
         const res = await fetch(`${API_URL}/quote/sums`);
         if (res.ok) {
           const data = await res.json();
-          const merged = [...new Set([...DEFAULT_SUMS, ...data])].sort((a, b) => a - b);
-          setSumsList(merged);
+          const sums = [...new Set(data)].sort((a, b) => a - b);
+          setSumsList(sums);
         }
       } catch (err) {
         console.error('Error al cargar sumas aseguradas:', err);
@@ -1072,9 +1071,9 @@ export default function Home() {
                           { name: 'Consultas Espec.', active: !!comp.consultas },
                           { name: 'Oftalmología', active: !!comp.oftalmologia },
                           { name: 'Odontología', active: !!comp.odontologia },
-                          { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
-                          { name: 'Muerte Acc. base', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
-                          { name: 'Invalidez base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) },
+                          { name: 'Maternidad', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
+                          { name: 'Muerte Acc.', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
+                          { name: 'Invalidez', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) },
                           { name: 'Reembolso Carta Aval', active: !!comp.reembolso_carta_aval }
                         ].map((serv, sIdx) => (
                           <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem' }}>

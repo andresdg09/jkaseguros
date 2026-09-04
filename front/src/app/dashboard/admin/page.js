@@ -50,6 +50,17 @@ export default function AdminDashboard() {
 
   const [pageLogs, setPageLogs] = useState(1);
   const [pageSizeLogs, setPageSizeLogs] = useState(10);
+
+  // --- FILTROS Y PAGINACIÓN PARA RESUMEN DE CLIENTES ---
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [clientFilterAdvisor, setClientFilterAdvisor] = useState('todos');
+  const [clientFilterPolicyStatus, setClientFilterPolicyStatus] = useState('todos');
+  const [clientFilterGender, setClientFilterGender] = useState('todos');
+  const [clientFilterCivilStatus, setClientFilterCivilStatus] = useState('todos');
+  const [clientFilterAgeGroup, setClientFilterAgeGroup] = useState('todos');
+  const [clientSortBy, setClientSortBy] = useState('recientes');
+  const [pageClients, setPageClients] = useState(1);
+  const [pageSizeClients, setPageSizeClients] = useState(10);
   
   // --- ESTADOS DE E-LEARNING (ADMIN) ---
   const [courses, setCourses] = useState([]);
@@ -129,7 +140,6 @@ export default function AdminDashboard() {
     protesis: false,
     muleta_silla_ruedas: false,
     examenes_lab_imagenologia: true,
-    consultas: true,
     maternidad: false,
     maternidad_suma: '',
     maternidad_costo: '',
@@ -141,8 +151,18 @@ export default function AdminDashboard() {
     invalidez_permanente: false,
     invalidez_permanente_suma: '',
     invalidez_permanente_costo: '',
+    asist_medica_primaria_suma: '',
+    asist_medica_primaria_costo: '',
+    odonto_oftal_suma: '',
+    odonto_oftal_costo: '',
+    fisio_psico_suma: '',
+    fisio_psico_costo: '',
+    dermato_nutricion_suma: '',
+    dermato_nutricion_costo: '',
     ambulancia: true,
     reembolso_carta_aval: false,
+    examenes_especiales: false,
+    asist_intl: false,
     asist_intl_suma: '',
     asist_intl_costo: '',
     funeral_suma: '',
@@ -187,7 +207,6 @@ export default function AdminDashboard() {
     protesis: 80,
     muleta_silla_ruedas: 115,
     examenes_lab_imagenologia: 90,
-    consultas: 80,
     maternidad: 85,
     oftalmologia: 95,
     odontologia: 95,
@@ -197,8 +216,18 @@ export default function AdminDashboard() {
     invalidez_permanente: 95,
     invalidez_permanente_suma: 105,
     invalidez_permanente_costo: 105,
+    asist_medica_primaria_suma: 130,
+    asist_medica_primaria_costo: 130,
+    odonto_oftal_suma: 110,
+    odonto_oftal_costo: 110,
+    fisio_psico_suma: 105,
+    fisio_psico_costo: 105,
+    dermato_nutricion_suma: 130,
+    dermato_nutricion_costo: 130,
     ambulancia: 90,
     reembolso_carta_aval: 120,
+    examenes_especiales: 110,
+    asist_intl: 100,
     maternidad_suma: 100,
     maternidad_costo: 100,
     asist_intl_suma: 100,
@@ -208,6 +237,20 @@ export default function AdminDashboard() {
     acciones: 110
   });
   const [comparativeColWidths, setComparativeColWidths] = useState({});
+
+  // --- ESTADOS DE PROPUESTAS / COTIZACIONES & RECORDATORIOS ---
+  const [quotesList, setQuotesList] = useState([]);
+  const [quotesSummary, setQuotesSummary] = useState({ totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 });
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [quotesSearch, setQuotesSearch] = useState('');
+  const [quotesAdvisorFilter, setQuotesAdvisorFilter] = useState('todos');
+  const [quotesStatusFilter, setQuotesStatusFilter] = useState('todos');
+  const [quotesReminderFilter, setQuotesReminderFilter] = useState('todos');
+  const [pageQuotes, setPageQuotes] = useState(1);
+  const [pageSizeQuotes, setPageSizeQuotes] = useState(10);
+  const [reminderModalQuote, setReminderModalQuote] = useState(null);
+  const [reminderForm, setReminderForm] = useState({ recordatorio_24h: false, recordatorio_48h: false, recordatorio_5d: false, notas_seguimiento: '' });
+  const [savingReminder, setSavingReminder] = useState(false);
 
   // Redirigir si no es admin
   useEffect(() => {
@@ -274,7 +317,6 @@ export default function AdminDashboard() {
         rehabilitacion: !!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL'),
         protesis: !!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL'),
         muleta_silla_ruedas: !!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL'),
-        consultas: !!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL'),
         maternidad: !!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL' || (t.maternidad_suma && String(t.maternidad_suma).trim().length > 0 && t.maternidad_suma !== '0' && t.maternidad_suma !== '$0')),
         oftalmologia: !!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL'),
         odontologia: !!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL'),
@@ -282,7 +324,9 @@ export default function AdminDashboard() {
         invalidez_permanente: !!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL' || (t.invalidez_permanente_suma && String(t.invalidez_permanente_suma).trim().length > 0 && t.invalidez_permanente_suma !== '0' && t.invalidez_permanente_suma !== '$0')),
         examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
         ambulancia: t.ambulancia || '',
-        reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL')
+        reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL'),
+        examenes_especiales: !!(t.examenes_especiales === true || t.examenes_especiales === 'true' || t.examenes_especiales === 'INCL'),
+        asist_intl: !!(t.asist_intl === true || t.asist_intl === 'true' || t.asist_intl === 'INCL' || (t.asist_intl_suma && String(t.asist_intl_suma).trim().length > 0 && t.asist_intl_suma !== '0' && t.asist_intl_suma !== '$0'))
       })) : [];
       setTariffs(normalizedTariffs);
 
@@ -302,11 +346,85 @@ export default function AdminDashboard() {
         console.error('Error al cargar metadatos de tarifario:', err);
       }
 
+      // 10. Cargar propuestas y cotizaciones enviadas
+      try {
+        const resQuotes = await fetch(`${API_URL}/quotes/all`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (resQuotes.ok) {
+          const dataQuotes = await resQuotes.json();
+          if (dataQuotes && dataQuotes.quotes) {
+            setQuotesList(dataQuotes.quotes);
+            setQuotesSummary(dataQuotes.summary || { totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 });
+          }
+        }
+      } catch (err) {
+        console.error('Error al cargar propuestas enviadas:', err);
+      }
+
     } catch (err) {
       console.error('Error al cargar datos de administración:', err);
       showToast('Error al conectar con la base de datos.', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadQuotes = async () => {
+    if (!token) return;
+    setLoadingQuotes(true);
+    try {
+      const res = await fetch(`${API_URL}/quotes/all`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (data && data.quotes) {
+        setQuotesList(data.quotes);
+        setQuotesSummary(data.summary || { totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 });
+      }
+    } catch (err) {
+      console.error('Error al recargar propuestas:', err);
+    } finally {
+      setLoadingQuotes(false);
+    }
+  };
+
+  const handleOpenReminderModal = (q) => {
+    setReminderModalQuote(q);
+    setReminderForm({
+      recordatorio_24h: !!q.recordatorio_24h,
+      recordatorio_48h: !!q.recordatorio_48h,
+      recordatorio_5d: !!q.recordatorio_5d,
+      notas_seguimiento: q.notas_seguimiento || ''
+    });
+  };
+
+  const handleSaveReminder = async (e) => {
+    if (e) e.preventDefault();
+    if (!reminderModalQuote || !token) return;
+    setSavingReminder(true);
+    try {
+      const res = await fetch(`${API_URL}/quotes/${reminderModalQuote.id}/reminders`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(reminderForm)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('✓ Recordatorios y seguimiento actualizados.');
+        setQuotesList(prev => prev.map(item => item.id === reminderModalQuote.id ? {
+          ...item,
+          ...reminderForm,
+          ultimo_contacto: new Date().toISOString()
+        } : item));
+        setReminderModalQuote(null);
+      } else {
+        alert(data.error || 'Error al guardar recordatorios.');
+      }
+    } catch (err) {
+      console.error('Error al guardar recordatorios:', err);
+      alert('Error de conexión con el servidor.');
+    } finally {
+      setSavingReminder(false);
     }
   };
 
@@ -937,7 +1055,6 @@ export default function AdminDashboard() {
       protesis: !!(t.protesis === true || t.protesis === 'true' || t.protesis === 'INCL'),
       muleta_silla_ruedas: !!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL'),
       examenes_lab_imagenologia: !!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO' && t.examenes_lab_imagenologia !== 'false')),
-      consultas: !!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL'),
       maternidad: !!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL'),
       maternidad_suma: t.maternidad_suma || '',
       maternidad_costo: t.maternidad_costo || '',
@@ -949,8 +1066,18 @@ export default function AdminDashboard() {
       invalidez_permanente: !!(t.invalidez_permanente === true || t.invalidez_permanente === 'true' || t.invalidez_permanente === 'INCL'),
       invalidez_permanente_suma: t.invalidez_permanente_suma || '',
       invalidez_permanente_costo: t.invalidez_permanente_costo || '',
+      asist_medica_primaria_suma: t.asist_medica_primaria_suma || '',
+      asist_medica_primaria_costo: t.asist_medica_primaria_costo || '',
+      odonto_oftal_suma: t.odonto_oftal_suma || '',
+      odonto_oftal_costo: t.odonto_oftal_costo || '',
+      fisio_psico_suma: t.fisio_psico_suma || '',
+      fisio_psico_costo: t.fisio_psico_costo || '',
+      dermato_nutricion_suma: t.dermato_nutricion_suma || '',
+      dermato_nutricion_costo: t.dermato_nutricion_costo || '',
       ambulancia: !!(t.ambulancia === true || t.ambulancia === 'true' || t.ambulancia === 'INCL' || (typeof t.ambulancia === 'string' && t.ambulancia.length > 0 && t.ambulancia !== 'NO' && t.ambulancia !== 'false')),
       reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL'),
+      examenes_especiales: !!(t.examenes_especiales === true || t.examenes_especiales === 'true' || t.examenes_especiales === 'INCL'),
+      asist_intl: !!(t.asist_intl === true || t.asist_intl === 'true' || t.asist_intl === 'INCL'),
       asist_intl_suma: t.asist_intl_suma || '',
       asist_intl_costo: t.asist_intl_costo || '',
       funeral_suma: t.funeral_suma || '',
@@ -1002,7 +1129,6 @@ export default function AdminDashboard() {
         rehabilitacion: !!newTariffForm.rehabilitacion,
         protesis: !!newTariffForm.protesis,
         muleta_silla_ruedas: !!newTariffForm.muleta_silla_ruedas,
-        consultas: !!newTariffForm.consultas,
         maternidad: !!newTariffForm.maternidad,
         maternidad_suma: newTariffForm.maternidad_suma || '',
         maternidad_costo: newTariffForm.maternidad_costo || '',
@@ -1011,13 +1137,23 @@ export default function AdminDashboard() {
         muerte_accidental: !!newTariffForm.muerte_accidental,
         muerte_accidental_suma: newTariffForm.muerte_accidental_suma || '',
         muerte_accidental_costo: newTariffForm.muerte_accidental_costo || '',
+        asist_medica_primaria_suma: newTariffForm.asist_medica_primaria_suma || '',
+        asist_medica_primaria_costo: newTariffForm.asist_medica_primaria_costo || '',
+        odonto_oftal_suma: newTariffForm.odonto_oftal_suma || '',
+        odonto_oftal_costo: newTariffForm.odonto_oftal_costo || '',
+        fisio_psico_suma: newTariffForm.fisio_psico_suma || '',
+        fisio_psico_costo: newTariffForm.fisio_psico_costo || '',
+        dermato_nutricion_suma: newTariffForm.dermato_nutricion_suma || '',
+        dermato_nutricion_costo: newTariffForm.dermato_nutricion_costo || '',
         invalidez_permanente: !!newTariffForm.invalidez_permanente,
         invalidez_permanente_suma: newTariffForm.invalidez_permanente_suma || '',
         invalidez_permanente_costo: newTariffForm.invalidez_permanente_costo || '',
         at_situ_medicamentos: newTariffForm.atencion_medica_primaria ? 'INCL' : '',
         examenes_lab_imagenologia: newTariffForm.examenes_lab_imagenologia ? 'INCL' : '',
         ambulancia: newTariffForm.ambulancia ? 'INCL' : '',
-        reembolso_carta_aval: !!newTariffForm.reembolso_carta_aval
+        reembolso_carta_aval: !!newTariffForm.reembolso_carta_aval,
+        examenes_especiales: !!newTariffForm.examenes_especiales,
+        asist_intl: !!newTariffForm.asist_intl
       };
 
       const isEdit = !!editingTariffId;
@@ -1088,7 +1224,6 @@ export default function AdminDashboard() {
           protesis: !!(tariff.protesis === true || tariff.protesis === 'true' || tariff.protesis === 'INCL'),
           muleta_silla_ruedas: !!(tariff.muleta_silla_ruedas === true || tariff.muleta_silla_ruedas === 'true' || tariff.muleta_silla_ruedas === 'INCL'),
           examenes_lab_imagenologia: tariff.examenes_lab_imagenologia || '',
-          consultas: !!(tariff.consultas === true || tariff.consultas === 'true' || tariff.consultas === 'INCL'),
           maternidad: !!(tariff.maternidad === true || tariff.maternidad === 'true' || tariff.maternidad === 'INCL'),
           oftalmologia: !!(tariff.oftalmologia === true || tariff.oftalmologia === 'true' || tariff.oftalmologia === 'INCL'),
           odontologia: !!(tariff.odontologia === true || tariff.odontologia === 'true' || tariff.odontologia === 'INCL'),
@@ -1202,18 +1337,27 @@ export default function AdminDashboard() {
       protesis: false,
       muleta_silla_ruedas: false,
       examenes_lab_imagenologia: 'INCL',
-      consultas: true,
       maternidad: false,
       oftalmologia: false,
       odontologia: false,
       muerte_accidental: false,
       muerte_accidental_suma: '',
       muerte_accidental_costo: '',
+      asist_medica_primaria_suma: '',
+      asist_medica_primaria_costo: '',
+      odonto_oftal_suma: '',
+      odonto_oftal_costo: '',
+      fisio_psico_suma: '',
+      fisio_psico_costo: '',
+      dermato_nutricion_suma: '',
+      dermato_nutricion_costo: '',
       invalidez_permanente: false,
       invalidez_permanente_suma: '',
       invalidez_permanente_costo: '',
       ambulancia: 'INCL',
-      reembolso_carta_aval: false
+      reembolso_carta_aval: false,
+      examenes_especiales: false,
+      asist_intl: false
     };
     setTariffs(prev => [newRow, ...prev]);
     setModifiedRows(prev => ({ ...prev, [tempId]: true }));
@@ -1368,13 +1512,134 @@ export default function AdminDashboard() {
     return !linkedPol || (linkedPol.estado !== 'rechazado' && linkedPol.estado !== 'anulada');
   }).length;
 
-  // --- FILTRADO DE DATOS CON SEARCHQUERY ---
-  const filteredClients = clients.filter(c =>
-    !searchQuery ||
-    c.nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.nro_documento?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.telefono?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // --- FILTRADO Y ORDENACIÓN AVANZADA DE CLIENTES (RESUMEN) ---
+  const filteredClients = useMemo(() => {
+    return clients
+      .filter(c => {
+        // 1. Búsqueda por texto (nombre, apellido, documento, teléfono, correo, póliza, asesor)
+        if (clientSearchQuery.trim()) {
+          const q = clientSearchQuery.toLowerCase().trim();
+          const fullName = `${c.primer_nombre || ''} ${c.segundo_nombre || ''} ${c.primer_apellido || ''} ${c.segundo_apellido || ''} ${c.nombre || ''}`.toLowerCase();
+          const doc = `${c.tipo_documento || ''}-${c.nro_documento || ''} ${c.nro_documento || ''}`.toLowerCase();
+          const phone = `${c.telefono || ''} ${c.numero_celular || ''}`.toLowerCase();
+          const email = (c.correo || '').toLowerCase();
+          const pols = (c.polizas || '').toLowerCase();
+          const adv = (c.asesor_nombre || '').toLowerCase();
+          const match = fullName.includes(q) || doc.includes(q) || phone.includes(q) || email.includes(q) || pols.includes(q) || adv.includes(q);
+          if (!match) return false;
+        }
+
+        // 2. Filtro por Asesor Asignado
+        if (clientFilterAdvisor !== 'todos') {
+          if (clientFilterAdvisor === 'con_asesor') {
+            if (!c.asesor_id) return false;
+          } else if (clientFilterAdvisor === 'sin_asesor') {
+            if (c.asesor_id) return false;
+          } else {
+            if (String(c.asesor_id) !== String(clientFilterAdvisor)) return false;
+          }
+        }
+
+        // 3. Filtro por Estado / Tenencia de Pólizas
+        if (clientFilterPolicyStatus !== 'todos') {
+          const polsStr = String(c.polizas || '').toLowerCase();
+          const hasPols = polsStr !== '' && polsStr !== 'ninguna' && (c.polizas_count === undefined || c.polizas_count > 0);
+
+          if (clientFilterPolicyStatus === 'con_poliza') {
+            if (!hasPols) return false;
+          } else if (clientFilterPolicyStatus === 'sin_poliza') {
+            if (hasPols) return false;
+          } else if (clientFilterPolicyStatus === 'vigente') {
+            const userPols = policies.filter(p => parseInt(p.cliente_id) === parseInt(c.id || c.id_cliente));
+            const hasVigente = userPols.some(p => p.estado === 'vigente') || (c.polizas_vigentes && c.polizas_vigentes > 0);
+            if (!hasVigente) return false;
+          } else if (clientFilterPolicyStatus === 'negociacion') {
+            const userPols = policies.filter(p => parseInt(p.cliente_id) === parseInt(c.id || c.id_cliente));
+            const hasNeg = userPols.some(p => p.estado === 'negociacion') || (c.polizas_negociacion && c.polizas_negociacion > 0);
+            if (!hasNeg) return false;
+          }
+        }
+
+        // 4. Filtro por Género
+        if (clientFilterGender !== 'todos') {
+          const g = (c.genero || '').toLowerCase();
+          if (clientFilterGender === 'masculino' && !g.startsWith('m')) return false;
+          if (clientFilterGender === 'femenino' && !g.startsWith('f')) return false;
+        }
+
+        // 5. Filtro por Estado Civil
+        if (clientFilterCivilStatus !== 'todos') {
+          const ec = (c.estado_civil || '').toLowerCase();
+          if (ec !== clientFilterCivilStatus.toLowerCase()) return false;
+        }
+
+        // 6. Filtro por Rango de Edad
+        if (clientFilterAgeGroup !== 'todos') {
+          const birthYear = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).getFullYear() : null;
+          const age = birthYear ? new Date().getFullYear() - birthYear : null;
+          if (age === null) return false;
+
+          if (clientFilterAgeGroup === 'menor_30' && age >= 30) return false;
+          if (clientFilterAgeGroup === '30_49' && (age < 30 || age > 49)) return false;
+          if (clientFilterAgeGroup === '50_64' && (age < 50 || age > 64)) return false;
+          if (clientFilterAgeGroup === '65_mas' && age < 65) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (clientSortBy === 'nombre_asc') {
+          const nameA = `${a.primer_nombre || ''} ${a.primer_apellido || ''}`.trim().toLowerCase();
+          const nameB = `${b.primer_nombre || ''} ${b.primer_apellido || ''}`.trim().toLowerCase();
+          return nameA.localeCompare(nameB);
+        }
+        if (clientSortBy === 'nombre_desc') {
+          const nameA = `${a.primer_nombre || ''} ${a.primer_apellido || ''}`.trim().toLowerCase();
+          const nameB = `${b.primer_nombre || ''} ${b.primer_apellido || ''}`.trim().toLowerCase();
+          return nameB.localeCompare(nameA);
+        }
+        if (clientSortBy === 'total_desc') {
+          const numA = typeof a.total_aportado === 'number' ? a.total_aportado : parseFloat(String(a.historial_pagos || '0').replace(/[^0-9.-]+/g, '')) || 0;
+          const numB = typeof b.total_aportado === 'number' ? b.total_aportado : parseFloat(String(b.historial_pagos || '0').replace(/[^0-9.-]+/g, '')) || 0;
+          return numB - numA;
+        }
+        if (clientSortBy === 'total_asc') {
+          const numA = typeof a.total_aportado === 'number' ? a.total_aportado : parseFloat(String(a.historial_pagos || '0').replace(/[^0-9.-]+/g, '')) || 0;
+          const numB = typeof b.total_aportado === 'number' ? b.total_aportado : parseFloat(String(b.historial_pagos || '0').replace(/[^0-9.-]+/g, '')) || 0;
+          return numA - numB;
+        }
+        if (clientSortBy === 'polizas_desc') {
+          const polsA = a.polizas_count !== undefined ? a.polizas_count : (a.polizas && a.polizas !== 'Ninguna' ? a.polizas.split(',').length : 0);
+          const polsB = b.polizas_count !== undefined ? b.polizas_count : (b.polizas && b.polizas !== 'Ninguna' ? b.polizas.split(',').length : 0);
+          return polsB - polsA;
+        }
+        if (clientSortBy === 'edad_desc') {
+          const ageA = a.fecha_nacimiento ? new Date().getFullYear() - new Date(a.fecha_nacimiento).getFullYear() : 0;
+          const ageB = b.fecha_nacimiento ? new Date().getFullYear() - new Date(b.fecha_nacimiento).getFullYear() : 0;
+          return ageB - ageA;
+        }
+        if (clientSortBy === 'edad_asc') {
+          const ageA = a.fecha_nacimiento ? new Date().getFullYear() - new Date(a.fecha_nacimiento).getFullYear() : 999;
+          const ageB = b.fecha_nacimiento ? new Date().getFullYear() - new Date(b.fecha_nacimiento).getFullYear() : 999;
+          return ageA - ageB;
+        }
+        return (parseInt(b.id || b.id_cliente) || 0) - (parseInt(a.id || a.id_cliente) || 0);
+      });
+  }, [clients, policies, clientSearchQuery, clientFilterAdvisor, clientFilterPolicyStatus, clientFilterGender, clientFilterCivilStatus, clientFilterAgeGroup, clientSortBy]);
+
+  const paginatedClients = useMemo(() => {
+    const start = (pageClients - 1) * pageSizeClients;
+    return filteredClients.slice(start, start + pageSizeClients);
+  }, [filteredClients, pageClients, pageSizeClients]);
+
+  const hasActiveClientFilters = 
+    clientSearchQuery.trim() !== '' ||
+    clientFilterAdvisor !== 'todos' ||
+    clientFilterPolicyStatus !== 'todos' ||
+    clientFilterGender !== 'todos' ||
+    clientFilterCivilStatus !== 'todos' ||
+    clientFilterAgeGroup !== 'todos' ||
+    clientSortBy !== 'recientes';
 
   const filteredPolicies = policies.filter(p =>
     !searchQuery ||
@@ -1543,6 +1808,39 @@ export default function AdminDashboard() {
       );
     });
   }, [tariffs, filterCompany, filterSuma, filterRamo, searchQuery, companies]);
+
+  // Propuestas filtradas para el módulo de Cotizaciones & Recordatorios
+  const filteredQuotes = useMemo(() => {
+    return quotesList.filter(q => {
+      if (quotesAdvisorFilter !== 'todos' && String(q.asesor_id) !== String(quotesAdvisorFilter)) {
+        return false;
+      }
+      if (quotesStatusFilter !== 'todos' && q.estado !== quotesStatusFilter) {
+        return false;
+      }
+      if (quotesReminderFilter === 'pendientes') {
+        if (q.recordatorio_24h && q.recordatorio_48h && q.recordatorio_5d) return false;
+      } else if (quotesReminderFilter === '24h_pendiente' && q.recordatorio_24h) {
+        return false;
+      } else if (quotesReminderFilter === '48h_pendiente' && q.recordatorio_48h) {
+        return false;
+      } else if (quotesReminderFilter === '5d_pendiente' && q.recordatorio_5d) {
+        return false;
+      }
+
+      if (!quotesSearch) return true;
+      const s = quotesSearch.toLowerCase().trim();
+      return (
+        q.cliente_nombre?.toLowerCase().includes(s) ||
+        q.cliente_documento?.toLowerCase().includes(s) ||
+        q.cliente_correo?.toLowerCase().includes(s) ||
+        q.cliente_telefono?.includes(s) ||
+        q.asesor_nombre?.toLowerCase().includes(s) ||
+        q.asesor_codigo?.toLowerCase().includes(s) ||
+        q.token?.toLowerCase().includes(s)
+      );
+    });
+  }, [quotesList, quotesAdvisorFilter, quotesStatusFilter, quotesReminderFilter, quotesSearch]);
 
   // Matriz pivote: una fila por (rango de edad, suma asegurada), con la oferta más económica de cada aseguradora
   const pivotRows = useMemo(() => {
@@ -1772,7 +2070,7 @@ export default function AdminDashboard() {
         overflowX: 'auto',
         paddingBottom: '1px'
       }}>
-        {['resumen', 'polizas', 'pagos', 'roles', 'asesores', 'tarifas', 'trazabilidad', 'elearning', 'comisiones', 'analitica'].map((tab) => (
+        {['resumen', 'polizas', 'pagos', 'propuestas', 'roles', 'asesores', 'tarifas', 'trazabilidad', 'elearning', 'comisiones', 'analitica'].map((tab) => (
           <button
             key={tab}
             onClick={() => {
@@ -1798,7 +2096,7 @@ export default function AdminDashboard() {
               transition: 'var(--transition)'
             }}
           >
-            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'analitica' ? '📊 Analítica 360' : tab === 'asesores' ? 'Asesores' : tab === 'pagos' ? `Pagos ${payments.filter(p => p.estado_pago === 'en_revision').length > 0 ? `(${payments.filter(p => p.estado_pago === 'en_revision').length}) 🟡` : ''}` : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'elearning' ? 'Capacitación' : tab === 'comisiones' ? 'Comisiones' : tab === 'analitica' ? '📊 Analítica 360' : tab === 'asesores' ? 'Asesores' : tab === 'propuestas' ? `📑 Propuestas ${quotesSummary.totalRemindersPending > 0 ? `(${quotesSummary.totalRemindersPending}) ⏰` : ''}` : tab === 'pagos' ? `Pagos ${payments.filter(p => p.estado_pago === 'en_revision').length > 0 ? `(${payments.filter(p => p.estado_pago === 'en_revision').length}) 🟡` : ''}` : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -1986,26 +2284,241 @@ export default function AdminDashboard() {
 
               {/* Lista de Clientes Registrados */}
               <div className="card" style={{ boxShadow: 'var(--shadow-lg)' }}>
-                <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Lista de Clientes Registrados</h3>
-                <div style={{ marginBottom: '1.2rem' }}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar cliente por nombre, documento o teléfono..."
-                    className="form-input"
-                    style={{ maxWidth: '350px', padding: '0.5rem 1rem', margin: 0 }}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', flexWrap: 'wrap', gap: '0.8rem' }}>
+                  <div>
+                    <h3 className="card-title" style={{ margin: 0 }}>Lista de Clientes Registrados</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.2rem 0 0 0' }}>
+                      Filtre, ordene y gestione la información consolidada de todos los clientes asegurados.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      background: 'var(--secondary)', 
+                      color: 'var(--primary)', 
+                      padding: '0.35rem 0.75rem', 
+                      borderRadius: '20px', 
+                      fontWeight: 700 
+                    }}>
+                      👥 {filteredClients.length} {filteredClients.length === 1 ? 'cliente' : 'clientes'} {hasActiveClientFilters ? `(de ${clients.length} totales)` : 'en total'}
+                    </span>
+                    {hasActiveClientFilters && (
+                      <button
+                        onClick={() => {
+                          setClientSearchQuery('');
+                          setClientFilterAdvisor('todos');
+                          setClientFilterPolicyStatus('todos');
+                          setClientFilterGender('todos');
+                          setClientFilterCivilStatus('todos');
+                          setClientFilterAgeGroup('todos');
+                          setClientSortBy('recientes');
+                          setPageClients(1);
+                        }}
+                        className="btn btn-outline"
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', color: '#ef4444', borderColor: '#fca5a5' }}
+                        title="Restablecer todos los filtros"
+                      >
+                        ✕ Limpiar Filtros
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* BARRA DE FILTROS AVANZADOS */}
+                <div style={{ 
+                  backgroundColor: '#f8fafc', 
+                  border: '1px solid #e2e8f0', 
+                  borderRadius: '10px', 
+                  padding: '1rem', 
+                  marginBottom: '1.2rem',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '0.75rem',
+                  alignItems: 'end'
+                }}>
+                  {/* Buscador general */}
+                  <div style={{ gridColumn: 'span 2', minWidth: '240px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      🔍 BÚSQUEDA GENERAL
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        placeholder="Nombre, cédula, correo, teléfono, póliza..."
+                        className="form-input"
+                        style={{ width: '100%', padding: '0.45rem 2rem 0.45rem 0.75rem', margin: 0, fontSize: '0.85rem' }}
+                        value={clientSearchQuery}
+                        onChange={(e) => {
+                          setClientSearchQuery(e.target.value);
+                          setPageClients(1);
+                        }}
+                      />
+                      {clientSearchQuery && (
+                        <button
+                          onClick={() => { setClientSearchQuery(''); setPageClients(1); }}
+                          style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: 'var(--text-muted)',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Filtro por Asesor */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      👔 ASESOR ASIGNADO
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ width: '100%', padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem' }}
+                      value={clientFilterAdvisor}
+                      onChange={(e) => {
+                        setClientFilterAdvisor(e.target.value);
+                        setPageClients(1);
+                      }}
+                    >
+                      <option value="todos">Todos los Asesores</option>
+                      <option value="con_asesor">Con Asesor Asignado</option>
+                      <option value="sin_asesor">Sin Asesor (Directos)</option>
+                      {advisors.map(adv => (
+                        <option key={adv.id || adv.id_asesor} value={adv.id || adv.id_asesor}>
+                          {adv.nombre} ({adv.codigo_asesor})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Filtro por Estado / Tenencia de Pólizas */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      📋 PÓLIZAS
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ width: '100%', padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem' }}
+                      value={clientFilterPolicyStatus}
+                      onChange={(e) => {
+                        setClientFilterPolicyStatus(e.target.value);
+                        setPageClients(1);
+                      }}
+                    >
+                      <option value="todos">Todas las Pólizas</option>
+                      <option value="con_poliza">Con Pólizas (≥ 1)</option>
+                      <option value="sin_poliza">Sin Pólizas (0)</option>
+                      <option value="vigente">Con Pólizas Vigentes</option>
+                      <option value="negociacion">En Negociación</option>
+                    </select>
+                  </div>
+
+                  {/* Filtro por Género */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      👤 GÉNERO
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ width: '100%', padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem' }}
+                      value={clientFilterGender}
+                      onChange={(e) => {
+                        setClientFilterGender(e.target.value);
+                        setPageClients(1);
+                      }}
+                    >
+                      <option value="todos">Todos los Géneros</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="femenino">Femenino</option>
+                    </select>
+                  </div>
+
+                  {/* Filtro por Estado Civil */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      💍 ESTADO CIVIL
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ width: '100%', padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem' }}
+                      value={clientFilterCivilStatus}
+                      onChange={(e) => {
+                        setClientFilterCivilStatus(e.target.value);
+                        setPageClients(1);
+                      }}
+                    >
+                      <option value="todos">Todos los Estados Civiles</option>
+                      <option value="Soltero">Soltero(a)</option>
+                      <option value="Casado">Casado(a)</option>
+                      <option value="Divorciado">Divorciado(a)</option>
+                      <option value="Viudo">Viudo(a)</option>
+                    </select>
+                  </div>
+
+                  {/* Filtro por Grupo de Edad */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      🎂 RANGO DE EDAD
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ width: '100%', padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem' }}
+                      value={clientFilterAgeGroup}
+                      onChange={(e) => {
+                        setClientFilterAgeGroup(e.target.value);
+                        setPageClients(1);
+                      }}
+                    >
+                      <option value="todos">Todas las Edades</option>
+                      <option value="menor_30">Menores de 30 años</option>
+                      <option value="30_49">De 30 a 49 años</option>
+                      <option value="50_64">De 50 a 64 años</option>
+                      <option value="65_mas">65 años o más</option>
+                    </select>
+                  </div>
+
+                  {/* Ordenamiento */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      ↕️ ORDENAR POR
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ width: '100%', padding: '0.45rem 0.75rem', margin: 0, fontSize: '0.85rem', fontWeight: 600 }}
+                      value={clientSortBy}
+                      onChange={(e) => setClientSortBy(e.target.value)}
+                    >
+                      <option value="recientes">Más recientes (ID ↓)</option>
+                      <option value="nombre_asc">Nombre (A - Z)</option>
+                      <option value="nombre_desc">Nombre (Z - A)</option>
+                      <option value="total_desc">Total Aportado ($ Mayor)</option>
+                      <option value="total_asc">Total Aportado ($ Menor)</option>
+                      <option value="polizas_desc">Cantidad de Pólizas (Mayor)</option>
+                      <option value="edad_desc">Edad (Mayor a Menor)</option>
+                      <option value="edad_asc">Edad (Menor a Mayor)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* TABLA DE RESULTADOS */}
                 <div className="table-container">
-                  <table className="table" style={{ fontSize: '0.8rem' }}>
+                  <table className="table" style={{ fontSize: '0.8rem', minWidth: '1050px' }}>
                     <thead>
                       <tr>
                         <th>ID</th>
                         <th>Cliente</th>
                         <th>Documento</th>
-                        <th>Correo</th>
-                        <th>Teléfono</th>
+                        <th>Contacto</th>
+                        <th>Asesor Asignado</th>
                         <th>Nacimiento (Edad)</th>
                         <th>Género</th>
                         <th>Edo. Civil</th>
@@ -2014,27 +2527,107 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredClients.length === 0 ? (
-                        <tr><td colSpan="10" className="text-center">No hay clientes que coincidan con la búsqueda.</td></tr>
+                      {paginatedClients.length === 0 ? (
+                        <tr>
+                          <td colSpan="10" className="text-center" style={{ padding: '2.5rem 1rem' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                            <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-muted)' }}>
+                              No se encontraron clientes que coincidan con los filtros seleccionados.
+                            </p>
+                            {hasActiveClientFilters && (
+                              <button
+                                onClick={() => {
+                                  setClientSearchQuery('');
+                                  setClientFilterAdvisor('todos');
+                                  setClientFilterPolicyStatus('todos');
+                                  setClientFilterGender('todos');
+                                  setClientFilterCivilStatus('todos');
+                                  setClientFilterAgeGroup('todos');
+                                  setClientSortBy('recientes');
+                                  setPageClients(1);
+                                }}
+                                className="btn btn-outline"
+                                style={{ marginTop: '0.75rem', padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                              >
+                                Limpiar filtros
+                              </button>
+                            )}
+                          </td>
+                        </tr>
                       ) : (
-                        filteredClients.map((c) => {
+                        paginatedClients.map((c) => {
                           const birthYear = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).getFullYear() : null;
                           const age = birthYear ? new Date().getFullYear() - birthYear : 'N/A';
                           const formattedBirth = c.fecha_nacimiento ? new Date(c.fecha_nacimiento).toLocaleDateString('es-VE', { timeZone: 'UTC' }) : 'N/A';
+                          const hasAdvisor = !!c.asesor_id;
+                          const polsCount = c.polizas_count !== undefined ? c.polizas_count : (c.polizas && c.polizas !== 'Ninguna' ? c.polizas.split(',').length : 0);
+
                           return (
-                            <tr key={c.id_cliente}>
-                              <td>{c.id_cliente}</td>
+                            <tr key={c.id_cliente || c.id}>
+                              <td><strong>#{c.id_cliente || c.id}</strong></td>
                               <td>
-                                <strong>{c.primer_nombre} {c.segundo_nombre ? c.segundo_nombre + ' ' : ''}{c.primer_apellido} {c.segundo_apellido ? c.segundo_apellido : ''}</strong>
+                                <div>
+                                  <strong style={{ color: 'var(--primary)' }}>
+                                    {c.primer_nombre} {c.segundo_nombre ? c.segundo_nombre + ' ' : ''}{c.primer_apellido} {c.segundo_apellido ? c.segundo_apellido : ''}
+                                  </strong>
+                                </div>
                               </td>
-                              <td>{c.tipo_documento ? `${c.tipo_documento}-${c.nro_documento}` : c.nro_documento}</td>
-                              <td>{c.correo || 'N/A'}</td>
-                              <td>{c.telefono}</td>
-                              <td>{formattedBirth} ({age} años)</td>
+                              <td>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                                  {c.tipo_documento ? `${c.tipo_documento}-${c.nro_documento}` : c.nro_documento}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <div>✉️ {c.correo || 'N/A'}</div>
+                                  <div>📞 {c.telefono || c.numero_celular || 'N/A'}</div>
+                                </div>
+                              </td>
+                              <td>
+                                {hasAdvisor ? (
+                                  <span style={{ 
+                                    background: '#e0e7ff', 
+                                    color: '#3730a3', 
+                                    padding: '0.2rem 0.5rem', 
+                                    borderRadius: '6px', 
+                                    fontSize: '0.75rem', 
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem'
+                                  }}>
+                                    👔 {c.asesor_nombre || 'Asesor'}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                                    Directo (Sin Asesor)
+                                  </span>
+                                )}
+                              </td>
+                              <td>{formattedBirth} {age !== 'N/A' && <span style={{ color: 'var(--text-muted)' }}>({age} años)</span>}</td>
                               <td>{c.genero || 'N/A'}</td>
                               <td>{c.estado_civil || 'N/A'}</td>
-                              <td><span className="badge badge-vigente" style={{ background: 'var(--secondary)', color: 'var(--primary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>{c.polizas}</span></td>
-                              <td><strong style={{ color: '#10b981' }}>{c.historial_pagos}</strong></td>
+                              <td>
+                                <span 
+                                  className={`badge ${polsCount > 0 ? 'badge-vigente' : 'badge-pendiente'}`} 
+                                  style={{ 
+                                    background: polsCount > 0 ? 'var(--secondary)' : '#f1f5f9', 
+                                    color: polsCount > 0 ? 'var(--primary)' : '#64748b', 
+                                    padding: '0.2rem 0.55rem', 
+                                    borderRadius: '4px', 
+                                    fontSize: '0.75rem', 
+                                    fontWeight: 700 
+                                  }}
+                                  title={c.polizas || 'Ninguna'}
+                                >
+                                  {c.polizas && c.polizas !== 'Ninguna' ? c.polizas : '0 pólizas'}
+                                </span>
+                              </td>
+                              <td>
+                                <strong style={{ color: '#10b981', fontSize: '0.85rem' }}>
+                                  {c.historial_pagos || '$0.00'}
+                                </strong>
+                              </td>
                             </tr>
                           );
                         })
@@ -2042,6 +2635,22 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* PAGINACIÓN */}
+                {filteredClients.length > 0 && (
+                  <div style={{ marginTop: '1.2rem' }}>
+                    <PaginationControls
+                      page={pageClients}
+                      pageSize={pageSizeClients}
+                      totalItems={filteredClients.length}
+                      onPageChange={setPageClients}
+                      onPageSizeChange={(newSize) => {
+                        setPageSizeClients(newSize);
+                        setPageClients(1);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2281,10 +2890,11 @@ export default function AdminDashboard() {
                 <table className="table" style={{ minWidth: '1800px' }}>
                   <thead>
                     <tr>
-                      <th>Código</th>
-                      <th>Cliente</th>
                       <th>Aseguradora</th>
-                      <th>Plan</th>
+                      <th>Póliza</th>
+                      <th>Tipo</th>
+                      <th>Cliente</th>
+                      <th>Fecha de Emisión</th>
                       <th>Suma Asegurada ($)</th>
                       <th>Deducible ($)</th>
                       <th>Prima Anual ($)</th>
@@ -2299,7 +2909,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredPolicies.length === 0 ? (
-                      <tr><td colSpan="14" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
+                      <tr><td colSpan="15" className="text-center">No hay pólizas que coincidan con la búsqueda.</td></tr>
                     ) : (
                       filteredPolicies
                         .slice((pagePolicies - 1) * pageSizePolicies, pagePolicies * pageSizePolicies)
@@ -2307,9 +2917,8 @@ export default function AdminDashboard() {
                         const isModified = !!modifiedPolicies[p.id];
                         return (
                           <tr key={p.id} style={{ background: isModified ? '#fffaf0' : 'transparent' }}>
-                            <td><strong>{p.codigo_poliza}</strong></td>
-                            <td>{p.cliente_nombre || 'Asociado'}</td>
-                            <td>{p.compania_nombre || 'Seguros'}</td>
+                            <td><strong>{p.compania_nombre || 'Seguros'}</strong></td>
+                            <td><strong style={{ color: 'var(--primary)' }}>{p.codigo_poliza}</strong></td>
                             <td>
                               <input
                                 type="text"
@@ -2317,6 +2926,12 @@ export default function AdminDashboard() {
                                 onChange={(e) => handlePolicyCellChange(p.id, 'plan', e.target.value)}
                                 style={{ border: 'none', background: 'transparent', width: '110px', outline: 'none', borderBottom: '1px dashed var(--border)', padding: '0.2rem' }}
                               />
+                            </td>
+                            <td>{p.cliente_nombre || 'Asociado'}</td>
+                            <td>
+                              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
+                                {p.created_at ? new Date(p.created_at).toLocaleDateString('es-VE') : (p.fecha_inicio || '—')}
+                              </span>
                             </td>
                             <td>
                               <input
@@ -2801,6 +3416,439 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* --- GESTIÓN DE PROPUESTAS & COTIZACIONES ENVIADAS CON SISTEMA DE RECORDATORIOS --- */}
+          {activeTab === 'propuestas' && (
+            <div>
+              {/* Encabezado y Acciones */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    📑 Propuestas & Cotizaciones Compartidas
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    Control integral de cotizaciones enviadas por los asesores, totales de primas cotizadas y sistema automatizado de recordatorios (24h / 48h / 5d).
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button
+                    onClick={loadQuotes}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                    disabled={loadingQuotes}
+                  >
+                    {loadingQuotes ? 'Sincronizando...' : '🔄 Actualizar Propuestas'}
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI CARDS: TOTALES Y MÉTRICAS GLOBALES */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+                gap: '1.25rem',
+                marginBottom: '1.75rem'
+              }}>
+                {/* Total Primas Cotizadas */}
+                <div className="card" style={{
+                  padding: '1.4rem',
+                  borderLeft: '5px solid #2563eb',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)',
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    💵 Total Primas Cotizadas
+                  </div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1e3a8a', margin: '0.4rem 0 0.2rem 0' }}>
+                    ${quotesSummary.totalPrimas.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>USD</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Volumen total de primas en propuestas enviadas
+                  </div>
+                </div>
+
+                {/* Total Propuestas Emitidas */}
+                <div className="card" style={{
+                  padding: '1.4rem',
+                  borderLeft: '5px solid #059669',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+                  boxShadow: '0 4px 12px rgba(5,150,105,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    📄 Propuestas Enviadas
+                  </div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#065f46', margin: '0.4rem 0 0.2rem 0' }}>
+                    {quotesSummary.totalQuotes} <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>propuestas</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Por todos los asesores certificados
+                  </div>
+                </div>
+
+                {/* Propuestas Aceptadas */}
+                <div className="card" style={{
+                  padding: '1.4rem',
+                  borderLeft: '5px solid #10b981',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%)',
+                  boxShadow: '0 4px 12px rgba(16,185,129,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🟢 Formalizadas / Aceptadas
+                  </div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#047857', margin: '0.4rem 0 0.2rem 0' }}>
+                    {quotesSummary.totalAccepted} <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>({quotesSummary.totalQuotes > 0 ? ((quotesSummary.totalAccepted / quotesSummary.totalQuotes) * 100).toFixed(1) : '0.0'}%)</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Pendientes de cierre: <strong>{quotesSummary.totalPending}</strong>
+                  </div>
+                </div>
+
+                {/* Recordatorios Pendientes */}
+                <div className="card" style={{
+                  padding: '1.4rem',
+                  borderLeft: '5px solid #f59e0b',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+                  boxShadow: '0 4px 12px rgba(245,158,11,0.08)'
+                }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    ⏰ Recordatorios por Gestionar
+                  </div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#d97706', margin: '0.4rem 0 0.2rem 0' }}>
+                    {quotesSummary.totalRemindersPending} <span style={{ fontSize: '0.9rem', color: '#b45309', fontWeight: 600 }}>pendientes</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Prospectos en seguimiento (24h, 48h o 5d)
+                  </div>
+                </div>
+              </div>
+
+              {/* FILTROS Y BÚSQUEDA */}
+              <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                  
+                  {/* Buscador de Prospecto */}
+                  <div style={{ flex: '1 1 280px', minWidth: '260px' }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Buscar por prospecto, cédula, teléfono, asesor o token..."
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 1rem', width: '100%', borderRadius: '8px' }}
+                      value={quotesSearch}
+                      onChange={(e) => { setQuotesSearch(e.target.value); setPageQuotes(1); }}
+                    />
+                  </div>
+
+                  {/* Filtro por Asesor */}
+                  <div style={{ minWidth: '180px' }}>
+                    <select
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 0.9rem', borderRadius: '8px', fontWeight: 600 }}
+                      value={quotesAdvisorFilter}
+                      onChange={(e) => { setQuotesAdvisorFilter(e.target.value); setPageQuotes(1); }}
+                    >
+                      <option value="todos">👤 Todos los Asesores ({advisors.length})</option>
+                      {advisors.map(adv => (
+                        <option key={adv.id} value={adv.id}>
+                          {adv.nombre || adv.codigo_asesor} ({adv.codigo_asesor})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Filtro por Estado */}
+                  <div style={{ minWidth: '150px' }}>
+                    <select
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 0.9rem', borderRadius: '8px', fontWeight: 600 }}
+                      value={quotesStatusFilter}
+                      onChange={(e) => { setQuotesStatusFilter(e.target.value); setPageQuotes(1); }}
+                    >
+                      <option value="todos">Todos los Estados</option>
+                      <option value="pendiente">🟡 Pendientes</option>
+                      <option value="aceptada">🟢 Aceptadas</option>
+                    </select>
+                  </div>
+
+                  {/* Filtro por Recordatorios */}
+                  <div style={{ minWidth: '180px' }}>
+                    <select
+                      className="form-input"
+                      style={{ margin: 0, padding: '0.55rem 0.9rem', borderRadius: '8px', fontWeight: 600 }}
+                      value={quotesReminderFilter}
+                      onChange={(e) => { setQuotesReminderFilter(e.target.value); setPageQuotes(1); }}
+                    >
+                      <option value="todos">Todos los Recordatorios</option>
+                      <option value="pendientes">⚠️ Recordatorios Pendientes</option>
+                      <option value="24h_pendiente">⏱️ 24h Pendiente</option>
+                      <option value="48h_pendiente">⏱️ 48h Pendiente</option>
+                      <option value="5d_pendiente">⏱️ 5 Días Pendiente</option>
+                    </select>
+                  </div>
+
+                  {(quotesSearch || quotesAdvisorFilter !== 'todos' || quotesStatusFilter !== 'todos' || quotesReminderFilter !== 'todos') && (
+                    <button
+                      onClick={() => {
+                        setQuotesSearch('');
+                        setQuotesAdvisorFilter('todos');
+                        setQuotesStatusFilter('todos');
+                        setQuotesReminderFilter('todos');
+                        setPageQuotes(1);
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '0.55rem 1rem', fontSize: '0.8rem', color: '#ef4444', borderColor: '#fca5a5' }}
+                    >
+                      ✕ Limpiar Filtros
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* TABLA DE PROPUESTAS */}
+              <div className="card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                <div className="table-container">
+                  <table className="table" style={{ margin: 0, minWidth: '1350px' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <th style={{ width: '110px' }}>Fecha Envío</th>
+                        <th style={{ width: '180px' }}>Asesor Emisor</th>
+                        <th>Prospecto / Cliente</th>
+                        <th>Suma Asegurada</th>
+                        <th>Prima Cotizada ($)</th>
+                        <th style={{ minWidth: '320px' }}>Sistema de Recordatorios Comercial</th>
+                        <th>Estado</th>
+                        <th style={{ textAlign: 'center', width: '180px' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredQuotes.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                            {loadingQuotes ? 'Cargando propuestas...' : 'No se encontraron propuestas o cotizaciones con los filtros seleccionados.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredQuotes
+                          .slice((pageQuotes - 1) * pageSizeQuotes, pageQuotes * pageSizeQuotes)
+                          .map((q) => {
+                            const dateFormatted = q.created_at ? new Date(q.created_at).toLocaleDateString('es-VE') : '—';
+                            const whatsAppPhone = q.cliente_telefono ? q.cliente_telefono.replace(/\D/g, '') : '';
+                            const waLink = whatsAppPhone ? `https://wa.me/${whatsAppPhone.startsWith('58') ? whatsAppPhone : `58${whatsAppPhone.replace(/^0/, '')}`}?text=${encodeURIComponent(`Hola ${q.cliente_nombre}, te saluda ${q.asesor_nombre} de Protección y Seguros 360. Te comparto nuevamente el enlace para consultar tu propuesta de cobertura de salud: ${window.location.origin}/cotizar/share/${q.token}`)}` : null;
+
+                            return (
+                              <tr key={q.id} style={{ background: q.estado === 'aceptada' ? '#f0fdf4' : 'transparent' }}>
+                                
+                                {/* Fecha Envío */}
+                                <td>
+                                  <strong style={{ fontSize: '0.85rem', color: '#1e293b' }}>{dateFormatted}</strong>
+                                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                    {q.created_at ? new Date(q.created_at).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                  </div>
+                                </td>
+
+                                {/* Asesor Emisor */}
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#e0e7ff', color: '#3730a3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>
+                                      👤
+                                    </div>
+                                    <div>
+                                      <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>{q.asesor_nombre}</strong>
+                                      <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Cód: {q.asesor_codigo || '—'}</div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Prospecto / Cliente */}
+                                <td>
+                                  <strong style={{ fontSize: '0.9rem', color: '#1e3a8a' }}>{q.cliente_nombre}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    {q.cliente_documento} • {q.cliente_correo}
+                                  </div>
+                                  {q.cliente_telefono && (
+                                    <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>
+                                      📞 {q.cliente_telefono}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Suma Asegurada */}
+                                <td>
+                                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                                    ${q.suma_asegurada?.toLocaleString('en-US')} USD
+                                  </span>
+                                  {q.suma_asegurada_2 && (
+                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                      Opción 2: ${q.suma_asegurada_2?.toLocaleString('en-US')}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Prima Cotizada */}
+                                <td>
+                                  <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#16a34a' }}>
+                                    ${q.prima_representativa ? q.prima_representativa.toFixed(2) : '0.00'} USD
+                                  </div>
+                                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                    {q.opciones_cotizadas} {q.opciones_cotizadas === 1 ? 'plan evaluado' : 'planes comparados'}
+                                  </div>
+                                </td>
+
+                                {/* Sistema de Recordatorios Comercial */}
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {/* 24h Badge */}
+                                    <span style={{
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      backgroundColor: q.recordatorio_24h ? '#dcfce7' : '#fef3c7',
+                                      color: q.recordatorio_24h ? '#15803d' : '#b45309',
+                                      border: q.recordatorio_24h ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                    }}>
+                                      ⏱️ 24h: {q.recordatorio_24h ? '✓ Contactado' : 'Pendiente'}
+                                    </span>
+
+                                    {/* 48h Badge */}
+                                    <span style={{
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      backgroundColor: q.recordatorio_48h ? '#dcfce7' : '#fef3c7',
+                                      color: q.recordatorio_48h ? '#15803d' : '#b45309',
+                                      border: q.recordatorio_48h ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                    }}>
+                                      ⏱️ 48h: {q.recordatorio_48h ? '✓ Aclaratoria' : 'Pendiente'}
+                                    </span>
+
+                                    {/* 5d Badge */}
+                                    <span style={{
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      backgroundColor: q.recordatorio_5d ? '#dcfce7' : '#fef3c7',
+                                      color: q.recordatorio_5d ? '#15803d' : '#b45309',
+                                      border: q.recordatorio_5d ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                    }}>
+                                      ⏱️ 5d: {q.recordatorio_5d ? '✓ Cierre' : 'Pendiente'}
+                                    </span>
+                                  </div>
+
+                                  {q.notas_seguimiento && (
+                                    <div style={{ fontSize: '0.725rem', color: '#475569', fontStyle: 'italic', marginTop: '0.35rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+                                      💬 "{q.notas_seguimiento.slice(0, 45)}{q.notas_seguimiento.length > 45 ? '...' : ''}"
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Estado */}
+                                <td>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.6rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.725rem',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    backgroundColor: q.estado === 'aceptada' ? '#dcfce7' : '#fffbeb',
+                                    color: q.estado === 'aceptada' ? '#15803d' : '#b45309',
+                                    border: q.estado === 'aceptada' ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                  }}>
+                                    {q.estado === 'aceptada' ? '🟢 Aceptada' : '🟡 Pendiente'}
+                                  </span>
+                                </td>
+
+                                {/* Acciones */}
+                                <td style={{ textAlign: 'center' }}>
+                                  <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                                    <a
+                                      href={`/cotizar/share/${q.token}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Ver cotización interactiva compartida"
+                                      style={{
+                                        background: '#eff6ff',
+                                        border: '1px solid #bfdbfe',
+                                        color: '#1d4ed8',
+                                        padding: '0.3rem 0.55rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        textDecoration: 'none',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.2rem'
+                                      }}
+                                    >
+                                      🔗 Ver
+                                    </a>
+
+                                    {waLink && (
+                                      <a
+                                        href={waLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Enviar seguimiento por WhatsApp"
+                                        style={{
+                                          background: '#f0fdf4',
+                                          border: '1px solid #bbf7d0',
+                                          color: '#15803d',
+                                          padding: '0.3rem 0.55rem',
+                                          borderRadius: '6px',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 700,
+                                          textDecoration: 'none',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.2rem'
+                                        }}
+                                      >
+                                        💬 WhatsApp
+                                      </a>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenReminderModal(q)}
+                                      title="Gestionar recordatorios y bitácora"
+                                      style={{
+                                        background: '#f8fafc',
+                                        border: '1px solid #cbd5e1',
+                                        color: '#334155',
+                                        padding: '0.3rem 0.55rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.2rem'
+                                      }}
+                                    >
+                                      ⏰ Bitácora
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <PaginationControls
+                  currentPage={pageQuotes}
+                  totalItems={filteredQuotes.length}
+                  pageSize={pageSizeQuotes}
+                  onPageChange={setPageQuotes}
+                  onPageSizeChange={setPageSizeQuotes}
+                />
+              </div>
+            </div>
+          )}
+
           {/* --- GESTIÓN DE ROLES --- */}
           {activeTab === 'roles' && (
             <div className="card">
@@ -3170,12 +4218,19 @@ export default function AdminDashboard() {
                         protesis: false,
                         muleta_silla_ruedas: false,
                         examenes_lab_imagenologia: true,
-                        consultas: true,
                         maternidad: false,
                         maternidad_suma: '',
                         maternidad_costo: '',
                         oftalmologia: false,
                         odontologia: false,
+                        asist_medica_primaria_suma: '',
+                        asist_medica_primaria_costo: '',
+                        odonto_oftal_suma: '',
+                        odonto_oftal_costo: '',
+                        fisio_psico_suma: '',
+                        fisio_psico_costo: '',
+                        dermato_nutricion_suma: '',
+                        dermato_nutricion_costo: '',
                         ambulancia: true,
                         asist_intl_suma: '',
                         asist_intl_costo: '',
@@ -3432,21 +4487,22 @@ export default function AdminDashboard() {
                         <h5 style={{ margin: '0 0 0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem' }}>🏥 4. Coberturas y Beneficios Incluidos</h5>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.6rem' }}>
                           {[
-                            { key: 'atencion_medica_primaria', label: '🏥 Atención Médica Primaria (AMP)' },
-                            { key: 'medicinas', label: '💊 Medicamentos Prescritos' },
+                            { key: 'atencion_medica_primaria', label: '🏥 Atc. Med. Primaria' },
+                            { key: 'medicinas', label: '💊 Medicamentos' },
                             { key: 'consultas_medicas', label: '🩺 Consultas Médicas' },
-                            { key: 'examenes_lab_imagenologia', label: '🔬 Exámenes Lab e Imágenes' },
-                            { key: 'ambulancia', label: '🚑 Servicio de Ambulancia' },
-                            { key: 'consultas', label: '📋 Consultas Especialistas' },
-                            { key: 'rehabilitacion', label: '🩹 Fisioterapia / Rehabilitación' },
+                            { key: 'examenes_lab_imagenologia', label: '🔬 Ex. Laboratorio' },
+                            { key: 'ambulancia', label: '🚑 Ambulancia' },
+                            { key: 'rehabilitacion', label: '🩹 Fisio/Rehab' },
                             { key: 'protesis', label: '🦿 Prótesis Quirúrgicas' },
                             { key: 'muleta_silla_ruedas', label: '♿ Muleta + Silla de Ruedas' },
                             { key: 'oftalmologia', label: '👓 Oftalmología' },
                             { key: 'odontologia', label: '🦷 Odontología' },
                             { key: 'muerte_accidental', label: '🕊️ Muerte Accidental' },
                             { key: 'invalidez_permanente', label: '🩼 Invalidez Permanente' },
-                            { key: 'maternidad', label: '🤰 Cobertura de Maternidad' },
-                            { key: 'reembolso_carta_aval', label: '📄 Reembolso / Carta Aval' }
+                            { key: 'maternidad', label: '🤰 Maternidad' },
+                            { key: 'reembolso_carta_aval', label: '📄 Reem/C. Aval' },
+                            { key: 'examenes_especiales', label: '🧪 Ex. Especiales' },
+                            { key: 'asist_intl', label: '✈️ Asist. Viajes' }
                           ].map(b => (
                             <label key={b.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', background: '#fff', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                               <input
@@ -3515,6 +4571,106 @@ export default function AdminDashboard() {
                               </div>
                             </div>
 
+                            {/* Asist. Médica Primaria (costo extra) */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🏥 Asist. Médica Primaria
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. Cubierta"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.asist_medica_primaria_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, asist_medica_primaria_suma: e.target.value }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.asist_medica_primaria_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, asist_medica_primaria_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Odonto/Oftal (costo extra) */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🦷 Odonto/Oftal
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. 500"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.odonto_oftal_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, odonto_oftal_suma: e.target.value }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.odonto_oftal_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, odonto_oftal_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Fisio/Psico (costo extra) */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🩹 Fisio/Psico
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. Cubierta"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.fisio_psico_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, fisio_psico_suma: e.target.value }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.fisio_psico_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, fisio_psico_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Dermatología/Nutrición (costo extra) */}
+                            <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
+                                🥗 Dermatología/Nutrición
+                              </label>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Suma ($) ej. Cubierta"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0 }}
+                                  value={newTariffForm.dermato_nutricion_suma}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, dermato_nutricion_suma: e.target.value }))}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Costo Extra ($)"
+                                  className="form-input"
+                                  style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', margin: 0, width: '110px' }}
+                                  value={newTariffForm.dermato_nutricion_costo}
+                                  onChange={(e) => setNewTariffForm(prev => ({ ...prev, dermato_nutricion_costo: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
                             {/* Maternidad */}
                             <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
@@ -3565,10 +4721,10 @@ export default function AdminDashboard() {
                               </div>
                             </div>
 
-                            {/* Gastos Funerarios */}
+                            {/* Funerario */}
                             <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '0.3rem' }}>
-                                ⚱️ Gastos Funerarios
+                                ⚱️ Funerario
                               </label>
                               <div style={{ display: 'flex', gap: '0.4rem' }}>
                                 <input
@@ -3979,8 +5135,18 @@ export default function AdminDashboard() {
                       <col style={{ width: `${detailedColWidths.invalidez_permanente}px` }} />
                       <col style={{ width: `${detailedColWidths.invalidez_permanente_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.invalidez_permanente_costo}px` }} />
+                      <col style={{ width: `${detailedColWidths.asist_medica_primaria_suma}px` }} />
+                      <col style={{ width: `${detailedColWidths.asist_medica_primaria_costo}px` }} />
+                      <col style={{ width: `${detailedColWidths.odonto_oftal_suma}px` }} />
+                      <col style={{ width: `${detailedColWidths.odonto_oftal_costo}px` }} />
+                      <col style={{ width: `${detailedColWidths.fisio_psico_suma}px` }} />
+                      <col style={{ width: `${detailedColWidths.fisio_psico_costo}px` }} />
+                      <col style={{ width: `${detailedColWidths.dermato_nutricion_suma}px` }} />
+                      <col style={{ width: `${detailedColWidths.dermato_nutricion_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.ambulancia}px` }} />
                       <col style={{ width: `${detailedColWidths.reembolso_carta_aval}px` }} />
+                      <col style={{ width: `${detailedColWidths.examenes_especiales}px` }} />
+                      <col style={{ width: `${detailedColWidths.asist_intl}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_suma}px` }} />
                       <col style={{ width: `${detailedColWidths.maternidad_costo}px` }} />
                       <col style={{ width: `${detailedColWidths.asist_intl_suma}px` }} />
@@ -4052,15 +5218,15 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'prima' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'prima')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Rehabilitación
+                          Fisio/Rehab
                           <div className={`resize-handle ${resizingCol === 'rehabilitacion' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'rehabilitacion')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Atención Médica Primaria
+                          Atc. Med. Primaria
                           <div className={`resize-handle ${resizingCol === 'atencion_medica_primaria' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'atencion_medica_primaria')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Medicamentos prescritos
+                          Medicamentos
                           <div className={`resize-handle ${resizingCol === 'medicinas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'medicinas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
@@ -4076,7 +5242,7 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'muleta_silla_ruedas' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'muleta_silla_ruedas')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Exámenes
+                          Ex. Laboratorio
                           <div className={`resize-handle ${resizingCol === 'examenes_lab_imagenologia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'examenes_lab_imagenologia')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
@@ -4115,13 +5281,53 @@ export default function AdminDashboard() {
                           Invalidez Costo ($)
                           <div className={`resize-handle ${resizingCol === 'invalidez_permanente_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'invalidez_permanente_costo')} />
                         </th>
+                        <th style={{ position: 'relative' }}>
+                          Asist. Médica Primaria Suma ($)
+                          <div className={`resize-handle ${resizingCol === 'asist_medica_primaria_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'asist_medica_primaria_suma')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Asist. Médica Primaria Costo ($)
+                          <div className={`resize-handle ${resizingCol === 'asist_medica_primaria_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'asist_medica_primaria_costo')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Odonto/Oftal Suma ($)
+                          <div className={`resize-handle ${resizingCol === 'odonto_oftal_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'odonto_oftal_suma')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Odonto/Oftal Costo ($)
+                          <div className={`resize-handle ${resizingCol === 'odonto_oftal_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'odonto_oftal_costo')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Fisio/Psico Suma ($)
+                          <div className={`resize-handle ${resizingCol === 'fisio_psico_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'fisio_psico_suma')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Fisio/Psico Costo ($)
+                          <div className={`resize-handle ${resizingCol === 'fisio_psico_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'fisio_psico_costo')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Dermato/Nutrición Suma ($)
+                          <div className={`resize-handle ${resizingCol === 'dermato_nutricion_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'dermato_nutricion_suma')} />
+                        </th>
+                        <th style={{ position: 'relative' }}>
+                          Dermato/Nutrición Costo ($)
+                          <div className={`resize-handle ${resizingCol === 'dermato_nutricion_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'dermato_nutricion_costo')} />
+                        </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
                           Ambulancia
                           <div className={`resize-handle ${resizingCol === 'ambulancia' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'ambulancia')} />
                         </th>
                         <th style={{ textAlign: 'center', position: 'relative' }}>
-                          Reembolso Carta Aval
+                          Reem/C. Aval
                           <div className={`resize-handle ${resizingCol === 'reembolso_carta_aval' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'reembolso_carta_aval')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Ex. Especiales
+                          <div className={`resize-handle ${resizingCol === 'examenes_especiales' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'examenes_especiales')} />
+                        </th>
+                        <th style={{ textAlign: 'center', position: 'relative' }}>
+                          Asist. Viajes
+                          <div className={`resize-handle ${resizingCol === 'asist_intl' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'asist_intl')} />
                         </th>
                         <th style={{ position: 'relative' }}>
                           Maternidad Suma
@@ -4140,7 +5346,7 @@ export default function AdminDashboard() {
                           <div className={`resize-handle ${resizingCol === 'asist_intl_costo' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'asist_intl_costo')} />
                         </th>
                         <th style={{ position: 'relative' }}>
-                          gastos funerarios
+                          Funerario
                           <div className={`resize-handle ${resizingCol === 'funeral_suma' ? 'resizing' : ''}`} onMouseDown={(e) => handleResizeStart(e, 'funeral_suma')} />
                         </th>
                         <th style={{ position: 'relative' }}>
@@ -4156,7 +5362,7 @@ export default function AdminDashboard() {
                     <tbody>
                       {filteredTariffs.length === 0 ? (
                         <tr>
-                          <td colSpan="41" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan="51" className="text-center" style={{ padding: '2rem', color: 'var(--text-muted)' }}>
                             No hay tarifas registradas en la planilla.
                           </td>
                         </tr>
@@ -4329,9 +5535,9 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.rehabilitacion === true || t.rehabilitacion === 'true' || t.rehabilitacion === 'INCL')}
-                                  onChange={(e) => handleBenefitChange(t.id, { rehabilitacion: e.target.checked }, 'Rehabilitación')}
+                                  onChange={(e) => handleBenefitChange(t.id, { rehabilitacion: e.target.checked }, 'Fisio/Rehab')}
                                   style={{ cursor: 'pointer' }}
-                                  title="Rehabilitación"
+                                  title="Fisio/Rehab"
                                 />
                               </td>
 
@@ -4343,9 +5549,9 @@ export default function AdminDashboard() {
                                   onChange={(e) => handleBenefitChange(t.id, {
                                     atencion_medica_primaria: e.target.checked,
                                     at_situ_medicamentos: e.target.checked ? 'INCL' : ''
-                                  }, 'Atención Médica Primaria')}
+                                  }, 'Atc. Med. Primaria')}
                                   style={{ cursor: 'pointer' }}
-                                  title="Atención Médica Primaria"
+                                  title="Atc. Med. Primaria"
                                 />
                               </td>
 
@@ -4354,9 +5560,9 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.medicinas === true || t.medicinas === 'true' || t.medicinas === 'INCL')}
-                                  onChange={(e) => handleBenefitChange(t.id, { medicinas: e.target.checked }, 'Medicamentos prescritos')}
+                                  onChange={(e) => handleBenefitChange(t.id, { medicinas: e.target.checked }, 'Medicamentos')}
                                   style={{ cursor: 'pointer' }}
-                                  title="Medicamentos prescritos"
+                                  title="Medicamentos"
                                 />
                               </td>
 
@@ -4398,9 +5604,9 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.examenes_lab_imagenologia === true || t.examenes_lab_imagenologia === 'true' || t.examenes_lab_imagenologia === 'INCL' || (typeof t.examenes_lab_imagenologia === 'string' && t.examenes_lab_imagenologia.length > 0 && t.examenes_lab_imagenologia !== 'NO' && t.examenes_lab_imagenologia !== 'false'))}
-                                  onChange={(e) => handleBenefitChange(t.id, { examenes_lab_imagenologia: e.target.checked ? 'INCL' : '' }, 'Exámenes')}
+                                  onChange={(e) => handleBenefitChange(t.id, { examenes_lab_imagenologia: e.target.checked ? 'INCL' : '' }, 'Ex. Laboratorio')}
                                   style={{ cursor: 'pointer' }}
-                                  title="Exámenes"
+                                  title="Ex. Laboratorio"
                                 />
                               </td>
 
@@ -4463,6 +5669,22 @@ export default function AdminDashboard() {
                               <td>{textInput('invalidez_permanente_suma')}</td>
                               <td>{textInput('invalidez_permanente_costo')}</td>
 
+                              {/* Asist. Médica Primaria (costo extra) */}
+                              <td>{textInput('asist_medica_primaria_suma')}</td>
+                              <td>{textInput('asist_medica_primaria_costo')}</td>
+
+                              {/* Odonto/Oftal (costo extra) */}
+                              <td>{textInput('odonto_oftal_suma')}</td>
+                              <td>{textInput('odonto_oftal_costo')}</td>
+
+                              {/* Fisio/Psico (costo extra) */}
+                              <td>{textInput('fisio_psico_suma')}</td>
+                              <td>{textInput('fisio_psico_costo')}</td>
+
+                              {/* Dermatología/Nutrición (costo extra) */}
+                              <td>{textInput('dermato_nutricion_suma')}</td>
+                              <td>{textInput('dermato_nutricion_costo')}</td>
+
                               {/* Ambulancia */}
                               <td style={{ textAlign: 'center' }}>
                                 <input
@@ -4479,9 +5701,31 @@ export default function AdminDashboard() {
                                 <input
                                   type="checkbox"
                                   checked={!!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL')}
-                                  onChange={(e) => handleBenefitChange(t.id, { reembolso_carta_aval: e.target.checked }, 'Reembolso Carta Aval')}
+                                  onChange={(e) => handleBenefitChange(t.id, { reembolso_carta_aval: e.target.checked }, 'Reem/C. Aval')}
                                   style={{ cursor: 'pointer' }}
-                                  title="Reembolso Carta Aval"
+                                  title="Reem/C. Aval"
+                                />
+                              </td>
+
+                              {/* Exámenes Especiales */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.examenes_especiales === true || t.examenes_especiales === 'true' || t.examenes_especiales === 'INCL')}
+                                  onChange={(e) => handleBenefitChange(t.id, { examenes_especiales: e.target.checked }, 'Ex. Especiales')}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Ex. Especiales"
+                                />
+                              </td>
+
+                              {/* Asistencia de Viajes (base) */}
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!(t.asist_intl === true || t.asist_intl === 'true' || t.asist_intl === 'INCL')}
+                                  onChange={(e) => handleBenefitChange(t.id, { asist_intl: e.target.checked }, 'Asist. Viajes')}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Asist. Viajes"
                                 />
                               </td>
 
@@ -5158,6 +6402,221 @@ export default function AdminDashboard() {
                     >
                       Cerrar Detalle
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL DE GESTIÓN DE RECORDATORIOS Y BITÁCORA COMERCIAL */}
+              {reminderModalQuote && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                  backdropFilter: 'blur(6px)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 99999,
+                  padding: '1rem'
+                }}>
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '20px',
+                    boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+                    width: '100%',
+                    maxWidth: '560px',
+                    overflow: 'hidden',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    {/* Modal Header */}
+                    <div style={{
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                      padding: '1.25rem 1.75rem',
+                      color: '#ffffff',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <span style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '9999px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Sistema de Recordatorios & Seguimiento
+                        </span>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0.25rem 0 0 0', color: '#ffffff' }}>
+                          ⏰ {reminderModalQuote.cliente_nombre}
+                        </h3>
+                        <p style={{ fontSize: '0.75rem', color: '#bfdbfe', margin: '0.1rem 0 0 0' }}>
+                          Asesor: {reminderModalQuote.asesor_nombre} • Cód: {reminderModalQuote.asesor_codigo}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setReminderModalQuote(null)}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                          border: 'none',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Modal Body */}
+                    <form onSubmit={handleSaveReminder} style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      
+                      {/* Info resumen */}
+                      <div style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div><strong>Suma:</strong> ${reminderModalQuote.suma_asegurada?.toLocaleString('en-US')} USD</div>
+                          <div><strong>Prima Base:</strong> ${reminderModalQuote.prima_representativa?.toFixed(2)} USD</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div><strong>Estado:</strong> <span style={{ textTransform: 'capitalize', fontWeight: 700, color: reminderModalQuote.estado === 'aceptada' ? '#16a34a' : '#d97706' }}>{reminderModalQuote.estado}</span></div>
+                          <div style={{ color: '#64748b', fontSize: '0.75rem' }}>Token: {reminderModalQuote.token.slice(0, 8)}...</div>
+                        </div>
+                      </div>
+
+                      {/* Hitos de Recordatorio */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+                          Hitos de Contacto Comercial:
+                        </label>
+
+                        {/* Recordatorio 24h */}
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '10px',
+                          background: reminderForm.recordatorio_24h ? '#f0fdf4' : '#ffffff',
+                          border: reminderForm.recordatorio_24h ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                          cursor: 'pointer'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={reminderForm.recordatorio_24h}
+                            onChange={e => setReminderForm({ ...reminderForm, recordatorio_24h: e.target.checked })}
+                            style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                          />
+                          <div>
+                            <strong style={{ fontSize: '0.85rem', color: reminderForm.recordatorio_24h ? '#15803d' : '#1e293b' }}>
+                              ⏱️ Recordatorio 24 Horas (Primer Contacto)
+                            </strong>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                              Confirmación de recepción de la cotización vía WhatsApp o llamada.
+                            </div>
+                          </div>
+                        </label>
+
+                        {/* Recordatorio 48h */}
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '10px',
+                          background: reminderForm.recordatorio_48h ? '#f0fdf4' : '#ffffff',
+                          border: reminderForm.recordatorio_48h ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                          cursor: 'pointer'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={reminderForm.recordatorio_48h}
+                            onChange={e => setReminderForm({ ...reminderForm, recordatorio_48h: e.target.checked })}
+                            style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                          />
+                          <div>
+                            <strong style={{ fontSize: '0.85rem', color: reminderForm.recordatorio_48h ? '#15803d' : '#1e293b' }}>
+                              ⏱️ Recordatorio 48 Horas (Aclaratoria de Dudas)
+                            </strong>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                              Revisión de comparativa, coberturas especiales y métodos de pago.
+                            </div>
+                          </div>
+                        </label>
+
+                        {/* Recordatorio 5 Días */}
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '10px',
+                          background: reminderForm.recordatorio_5d ? '#f0fdf4' : '#ffffff',
+                          border: reminderForm.recordatorio_5d ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                          cursor: 'pointer'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={reminderForm.recordatorio_5d}
+                            onChange={e => setReminderForm({ ...reminderForm, recordatorio_5d: e.target.checked })}
+                            style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                          />
+                          <div>
+                            <strong style={{ fontSize: '0.85rem', color: reminderForm.recordatorio_5d ? '#15803d' : '#1e293b' }}>
+                              ⏱️ Recordatorio 5 Días (Cierre y Decisión)
+                            </strong>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                              Toque final de reactivación comercial y emisión de póliza.
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Notas de Seguimiento */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.8rem', color: '#1e3a8a' }}>
+                          📝 Bitácora & Notas de Seguimiento
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={reminderForm.notas_seguimiento}
+                          onChange={e => setReminderForm({ ...reminderForm, notas_seguimiento: e.target.value })}
+                          placeholder="Ej: El cliente está evaluando la opción de Mercantil. Prefiere pago trimestral. Llamar el viernes..."
+                          className="form-input"
+                          style={{ margin: 0, padding: '0.75rem', borderRadius: '10px', fontSize: '0.825rem', fontFamily: 'inherit' }}
+                        ></textarea>
+                      </div>
+
+                      {/* Modal Actions */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                        <button
+                          type="button"
+                          onClick={() => setReminderModalQuote(null)}
+                          className="btn btn-secondary"
+                          style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={savingReminder}
+                          className="btn btn-primary"
+                          style={{ padding: '0.5rem 1.5rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
+                        >
+                          {savingReminder ? 'Guardando...' : '💾 Guardar Seguimiento'}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}

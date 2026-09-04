@@ -74,6 +74,9 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
       
       const mapped = clientsRes.rows.map(c => {
         const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
+        const cDesde = c.cliente_desde 
+          ? (typeof c.cliente_desde === 'string' ? c.cliente_desde.split('T')[0] : new Date(c.cliente_desde).toISOString().split('T')[0])
+          : (c.created_at ? (typeof c.created_at === 'string' ? c.created_at.split('T')[0] : new Date(c.created_at).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]);
         return {
           id: c.id,
           id_cliente: c.id,
@@ -83,6 +86,7 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
           primer_apellido: c.primer_apellido,
           segundo_apellido: c.segundo_apellido,
           fecha_nacimiento: c.fecha_nacimiento,
+          cliente_desde: cDesde,
           tipo_documento: c.tipo_documento,
           nro_documento: c.nro_documento,
           genero: c.genero,
@@ -112,6 +116,9 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
       .filter(c => clientIds.includes(parseInt(c.id)))
       .map(c => {
         const userObj = usersRes.rows.find(u => u.id === c.usuario_id);
+        const cDesde = c.cliente_desde 
+          ? (typeof c.cliente_desde === 'string' ? c.cliente_desde.split('T')[0] : new Date(c.cliente_desde).toISOString().split('T')[0])
+          : (c.created_at ? (typeof c.created_at === 'string' ? c.created_at.split('T')[0] : new Date(c.created_at).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]);
         return {
           id: c.id,
           id_cliente: c.id,
@@ -121,6 +128,7 @@ router.get('/advisor/clients', authenticateToken, async (req, res) => {
           primer_apellido: c.primer_apellido,
           segundo_apellido: c.segundo_apellido,
           fecha_nacimiento: c.fecha_nacimiento,
+          cliente_desde: cDesde,
           tipo_documento: c.tipo_documento,
           nro_documento: c.nro_documento,
           genero: c.genero,

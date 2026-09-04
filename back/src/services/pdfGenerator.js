@@ -170,11 +170,12 @@ const SECTION_TITLE_H = 9;
 const GAP_XS = 4;
 const DEDBOX_H = 20;
 const GAP_SM = 6;
-const GRID_ROWS = 8; // 15 servicios en grid de 2 columnas
+const GRID_ROWS = 6; // 12 servicios en grid de 2 columnas
 const GRID_ROW_H = 10;
 const GRID_H = GRID_ROWS * GRID_ROW_H;
 const SECTION_DIVIDER_GAP = 10;
-const EXTRAS_BOX_H = 74; // título + 5 filas con separador punteado
+const EXTRAS_BOX_BASE_H = 24; // título + paddings de la caja de extras (sin las filas)
+const EXTRAS_ROW_H = 10; // alto de cada fila de cobertura extra
 const PAYMENT_BOX_FIXED = 24; // título + paddings de la caja de formas de pago (sin las píldoras)
 const CARD_BOTTOM_PAD = 10;
 
@@ -206,35 +207,67 @@ function calcularDatosFinancieros(comp) {
   const costoFuneral = parseExtraCost(comp.funeral_costo);
   const costoMuerteAcc = parseExtraCost(comp.muerte_accidental_costo);
   const costoInvalidez = parseExtraCost(comp.invalidez_permanente_costo);
-  const totalExtras = costoMat + costoAsist + costoFuneral + costoMuerteAcc + costoInvalidez;
+  const costoConsultas = parseExtraCost(comp.consultas_costo);
+  const costoAsistMedPrim = parseExtraCost(comp.asist_medica_primaria_costo);
+  const costoOdontoOftal = parseExtraCost(comp.odonto_oftal_costo);
+  const costoFisioPsico = parseExtraCost(comp.fisio_psico_costo);
+  const costoDermatoNutricion = parseExtraCost(comp.dermato_nutricion_costo);
+  const totalExtras = costoMat + costoAsist + costoFuneral + costoMuerteAcc + costoInvalidez +
+    costoConsultas + costoAsistMedPrim + costoOdontoOftal + costoFisioPsico + costoDermatoNutricion;
   const primaBase = parseFloat(comp.prima || 0);
   const primaConExtras = primaBase + totalExtras;
-  return { costoMat, costoAsist, costoFuneral, costoMuerteAcc, costoInvalidez, totalExtras, primaBase, primaConExtras };
+  return {
+    costoMat, costoAsist, costoFuneral, costoMuerteAcc, costoInvalidez, costoConsultas,
+    costoAsistMedPrim, costoOdontoOftal, costoFisioPsico, costoDermatoNutricion,
+    totalExtras, primaBase, primaConExtras
+  };
 }
 
 /**
- * Lista de 15 servicios del plan base para el grid de 2 columnas — mismos
+ * Lista de 12 servicios del plan base para el grid de 2 columnas — mismos
  * campos y mismo orden que la sección "Coberturas y Beneficios Incluidos"
- * del tarifario (panel admin), no el comparativo de la web.
+ * del tarifario (panel admin), no el comparativo de la web. Oftalmología,
+ * Odontología, Muerte Accidental, Invalidez Permanente y Consultas
+ * Especialistas NO van acá — aparecen únicamente en el recuadro de
+ * "Coberturas Extras" (ver construirExtrasWeb) cuando tienen costo agregado.
  */
 function construirServiciosGrid(comp, fin) {
   return [
-    { name: 'Atención Médica Primaria (AMP)', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
-    { name: 'Medicamentos Prescritos', active: !!comp.medicinas },
+    { name: 'Atc. Med. Primaria', active: !!(comp.atencion_medica_primaria || comp.at_situ_medicamentos === 'INCL') },
+    { name: 'Medicamentos', active: !!comp.medicinas },
     { name: 'Consultas Médicas', active: !!comp.consultas_medicas },
-    { name: 'Exámenes Lab e Imágenes', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' && comp.examenes_lab_imagenologia !== 'false') },
-    { name: 'Servicio de Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO' && comp.ambulancia !== 'false') },
-    { name: 'Consultas Especialistas', active: !!comp.consultas },
-    { name: 'Fisioterapia / Rehabilitación', active: !!comp.rehabilitacion },
+    { name: 'Ex. Laboratorio', active: !!(comp.examenes_lab_imagenologia && comp.examenes_lab_imagenologia !== 'NO' && comp.examenes_lab_imagenologia !== 'false') },
+    { name: 'Ambulancia', active: !!(comp.ambulancia && comp.ambulancia !== 'NO' && comp.ambulancia !== 'false') },
+    { name: 'Fisio/Rehab', active: !!comp.rehabilitacion },
     { name: 'Prótesis Quirúrgicas', active: !!comp.protesis },
     { name: 'Muleta + Silla de Ruedas', active: !!comp.muleta_silla_ruedas },
-    { name: 'Oftalmología', active: !!comp.oftalmologia },
-    { name: 'Odontología', active: !!comp.odontologia },
-    { name: 'Muerte Accidental', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && fin.costoMuerteAcc === 0) },
-    { name: 'Invalidez Permanente', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && fin.costoInvalidez === 0) },
-    { name: 'Cobertura de Maternidad', active: !!((comp.maternidad || comp.maternidad_suma) && fin.costoMat === 0) },
-    { name: 'Reembolso / Carta Aval', active: !!comp.reembolso_carta_aval }
+    { name: 'Maternidad', active: !!((comp.maternidad || comp.maternidad_suma) && fin.costoMat === 0) },
+    { name: 'Reem/C. Aval', active: !!comp.reembolso_carta_aval },
+    { name: 'Ex. Especiales', active: !!comp.examenes_especiales },
+    { name: 'Asist. Viajes', active: !!((comp.asist_intl || comp.asist_intl_suma) && fin.costoAsist === 0) }
   ];
+}
+
+/**
+ * Devuelve el tamaño de fuente más grande (sin superar `maxSize` ni bajar de
+ * `minSize`) con el que `text` entra en una sola línea dentro de `maxWidth`,
+ * en vez de truncarlo con "…". Se usa para el nombre y el plan de la
+ * aseguradora en el encabezado de cada tarjeta: cuando hay 3 tarjetas por
+ * fila (y por lo tanto menos ancho disponible) el texto se ve completo
+ * reduciendo la letra en vez de cortarse. Deja el font/tamaño elegido puesto
+ * en `doc` al salir.
+ */
+function ajustarFontSizeParaAncho(doc, text, maxWidth, fontName, maxSize, minSize) {
+  const str = String(text ?? '');
+  doc.font(fontName);
+  let size = maxSize;
+  while (size > minSize) {
+    doc.fontSize(size);
+    if (doc.widthOfString(str) <= maxWidth) return size;
+    size -= 0.25;
+  }
+  doc.fontSize(minSize);
+  return minSize;
 }
 
 /**
@@ -242,6 +275,8 @@ function construirServiciosGrid(comp, fin) {
  * fuente/tamaño ya seleccionados en `doc`. Usado en todo el texto que viene
  * de datos variables (nombre de aseguradora, plan, valores de coberturas)
  * para que nunca se monte con el texto vecino, sin importar cuán largo sea.
+ * Es el último recurso si ni siquiera al tamaño mínimo de
+ * `ajustarFontSizeParaAncho` entra el texto completo.
  */
 function ajustarTexto(doc, text, maxWidth) {
   const str = String(text ?? '');
@@ -257,22 +292,41 @@ function ajustarTexto(doc, text, maxWidth) {
 }
 
 /**
- * Coberturas extras opcionales (5 filas, siempre visibles) con el mismo
- * texto que arma el comparativo web ("Incluida en base" / "No incluida" /
- * suma + costo).
+ * Coberturas extras: Maternidad, Asistencia de Viajes y Funerario siempre se
+ * muestran (con costo, incluidas en base sin costo, o "No incluida"), igual
+ * que el comparativo web. Muerte Accidental, Invalidez Permanente, Consultas
+ * Especialistas, Asist. Médica Primaria, Odonto/Oftal, Fisio/Psico y
+ * Dermatología/Nutrición en cambio son filas condicionales: solo aparecen
+ * cuando el plan las tiene disponibles Y tienen un costo adicional agregado
+ * — si no, se omiten (no se listan ni como "No incluida"). Por eso la caja
+ * de extras tiene alto variable (ver EXTRAS_BOX_BASE_H / EXTRAS_ROW_H).
  */
 function construirExtrasWeb(comp, fin) {
   const frase = (tieneCobertura, suma, costo, textoNo) => {
     if (!tieneCobertura) return textoNo;
     return costo > 0 ? `${suma || 'Cubierta'} (+ $${costo.toFixed(2)}/año)` : `${suma || 'Cubierta'} (Incluida en base)`;
   };
-  return [
-    { label: 'Muerte Accidental:', value: frase(!!(comp.muerte_accidental_suma || comp.muerte_accidental), comp.muerte_accidental_suma, fin.costoMuerteAcc, 'No incluida') },
-    { label: 'Invalidez Permanente:', value: frase(!!(comp.invalidez_permanente_suma || comp.invalidez_permanente), comp.invalidez_permanente_suma, fin.costoInvalidez, 'No incluida') },
+
+  const extras = [
     { label: 'Maternidad:', value: frase(!!(comp.maternidad_suma || comp.maternidad), comp.maternidad_suma, fin.costoMat, 'No incluida') },
     { label: 'Asistencia de Viajes:', value: frase(!!comp.asist_intl_suma, comp.asist_intl_suma, fin.costoAsist, 'No incluida') },
-    { label: 'Servicio Funeral:', value: frase(!!comp.funeral_suma, comp.funeral_suma, fin.costoFuneral, 'No incluido') }
+    { label: 'Funerario:', value: frase(!!comp.funeral_suma, comp.funeral_suma, fin.costoFuneral, 'No incluido') }
   ];
+
+  const agregarSiTieneCosto = (label, disponible, suma, costo) => {
+    if (disponible && costo > 0) {
+      extras.push({ label, value: `${suma || 'Cubierta'} (+ $${costo.toFixed(2)}/año)` });
+    }
+  };
+  agregarSiTieneCosto('Muerte Accidental:', !!(comp.muerte_accidental_suma || comp.muerte_accidental), comp.muerte_accidental_suma, fin.costoMuerteAcc);
+  agregarSiTieneCosto('Invalidez Permanente:', !!(comp.invalidez_permanente_suma || comp.invalidez_permanente), comp.invalidez_permanente_suma, fin.costoInvalidez);
+  agregarSiTieneCosto('Consultas Especialistas:', !!comp.consultas, comp.consultas_suma, fin.costoConsultas);
+  agregarSiTieneCosto('Asist. Médica Primaria:', !!comp.asist_medica_primaria_suma, comp.asist_medica_primaria_suma, fin.costoAsistMedPrim);
+  agregarSiTieneCosto('Odonto/Oftal:', !!comp.odonto_oftal_suma, comp.odonto_oftal_suma, fin.costoOdontoOftal);
+  agregarSiTieneCosto('Fisio/Psico:', !!comp.fisio_psico_suma, comp.fisio_psico_suma, fin.costoFisioPsico);
+  agregarSiTieneCosto('Dermatología/Nutrición:', !!comp.dermato_nutricion_suma, comp.dermato_nutricion_suma, fin.costoDermatoNutricion);
+
+  return extras;
 }
 
 /**
@@ -321,14 +375,17 @@ function calcularFilasPildoras(doc, items, containerWidth, fontSize, padX, gapX)
 function calcularAlturaTarjeta(doc, comp, width, scale = 1) {
   const s = scale;
   const contentW = width - 24;
+  const fin = calcularDatosFinancieros(comp);
+  const extras = construirExtrasWeb(comp, fin);
+  const extrasBoxH = (EXTRAS_BOX_BASE_H + extras.length * EXTRAS_ROW_H) * s;
   const chipsPago = construirChipsPago(comp);
   const filasPago = calcularFilasPildoras(doc, chipsPago, contentW - 16 * s, PAY_CHIP_FONT * s, PAY_CHIP_PAD_X * s, PAY_CHIP_GAP_X * s);
   const payChipH = PAY_CHIP_FONT * s + PAY_CHIP_PAD_Y * s * 2;
   const chipsH = filasPago.length * payChipH + (filasPago.length - 1) * PAY_CHIP_GAP_Y * s;
   const fixedSum = CARD_TOP_PAD + CARD_HEADER_H + CARD_GAP + CARD_PRICEBOX_H + CARD_GAP +
          SECTION_TITLE_H + GAP_XS + DEDBOX_H + GAP_SM + GRID_H + SECTION_DIVIDER_GAP +
-         EXTRAS_BOX_H + CARD_GAP + PAYMENT_BOX_FIXED + CARD_BOTTOM_PAD;
-  return fixedSum * s + chipsH;
+         CARD_GAP + PAYMENT_BOX_FIXED + CARD_BOTTOM_PAD;
+  return fixedSum * s + extrasBoxH + chipsH;
 }
 
 /**
@@ -336,7 +393,7 @@ function calcularAlturaTarjeta(doc, comp, width, scale = 1) {
  * "Cuadro Comparativo de Opciones" de la página web: nombre (oscuro) + plan
  * (azul) con línea divisoria, caja de precio única de ancho completo (prima
  * base y total con extras en una sola caja), caja de deducible, grid de 2
- * columnas con los 15 servicios del plan base, recuadro de coberturas extras
+ * columnas con los servicios del plan base, recuadro de coberturas extras
  * con separadores punteados, y píldoras de colores por forma de pago
  * (sin score de cobertura, no se muestra en el PDF).
  *
@@ -383,47 +440,57 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeig
       textW = contentW;
     }
   }
-  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(10.5 * s);
-  doc.text(ajustarTexto(doc, comp.nombre, textW), textX, cy, { width: textW, lineBreak: false });
-  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5 * s);
-  doc.text(ajustarTexto(doc, `PLAN: ${(comp.plan || 'N/D').toUpperCase()}`, textW), textX, cy + 14 * s, { width: textW, lineBreak: false });
+  // El nombre y el plan reducen su letra automáticamente para entrar
+  // completos en el ancho disponible (importante con 3 tarjetas por fila,
+  // donde el ancho es más chico) — solo se recortan con "…" si ni al tamaño
+  // mínimo legible entran.
+  const nombreTexto = comp.nombre || '';
+  const nombreSize = ajustarFontSizeParaAncho(doc, nombreTexto, textW, 'Helvetica-Bold', 10.5 * s, 6.5 * s);
+  doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(nombreSize);
+  doc.text(ajustarTexto(doc, nombreTexto, textW), textX, cy, { width: textW, lineBreak: false });
+
+  const planTexto = `PLAN: ${(comp.plan || 'N/D').toUpperCase()}`;
+  const planSize = ajustarFontSizeParaAncho(doc, planTexto, textW, 'Helvetica-Bold', 7.5 * s, 5 * s);
+  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(planSize);
+  doc.text(ajustarTexto(doc, planTexto, textW), textX, cy + 14 * s, { width: textW, lineBreak: false });
   doc.strokeColor(COLORS.border).lineWidth(1).moveTo(padX, cy + CARD_HEADER_H * s - 5 * s).lineTo(padX + contentW, cy + CARD_HEADER_H * s - 5 * s).stroke();
   cy += (CARD_HEADER_H + CARD_GAP) * s;
 
   // --- Caja de precio dual (una sola caja de ancho completo) ---
-  // La etiqueta va en su propia línea (en vez de compartir renglón con el
-  // valor, como en la web) para que quepa cómodamente en tarjetas angostas.
+  // Etiquetas y montos van centrados horizontalmente dentro de la caja
+  // (en vez de alineados a la izquierda, como antes).
   const priceY = cy;
-  const priceInnerX = padX + 10 * s;
   const priceBoxH = CARD_PRICEBOX_H * s;
   doc.roundedRect(padX, priceY, contentW, priceBoxH, 8).fill('#eff6ff');
   doc.roundedRect(padX, priceY, contentW, priceBoxH, 8).lineWidth(1).stroke(COLORS.border);
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6.2 * s).text('PRIMA BASE (SIN EXTRAS)', priceInnerX, priceY + 8 * s, { lineBreak: false });
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(6.2 * s).text('PRIMA BASE (SIN EXTRAS)', padX, priceY + 8 * s, { width: contentW, align: 'center', lineBreak: false });
+  const primaBaseTxt = `$${fin.primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  doc.font('Helvetica-Bold').fontSize(12 * s);
+  const primaBaseW = doc.widthOfString(primaBaseTxt);
+  doc.font('Helvetica').fontSize(6 * s);
+  const porAnioW = doc.widthOfString(' por año');
+  const primaBaseStartX = padX + (contentW - (primaBaseW + porAnioW)) / 2;
   doc.font('Helvetica-Bold').fontSize(12 * s)
-     .text(`$${fin.primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceInnerX, priceY + 17 * s, { continued: true, lineBreak: false });
+     .text(primaBaseTxt, primaBaseStartX, priceY + 17 * s, { continued: true, lineBreak: false });
   doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6 * s).text(' por año', { lineBreak: false });
   // Línea divisoria punteada
   doc.dash(2, { space: 2 }).strokeColor(COLORS.border).lineWidth(0.75)
-     .moveTo(priceInnerX, priceY + 34 * s).lineTo(padX + contentW - 10 * s, priceY + 34 * s).stroke();
+     .moveTo(padX + 10 * s, priceY + 34 * s).lineTo(padX + contentW - 10 * s, priceY + 34 * s).stroke();
   doc.undash();
   if (hayExtras) {
-    doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(6.3 * s).text('TOTAL CON EXTRAS', priceInnerX, priceY + 40 * s, { lineBreak: false });
+    doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(6.3 * s).text('TOTAL CON EXTRAS', padX, priceY + 40 * s, { width: contentW, align: 'center', lineBreak: false });
     doc.fillColor('#15803d').font('Helvetica-Bold').fontSize(10.5 * s)
-       .text(`$${fin.primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceInnerX, priceY + 49 * s, { lineBreak: false });
-    doc.fillColor('#b45309').font('Helvetica').fontSize(5.8 * s).text(`(+$${fin.totalExtras.toFixed(2)} en extras)`, priceInnerX, priceY + 64 * s, { lineBreak: false });
+       .text(`$${fin.primaConExtras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, padX, priceY + 49 * s, { width: contentW, align: 'center', lineBreak: false });
+    doc.fillColor('#b45309').font('Helvetica').fontSize(5.8 * s).text(`(+$${fin.totalExtras.toFixed(2)} en extras)`, padX, priceY + 64 * s, { width: contentW, align: 'center', lineBreak: false });
   } else {
-    doc.fillColor('#15803d').font('Helvetica-Bold').fontSize(6.3 * s).text('PLAN COMPLETO', priceInnerX, priceY + 40 * s, { lineBreak: false });
+    doc.fillColor('#15803d').font('Helvetica-Bold').fontSize(6.3 * s).text('PLAN COMPLETO', padX, priceY + 40 * s, { width: contentW, align: 'center', lineBreak: false });
     doc.fillColor('#15803d').font('Helvetica-Bold').fontSize(9.5 * s)
-       .text(`$${fin.primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, priceInnerX, priceY + 49 * s, { lineBreak: false });
-    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.8 * s).text('(sin costos extras)', priceInnerX, priceY + 64 * s, { lineBreak: false });
+       .text(`$${fin.primaBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, padX, priceY + 49 * s, { width: contentW, align: 'center', lineBreak: false });
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(5.8 * s).text('(sin costos extras)', padX, priceY + 64 * s, { width: contentW, align: 'center', lineBreak: false });
   }
   cy += (CARD_PRICEBOX_H + CARD_GAP) * s;
 
-  // --- Título "✓ INCLUIDO EN PLAN BASE:" ---
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(7.2 * s).text('✓ INCLUIDO EN PLAN BASE:', padX, cy, { lineBreak: false });
-  cy += (SECTION_TITLE_H + GAP_XS) * s;
-
-  // --- Caja de Deducible ---
+  // --- Caja de Deducible (justo debajo de la caja de precios) ---
   const deducibleVal = comp.deducible !== undefined && comp.deducible !== null && parseFloat(comp.deducible) > 0
     ? `$${Number(comp.deducible).toLocaleString('en-US')}`
     : '$0 (Sin deducible)';
@@ -434,6 +501,10 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeig
   doc.fillColor(parseFloat(comp.deducible || 0) > 0 ? '#b45309' : '#15803d').font('Helvetica-Bold').fontSize(7 * s)
      .text(deducibleVal, padX, cy + 6 * s, { width: contentW - 8 * s, align: 'right' });
   cy += (DEDBOX_H + GAP_SM) * s;
+
+  // --- Título "✓ INCLUIDO EN PLAN BASE:" (debajo del deducible) ---
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(7.2 * s).text('✓ INCLUIDO EN PLAN BASE:', padX, cy, { lineBreak: false });
+  cy += (SECTION_TITLE_H + GAP_XS) * s;
 
   // --- Grid de servicios incluidos (2 columnas x 8 filas) ---
   const servicios = construirServiciosGrid(comp, fin);
@@ -455,10 +526,10 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeig
   doc.strokeColor(COLORS.border).lineWidth(1).moveTo(padX, cy + (SECTION_DIVIDER_GAP * s) / 2 - 1).lineTo(padX + contentW, cy + (SECTION_DIVIDER_GAP * s) / 2 - 1).stroke();
   cy += SECTION_DIVIDER_GAP * s;
 
-  // --- Coberturas extras: recuadro gris, 5 filas con separador punteado ---
+  // --- Coberturas extras: recuadro gris con separador punteado (alto dinámico según cuántas filas apliquen) ---
   const extras = construirExtrasWeb(comp, fin);
   const extraBoxY = cy;
-  const extrasBoxH = EXTRAS_BOX_H * s;
+  const extrasBoxH = (EXTRAS_BOX_BASE_H + extras.length * EXTRAS_ROW_H) * s;
   doc.roundedRect(padX, extraBoxY, contentW, extrasBoxH, 6).fill('#f8fafc');
   doc.roundedRect(padX, extraBoxY, contentW, extrasBoxH, 6).lineWidth(1).stroke(COLORS.border);
   const extrasTituloW = contentW - 16 * s;
@@ -483,7 +554,7 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeig
   });
   cy += extrasBoxH + CARD_GAP * s;
 
-  // --- Formas de pago aceptadas: recuadro gris con píldoras de color ---
+  // --- Frecuencias de pago aceptadas: recuadro gris con píldoras de color ---
   const chipsPago = construirChipsPago(comp);
   const payChipFont = PAY_CHIP_FONT * s;
   const payChipPadX = PAY_CHIP_PAD_X * s;
@@ -497,7 +568,7 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeig
   const payBoxH = PAYMENT_BOX_FIXED * s + chipsH;
   doc.roundedRect(padX, payBoxY, contentW, payBoxH, 6).fill('#f8fafc');
   doc.roundedRect(padX, payBoxY, contentW, payBoxH, 6).lineWidth(1).stroke(COLORS.border);
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(7 * s).text('Formas de Pago Aceptadas:', padX + 8 * s, payBoxY + 7 * s, { lineBreak: false });
+  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(7 * s).text('Frecuencias de Pago Aceptadas:', padX + 8 * s, payBoxY + 7 * s, { lineBreak: false });
   let chipY = payBoxY + 19 * s;
   filasPago.forEach((fila) => {
     let chipX = padX + 8 * s;
@@ -525,40 +596,95 @@ function dibujarSectorTorta(doc, cx, cy, radius, startAngle, endAngle, color) {
 }
 
 /**
- * Dibuja el gráfico de torta de distribución de protección financiera + leyenda
+ * Dibuja el gráfico de torta de distribución de protección financiera,
+ * centrado, con el nombre y el porcentaje de cada porción escritos dentro de
+ * ella misma (sin leyenda aparte al costado).
  */
-function dibujarGraficoDistribucion(doc, cx, cy, radius, legendX, legendY) {
+function dibujarGraficoDistribucion(doc, cx, cy, radius) {
   const datos = [
-    { label: 'Seguro de Salud', pct: 20, color: '#2563eb', grupo: 'Vida y Salud' },
-    { label: 'Seguro de Vida', pct: 30, color: '#93c5fd', grupo: 'Vida y Salud' },
-    { label: 'Seguro Patrimonial', pct: 25, color: COLORS.amber },
-    { label: 'Responsabilidad Civil', pct: 25, color: COLORS.success }
+    { label: 'Salud', pct: 20, color: '#2563eb', textColor: '#ffffff' },
+    { label: 'Vida', pct: 30, color: '#93c5fd', textColor: COLORS.dark },
+    { label: 'Patrimonial', pct: 25, color: COLORS.amber, textColor: '#ffffff' },
+    { label: 'Resp. Civil', pct: 25, color: COLORS.success, textColor: '#ffffff' }
   ];
 
   let angle = -Math.PI / 2; // Comenzar en las 12
-  datos.forEach(d => {
+  const porciones = datos.map((d) => {
     const span = (d.pct / 100) * Math.PI * 2;
-    dibujarSectorTorta(doc, cx, cy, radius, angle, angle + span, d.color);
-    angle += span;
+    const start = angle;
+    const end = angle + span;
+    angle = end;
+    return { ...d, start, end, mid: (start + end) / 2 };
   });
 
-  // Leyenda
-  let ly = legendY;
-  doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(8).text('SEGURO DE VIDA Y SALUD — 50%', legendX, ly, { lineBreak: false });
-  ly += 13;
-  [datos[0], datos[1]].forEach(d => {
-    doc.rect(legendX + 10, ly + 1, 8, 8).fill(d.color);
-    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(7.5).text(`${d.label} — ${d.pct}%`, legendX + 24, ly, { lineBreak: false });
-    ly += 14;
+  porciones.forEach((p) => dibujarSectorTorta(doc, cx, cy, radius, p.start, p.end, p.color));
+
+  // Nombre y porcentaje centrados sobre el punto medio angular de cada
+  // porción, a un 60% del radio desde el centro — así el texto queda "dentro"
+  // del pedazo de gráfico que le corresponde en vez de en una leyenda aparte.
+  const labelRadius = radius * 0.6;
+  const labelBoxW = Math.max(48, radius * 0.85);
+  porciones.forEach((p) => {
+    const lx = cx + labelRadius * Math.cos(p.mid);
+    const ly = cy + labelRadius * Math.sin(p.mid);
+    doc.fillColor(p.textColor).font('Helvetica-Bold').fontSize(7)
+       .text(p.label, lx - labelBoxW / 2, ly - 9, { width: labelBoxW, align: 'center', lineBreak: false });
+    doc.fontSize(8.5)
+       .text(`${p.pct}%`, lx - labelBoxW / 2, ly + 1, { width: labelBoxW, align: 'center', lineBreak: false });
   });
-  ly += 4;
-  [datos[2], datos[3]].forEach(d => {
-    doc.rect(legendX, ly + 1, 8, 8).fill(d.color);
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(8).text(`${d.label} — ${d.pct}%`, legendX + 14, ly - 1, { lineBreak: false });
-    ly += 16;
+}
+
+/**
+ * Dibuja un gráfico de líneas que muestra cómo crece el nivel de protección
+ * financiera a medida que se suman los seguros personales (Vida + Salud),
+ * el patrimonial y el de responsabilidad civil — mismos porcentajes que el
+ * gráfico de torta de arriba, acumulados paso a paso.
+ */
+function dibujarGraficoLineasProteccion(doc, x, y, width, height) {
+  const puntos = [
+    { label: 'Hoy (Salud)', pct: 20 },
+    { label: '+ Seguros\nPersonales', pct: 50 },
+    { label: '+ Patrimonial', pct: 75 },
+    { label: '+ Resp. Civil', pct: 100 }
+  ];
+
+  const padLeft = 26; // espacio para las etiquetas del eje Y (0%-100%)
+  const padBottom = 24; // espacio para las etiquetas del eje X
+  const plotX = x + padLeft;
+  const plotW = width - padLeft;
+  const plotY = y;
+  const plotH = height - padBottom;
+
+  // Líneas de referencia horizontales + etiquetas del eje Y
+  [0, 25, 50, 75, 100].forEach((n) => {
+    const gy = plotY + plotH - (n / 100) * plotH;
+    doc.strokeColor(COLORS.border).lineWidth(0.5).moveTo(plotX, gy).lineTo(plotX + plotW, gy).stroke();
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.3)
+       .text(`${n}%`, x, gy - 3, { width: padLeft - 4, align: 'right', lineBreak: false });
   });
 
-  return ly;
+  // Coordenadas de cada punto, distribuidas uniformemente en el eje X
+  const stepX = plotW / (puntos.length - 1);
+  const coords = puntos.map((p, i) => ({
+    ...p,
+    x: plotX + i * stepX,
+    y: plotY + plotH - (p.pct / 100) * plotH
+  }));
+
+  // Línea que conecta los puntos
+  doc.strokeColor(COLORS.primary).lineWidth(2);
+  doc.moveTo(coords[0].x, coords[0].y);
+  coords.slice(1).forEach((c) => doc.lineTo(c.x, c.y));
+  doc.stroke();
+
+  // Puntos, porcentaje arriba de cada uno y etiqueta de la etapa en el eje X
+  coords.forEach((c, i) => {
+    doc.circle(c.x, c.y, 3).fill(i === coords.length - 1 ? COLORS.success : COLORS.secondary);
+    doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(7.5)
+       .text(`${c.pct}%`, c.x - 20, c.y - 14, { width: 40, align: 'center', lineBreak: false });
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(6.3)
+       .text(c.label, c.x - stepX / 2 + 2, plotY + plotH + 6, { width: stepX - 4, align: 'center', lineGap: -1 });
+  });
 }
 
 /**
@@ -799,12 +925,18 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   const titleY = 92 + boxH + 16;
   const subtitleY = titleY + 13;
-  const startCardsY = subtitleY + 20;
+  const infoLineY = subtitleY + 11;
+  const startCardsY = infoLineY + 15;
 
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(9.5)
      .text('Tu Comparativo Personalizado de Aseguradoras', MARGIN, titleY, { lineBreak: false });
   doc.fillColor(COLORS.muted).font('Helvetica').fontSize(7)
      .text('Cada tarjeta resume el plan, la prima anual y los beneficios adicionales ofrecidos para la edad y suma asegurada cotizadas.', MARGIN, subtitleY, { width: CONTENT_W, lineBreak: false });
+  // Nota informativa con enlace a las estadísticas oficiales de SUDEASEG.
+  const infoTexto = '¿Quieres conocer más información sobre estas compañías aseguradoras? Ingresa a https://sudeaseg.gob.ve/estadisticas';
+  doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7)
+     .text(infoTexto, MARGIN, infoLineY, { width: CONTENT_W, lineBreak: false });
+  doc.link(MARGIN, infoLineY, doc.widthOfString(infoTexto), 9, 'https://sudeaseg.gob.ve/estadisticas');
 
   let cardY = startCardsY;
   const rowGap = 14;
@@ -878,8 +1010,9 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
 
   // ==========================================
   // PÁGINA: SECCIÓN DE MARKETING / DISTRIBUCIÓN DE PROTECCIÓN
-  // Orden: título → cuadro de atención → gráfica → título "El valor de
-  // blindar tu esfuerzo" → carta personal. Todo debe caber en esta página.
+  // Orden: título → cuadro de atención → gráfico de torta (centrado, con
+  // etiquetas dentro de cada porción) → gráfico de líneas de crecimiento de
+  // la protección. Todo debe caber en esta página.
   // ==========================================
   doc.addPage();
   dibujarHeader(doc, '¿ESTÁ REALMENTE PROTEGIDO?');
@@ -901,47 +1034,27 @@ function dibujarPdf(doc, cliente, edad, sumaAsegurada, comparativas, asesor) {
      .text('Con un seguro de salud contratado, aún te falta cubrir otras áreas importantes de tu vida, considerando tu perfil individual.', MARGIN + 12, mktY + 20, { width: CONTENT_W - 24 });
   mktY += calloutH + 16;
 
-  // 3. Gráfica de distribución de protección financiera
-  const chartCx = MARGIN + 90;
-  const chartCy = mktY + 85;
-  const chartRadius = 78;
-  dibujarGraficoDistribucion(doc, chartCx, chartCy, chartRadius, MARGIN + 210, mktY + 20);
-  mktY += 178;
+  // 3. Gráfica de distribución de protección financiera, centrada en el
+  // ancho de la página, con las etiquetas dentro de cada porción.
+  const chartCx = MARGIN + CONTENT_W / 2;
+  const chartRadius = 92;
+  const chartCy = mktY + chartRadius + 8;
+  dibujarGraficoDistribucion(doc, chartCx, chartCy, chartRadius);
+  mktY = chartCy + chartRadius + 20;
 
-  // 4. Título "El valor de blindar tu esfuerzo"
+  // 4. Gráfico de líneas: cómo crece el nivel de protección al sumar los
+  // seguros personales (Vida + Salud), el patrimonial y el de responsabilidad
+  // civil — reemplaza la carta personal "El valor de blindar tu esfuerzo".
   doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(11.5)
      .text('El valor de blindar tu esfuerzo', MARGIN, mktY, { lineBreak: false });
-  mktY += 18;
+  mktY += 16;
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(7.5)
+     .text('Cada seguro que sumas a tu plan de salud cierra una brecha distinta en tu protección financiera, hasta completarla.', MARGIN, mktY, { width: CONTENT_W });
+  mktY = doc.y + 16;
 
-  // 5. Carta personal: fuente reducida y sin salto de página, para que todo
-  // el texto entre en esta misma página junto con el título y la gráfica.
-  const MKT_FONT = 7.8;
-  const MKT_GAP = -0.2;
-
-  const drawMktP = (texto, y) => {
-    doc.fillColor(COLORS.dark).font('Helvetica').fontSize(MKT_FONT)
-       .text(texto, MARGIN, y, { width: CONTENT_W, lineGap: MKT_GAP });
-    return doc.y;
-  };
-
-  const drawMktItem = (num, lead, resto, y) => {
-    doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(MKT_FONT)
-       .text(`${num}) ${lead} `, MARGIN, y, { width: CONTENT_W, continued: true, lineGap: MKT_GAP });
-    doc.font('Helvetica').text(resto, { lineGap: MKT_GAP });
-    return doc.y;
-  };
-
-  mktY = drawMktP('Primero que nada, quiero felicitarte de corazón. Al dar el paso de solicitar tu seguro de salud, estás demostrando algo invaluable: el compromiso real de proteger tu vida y estar allí para quienes dependen de ti. Cuidar de tu bienestar físico es, sin duda, la base de todo.', mktY) + 5;
-  mktY = drawMktP('Sin embargo, sabemos muy bien que la verdadera tranquilidad no se vive a medias; por eso, con la misma prioridad con la que hoy blindas tu salud, quiero ayudarte a proteger los otros pilares que sostienen tu mundo:', mktY) + 5;
-  mktY = drawMktItem(1, 'El futuro de los tuyos (Seguro de Vida):', 'Tu salud estará respaldada, pero tu amor va más allá del presente. Si el día de mañana no llegaras a estar, una póliza de vida es la certeza de que los sueños de tus hijos, su educación y el sustento de tu hogar seguirán adelante, sin que ellos tengan que heredar cargas financieras ni desamparo en los momentos más difíciles.', mktY) + 4;
-  mktY = drawMktItem(2, 'Tu verdadero refugio (Seguro de Hogar):', 'Tu cuerpo es tu primer templo, y tu casa el segundo. Ya seas propietario o inquilino, allí dentro está tu historia, tus recuerdos y el esfuerzo de tus años reflejado en cada mueble y equipo electrónico. Protégela frente a incendios, daños por agua o terremotos; que un imprevisto de la naturaleza jamás te arrebate lo que tanto te costó levantar.', mktY) + 4;
-  mktY = drawMktItem(3, 'Tu tranquilidad en el camino (Seguro de Auto):', 'Tu vehículo es tu herramienta de movilidad diaria y parte de tu libertad. En nuestras vías, los riesgos de un accidente, una avería o un percance vial están a la orden del día. Asegurarlo te garantiza el auxilio inmediato y la cobertura de daños para que un mal momento en la calle no se convierta en una crisis para tu bolsillo.', mktY) + 4;
-  mktY = drawMktItem(4, 'El escudo para tu profesión y ahorros (Responsabilidad Civil General o Profesional):', 'Has pasado años preparándote y construyendo una reputación. Un error involuntario en tu ejercicio profesional o un accidente fortuito de un tercero bajo tu responsabilidad pueden poner en riesgo los ahorros de toda tu vida en un instante. Esta cobertura es el blindaje legal y económico que responde por ti ante reclamos o demandas, manteniendo a salvo tu patrimonio de años.', mktY) + 4;
-  mktY = drawMktP('Al unificar y centralizar todas tus soluciones de protección conmigo, no solo optimizas tus costos, sino que ganas algo que no tiene precio: simplificar tu vida y tener un único punto de contacto de absoluta confianza para todo lo que te importa.', mktY) + 8;
-
-  doc.fillColor(COLORS.primary).font('Helvetica-BoldOblique').fontSize(8.3)
-     .text('Elegir salud es cuidar el presente. Completar tu protección es blindar tu futuro.', MARGIN, mktY, { width: CONTENT_W, align: 'center' });
-  mktY = doc.y;
+  const lineChartH = 190;
+  dibujarGraficoLineasProteccion(doc, MARGIN, mktY, CONTENT_W, lineChartH);
+  mktY += lineChartH;
 
   // Si el contenido fijo de esta página llegara a invadir la franja reservada
   // para el bloque de contacto (por ejemplo, en un tamaño de página distinto),

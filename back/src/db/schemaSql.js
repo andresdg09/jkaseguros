@@ -1,5 +1,7 @@
--- Esquema de Base de Datos para JKA Seguros
+// Esquema base de Base de Datos para JKA Seguros / Protección 360
+// Exportado como módulo JS para empaquetado seguro en Vercel Serverless
 
+export const SCHEMA_SQL = `
 -- 1. Tabla de Usuarios (Credenciales y Roles)
 CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
@@ -35,11 +37,11 @@ CREATE TABLE IF NOT EXISTS datos_personales (
     primer_apellido VARCHAR(100) NOT NULL,
     segundo_apellido VARCHAR(100),
     fecha_nacimiento DATE NOT NULL,
-    tipo_documento VARCHAR(50) NOT NULL, -- 'Venezolano', 'Extranjero', 'Pasaporte'
+    tipo_documento VARCHAR(50) NOT NULL,
     nro_documento VARCHAR(50) UNIQUE NOT NULL,
-    genero VARCHAR(50) NOT NULL, -- 'Masculino', 'Femenino'
-    estado_civil VARCHAR(50) NOT NULL, -- 'Soltero', 'Casado', 'Divorciado', 'Viudo'
-    codigo_area VARCHAR(10) NOT NULL, -- '0412', '0414', etc.
+    genero VARCHAR(50) NOT NULL,
+    estado_civil VARCHAR(50) NOT NULL,
+    codigo_area VARCHAR(10) NOT NULL,
     numero_celular VARCHAR(50) NOT NULL,
     numero_hijos INT DEFAULT 0,
     asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
@@ -64,7 +66,7 @@ CREATE TABLE IF NOT EXISTS polizas (
     cliente_id INT REFERENCES datos_personales(id) ON DELETE CASCADE,
     asesor_id INT REFERENCES asesores(id) ON DELETE SET NULL,
     compania_id INT REFERENCES companias_seguros(id) ON DELETE RESTRICT,
-    plan VARCHAR(100), -- Nombre del plan contratado (ej. 'PLATINO', 'ACCESS')
+    plan VARCHAR(100),
     area VARCHAR(100) NOT NULL DEFAULT 'Salud',
     suma_asegurada NUMERIC NOT NULL,
     deducible NUMERIC DEFAULT 0,
@@ -188,11 +190,11 @@ CREATE TABLE IF NOT EXISTS comisiones_asesores (
 -- 10. Tabla de Matriz de Comisiones Jerárquica (Excel)
 CREATE TABLE IF NOT EXISTS matriz_comisiones (
     id SERIAL PRIMARY KEY,
-    mercado VARCHAR(100) NOT NULL, -- 'Nacionales' o 'Internacionales'
+    mercado VARCHAR(100) NOT NULL,
     compania_id INT REFERENCES companias_seguros(id) ON DELETE CASCADE,
-    ramo VARCHAR(100) NOT NULL, -- Salud, Automovil, etc.
-    producto_modalidad VARCHAR(255) NOT NULL, -- Plan o condición
-    total_comision NUMERIC NOT NULL DEFAULT 0, -- Margen total pagado por aseguradora
+    ramo VARCHAR(100) NOT NULL,
+    producto_modalidad VARCHAR(255) NOT NULL,
+    total_comision NUMERIC NOT NULL DEFAULT 0,
     asesor_1 NUMERIC DEFAULT 0,
     asesor_2 NUMERIC DEFAULT 0,
     asesor_3 NUMERIC DEFAULT 0,
@@ -208,7 +210,7 @@ CREATE TABLE IF NOT EXISTS matriz_comisiones (
 CREATE TABLE IF NOT EXISTS corridas_comisiones (
     id SERIAL PRIMARY KEY,
     fecha_ejecucion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    tipo_ejecucion VARCHAR(50) NOT NULL, -- 'automatica' o 'manual'
+    tipo_ejecucion VARCHAR(50) NOT NULL,
     total_pagado NUMERIC NOT NULL,
     cantidad_asesores INT NOT NULL,
     archivo_txt TEXT,
@@ -304,3 +306,4 @@ CREATE TABLE IF NOT EXISTS renovaciones_polizas (
     observaciones TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+`;

@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/db.js';
+import { authenticateToken } from './auth.js';
 import { generarPdfCotizacion, generarPdfBuffer } from '../services/pdfGenerator.js';
 import { registrarAccion } from '../db/logger.js';
 import { generarPagosFraccionados } from './policies.js';
@@ -25,8 +26,9 @@ function calcularEdad(fechaNacimiento) {
 const BENEFIT_FIELDS = [
   'atencion_medica_primaria', 'at_situ_medicamentos', 'medicinas', 'consultas_medicas', 'examenes_lab_imagenologia', 'ambulancia',
   'rehabilitacion', 'protesis', 'muleta_silla_ruedas', 'consultas', 'maternidad', 'maternidad_suma',
-  'oftalmologia', 'odontologia', 'muerte_accidental', 'muerte_accidental_suma', 'invalidez_permanente', 'invalidez_permanente_suma',
-  'asist_intl_suma', 'funeral_suma', 'reembolso_carta_aval'
+  'oftalmologia', 'oftalmologia_suma', 'odontologia', 'odontologia_suma', 'muerte_accidental', 'muerte_accidental_suma', 'invalidez_permanente', 'invalidez_permanente_suma',
+  'asist_intl_suma', 'funeral_suma', 'reembolso_carta_aval', 'examenes_especiales', 'asist_intl', 'consultas_suma',
+  'asist_medica_primaria_suma', 'odonto_oftal_suma', 'fisio_psico_suma', 'dermato_nutricion_suma'
 ];
 
 function tieneBeneficio(valor) {
@@ -146,9 +148,15 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       muleta_silla_ruedas: !!(t.muleta_silla_ruedas === true || t.muleta_silla_ruedas === 'true' || t.muleta_silla_ruedas === 'INCL'),
       examenes_lab_imagenologia: t.examenes_lab_imagenologia || '',
       consultas: !!(t.consultas === true || t.consultas === 'true' || t.consultas === 'INCL'),
+      consultas_suma: t.consultas_suma || '',
+      consultas_costo: t.consultas_costo || '',
       maternidad: !!(t.maternidad === true || t.maternidad === 'true' || t.maternidad === 'INCL'),
       oftalmologia: !!(t.oftalmologia === true || t.oftalmologia === 'true' || t.oftalmologia === 'INCL'),
+      oftalmologia_suma: t.oftalmologia_suma || '',
+      oftalmologia_costo: t.oftalmologia_costo || '',
       odontologia: !!(t.odontologia === true || t.odontologia === 'true' || t.odontologia === 'INCL'),
+      odontologia_suma: t.odontologia_suma || '',
+      odontologia_costo: t.odontologia_costo || '',
       muerte_accidental: !!(t.muerte_accidental === true || t.muerte_accidental === 'true' || t.muerte_accidental === 'INCL'),
       muerte_accidental_suma: t.muerte_accidental_suma || '',
       muerte_accidental_costo: t.muerte_accidental_costo || '',
@@ -157,6 +165,16 @@ function calcularComparativa(tarifasRows, sumaAsegurada, edadTarifa, companiaIds
       invalidez_permanente_costo: t.invalidez_permanente_costo || '',
       ambulancia: t.ambulancia || '',
       reembolso_carta_aval: !!(t.reembolso_carta_aval === true || t.reembolso_carta_aval === 'true' || t.reembolso_carta_aval === 'INCL'),
+      examenes_especiales: !!(t.examenes_especiales === true || t.examenes_especiales === 'true' || t.examenes_especiales === 'INCL'),
+      asist_intl: !!(t.asist_intl === true || t.asist_intl === 'true' || t.asist_intl === 'INCL'),
+      asist_medica_primaria_suma: t.asist_medica_primaria_suma || '',
+      asist_medica_primaria_costo: t.asist_medica_primaria_costo || '',
+      odonto_oftal_suma: t.odonto_oftal_suma || '',
+      odonto_oftal_costo: t.odonto_oftal_costo || '',
+      fisio_psico_suma: t.fisio_psico_suma || '',
+      fisio_psico_costo: t.fisio_psico_costo || '',
+      dermato_nutricion_suma: t.dermato_nutricion_suma || '',
+      dermato_nutricion_costo: t.dermato_nutricion_costo || '',
       calidadScore,
       relacion_calidad_precio,
       recomendada: false,
@@ -255,8 +273,7 @@ router.get('/sums', async (req, res) => {
   try {
     const tarifasRes = await db.query('SELECT DISTINCT suma_asegurada FROM tarifas', []);
     const fromTariffs = tarifasRes.rows.map(t => parseFloat(t.suma_asegurada)).filter(Boolean);
-    const baseSums = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000];
-    const sums = [...new Set([...baseSums, ...fromTariffs])].sort((a, b) => a - b);
+    const sums = [...new Set(fromTariffs)].sort((a, b) => a - b);
     res.json(sums);
   } catch (err) {
     console.error('Error al obtener sumas aseguradas:', err);
@@ -389,11 +406,11 @@ router.post('/email', async (req, res) => {
         { name: 'Prótesis', active: !!comp.protesis },
         { name: 'Muleta+Silla', active: !!comp.muleta_silla_ruedas },
         { name: 'Consultas', active: !!comp.consultas },
-        { name: 'Maternidad base', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
+        { name: 'Maternidad', active: !!((comp.maternidad || comp.maternidad_suma) && costoMat === 0) },
         { name: 'Oftalmología', active: !!comp.oftalmologia },
         { name: 'Odontología', active: !!comp.odontologia },
-        { name: 'Muerte Acc. base', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
-        { name: 'Invalidez Perm. base', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) }
+        { name: 'Muerte Acc.', active: !!((comp.muerte_accidental || comp.muerte_accidental_suma) && costoMuerteAcc === 0) },
+        { name: 'Invalidez Perm.', active: !!((comp.invalidez_permanente || comp.invalidez_permanente_suma) && costoInvalidez === 0) }
       ];
 
       planCardsHtml += `
@@ -785,6 +802,157 @@ router.post('/share/:token/accept', async (req, res) => {
   } catch (err) {
     console.error('Error al aceptar cotización compartida:', err);
     res.status(500).json({ error: 'Error del servidor al procesar la cotización.' });
+  }
+});
+
+// 8. Obtener todas las propuestas / cotizaciones enviadas (Admin: todas con asesor; Asesor: solo las suyas)
+router.get('/all', authenticateToken, async (req, res) => {
+  try {
+    const userRole = req.user?.rango;
+    const userId = req.user?.id;
+
+    let quotesQuery = '';
+    let queryParams = [];
+
+    if (userRole === 'admin') {
+      quotesQuery = `
+        SELECT c.*, 
+               a.codigo_asesor,
+               COALESCE(dp.primer_nombre || ' ' || dp.primer_apellido, a.codigo_asesor, 'Asesor') AS asesor_nombre,
+               a.telefono AS asesor_telefono
+        FROM cotizaciones c
+        LEFT JOIN asesores a ON c.asesor_id = a.id
+        LEFT JOIN datos_personales dp ON a.datos_personales_id = dp.id
+        ORDER BY c.id DESC
+      `;
+    } else if (userRole === 'asesor') {
+      const aseRes = await db.query('SELECT id, codigo_asesor FROM asesores WHERE usuario_id = $1', [userId]);
+      if (aseRes.rows.length === 0) {
+        return res.json({ quotes: [], summary: { totalQuotes: 0, totalPrimas: 0, totalAccepted: 0, totalPending: 0, totalRemindersPending: 0 } });
+      }
+      const asesorId = aseRes.rows[0].id;
+      const codigoAsesor = aseRes.rows[0].codigo_asesor;
+
+      quotesQuery = `
+        SELECT c.*, 
+               $2 AS codigo_asesor,
+               'Mi Asesoría' AS asesor_nombre
+        FROM cotizaciones c
+        WHERE c.asesor_id = $1
+        ORDER BY c.id DESC
+      `;
+      queryParams = [asesorId, codigoAsesor];
+    } else {
+      return res.status(403).json({ error: 'Acceso no autorizado a propuestas.' });
+    }
+
+    const result = await db.query(quotesQuery, queryParams);
+
+    let totalPrimasSum = 0;
+    let totalAccepted = 0;
+    let totalPending = 0;
+    let totalRemindersPending = 0;
+
+    const formattedQuotes = result.rows.map(q => {
+      const clienteDatos = typeof q.cliente_datos === 'string' ? JSON.parse(q.cliente_datos) : (q.cliente_datos || {});
+      const comparativa = typeof q.comparativa === 'string' ? JSON.parse(q.comparativa) : (q.comparativa || []);
+      const dependientes = typeof q.dependientes === 'string' ? JSON.parse(q.dependientes) : (q.dependientes || []);
+
+      // Extraer primas disponibles en la comparativa
+      const primas = comparativa.map(c => parseFloat(c.prima_total || c.prima || 0)).filter(p => p > 0);
+      const minPrima = primas.length ? Math.min(...primas) : 0;
+      const maxPrima = primas.length ? Math.max(...primas) : 0;
+      const primaRepresentativa = primas.length ? primas[0] : 0;
+
+      totalPrimasSum += primaRepresentativa;
+      if (q.estado === 'aceptada') totalAccepted++;
+      else totalPending++;
+
+      // Verificar si hay recordatorios pendientes
+      const hasPendingReminder = (!q.recordatorio_24h || !q.recordatorio_48h || !q.recordatorio_5d) && q.estado !== 'aceptada';
+      if (hasPendingReminder) totalRemindersPending++;
+
+      return {
+        id: q.id,
+        token: q.token,
+        asesor_id: q.asesor_id,
+        asesor_nombre: q.asesor_nombre || 'Sin asesor',
+        asesor_codigo: q.asesor_codigo || '—',
+        cliente_nombre: `${clienteDatos.primer_nombre || ''} ${clienteDatos.primer_apellido || ''}`.trim() || 'Prospecto',
+        cliente_documento: `${clienteDatos.tipo_documento || 'V'}-${clienteDatos.nro_documento || ''}`,
+        cliente_correo: clienteDatos.correo || '',
+        cliente_telefono: clienteDatos.codigo_area && clienteDatos.numero_celular ? `${clienteDatos.codigo_area}${clienteDatos.numero_celular}` : (clienteDatos.telefono || ''),
+        suma_asegurada: parseFloat(q.suma_asegurada || 0),
+        suma_asegurada_2: q.suma_asegurada_2 ? parseFloat(q.suma_asegurada_2) : null,
+        total_dependientes: dependientes.length,
+        opciones_cotizadas: comparativa.length,
+        prima_representativa: primaRepresentativa,
+        min_prima: minPrima,
+        max_prima: maxPrima,
+        estado: q.estado || 'pendiente',
+        recordatorio_24h: !!q.recordatorio_24h,
+        recordatorio_48h: !!q.recordatorio_48h,
+        recordatorio_5d: !!q.recordatorio_5d,
+        notas_seguimiento: q.notas_seguimiento || '',
+        ultimo_contacto: q.ultimo_contacto,
+        created_at: q.created_at
+      };
+    });
+
+    res.json({
+      quotes: formattedQuotes,
+      summary: {
+        totalQuotes: formattedQuotes.length,
+        totalPrimas: parseFloat(totalPrimasSum.toFixed(2)),
+        totalAccepted,
+        totalPending,
+        totalRemindersPending
+      }
+    });
+  } catch (err) {
+    console.error('Error al obtener lista de propuestas y cotizaciones:', err);
+    res.status(500).json({ error: 'Error del servidor al recuperar las propuestas.' });
+  }
+});
+
+// 9. Actualizar recordatorios y notas de seguimiento de una cotización
+router.patch('/:id/reminders', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { recordatorio_24h, recordatorio_48h, recordatorio_5d, notas_seguimiento, ultimo_contacto } = req.body;
+
+  try {
+    const quoteId = parseInt(id);
+    const updateQuery = `
+      UPDATE cotizaciones 
+      SET recordatorio_24h = $1,
+          recordatorio_48h = $2,
+          recordatorio_5d = $3,
+          notas_seguimiento = $4,
+          ultimo_contacto = $5
+      WHERE id = $6
+      RETURNING *
+    `;
+    const params = [
+      !!recordatorio_24h,
+      !!recordatorio_48h,
+      !!recordatorio_5d,
+      notas_seguimiento || '',
+      ultimo_contacto || new Date().toISOString(),
+      quoteId
+    ];
+
+    const result = await db.query(updateQuery, params);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cotización no encontrada.' });
+    }
+
+    res.json({
+      message: 'Recordatorios actualizados exitosamente.',
+      quote: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error al actualizar recordatorios de cotización:', err);
+    res.status(500).json({ error: 'Error del servidor al actualizar los recordatorios.' });
   }
 });
 

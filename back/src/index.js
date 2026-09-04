@@ -34,7 +34,10 @@ app.use(async (req, res, next) => {
       isDbInitialized = true;
     } catch (err) {
       console.error('Error inicializando DB:', err);
-      return res.status(500).json({ error: 'Database connection failed' });
+      return res.status(500).json({
+        error: 'Database connection failed',
+        message: err.message || String(err)
+      });
     }
   }
   next();
@@ -69,6 +72,29 @@ app.get('/api/cron/commissions', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// Rutas base y diagnóstico
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'Protección y Seguros 360 API (Backend)',
+    version: '1.0.0',
+    message: 'El backend está activo y conectado a la base de datos.',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      profile: '/api/profile',
+      quote: '/api/quote',
+      policies: '/api/policies',
+      payments: '/api/payments',
+      admin: '/api/admin',
+      elearning: '/api/elearning'
+    }
+  });
+});
+
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get('/favicon.png', (req, res) => res.status(204).end());
 
 // Ruta de diagnóstico inicial
 app.get('/api/health', (req, res) => {

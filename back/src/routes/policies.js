@@ -6,25 +6,46 @@ import { registrarAccion } from '../db/logger.js';
 
 const router = express.Router();
 
-export async function generarPagosFraccionados(polizaId, primaAnual, frecuenciaPago) {
+export async function generarPagosFraccionados(polizaId, primaAnual, frecuenciaPago, fechaInicioStr = null, preservePaid = false) {
   const pid = parseInt(polizaId);
-  // Eliminar cuotas pendientes anteriores para esta póliza para evitar duplicación
-  await db.query('DELETE FROM pagos WHERE poliza_id = $1', [pid]);
+  if (preservePaid) {
+    // Solo eliminar cuotas pendientes/rechazadas no pagadas para preservar el histórico de pagos del cliente
+    await db.query("DELETE FROM pagos WHERE poliza_id = $1 AND estado_pago NOT IN ('pagado', 'en_revision')", [pid]);
+  } else {
+    await db.query('DELETE FROM pagos WHERE poliza_id = $1', [pid]);
+  }
 
-  const freq = frecuenciaPago || 'contado';
-  const numCuotas = freq === 'contado' ? 1 : freq === 'semestral' ? 2 : freq === 'cuatrimestral' ? 3 : freq === 'trimestral' ? 4 : 12;
-  const mesesIntervalo = freq === 'contado' ? 0 : freq === 'semestral' ? 6 : freq === 'cuatrimestral' ? 4 : freq === 'trimestral' ? 3 : 1;
+  const freq = (frecuenciaPago || 'contado').toLowerCase();
+  const numCuotas = freq === 'contado' ? 1 : 
+                    freq === 'semestral' ? 2 : 
+                    freq === 'cuatrimestral' ? 3 : 
+                    (freq === 'trimestral' || freq === '4_cuotas' || freq === 'cuatro_cuotas') ? 4 : 
+                    freq === 'bimestral' ? 6 : 12;
+
+  const mesesIntervalo = freq === 'contado' ? 0 : 
+                         freq === 'semestral' ? 6 : 
+                         freq === 'cuatrimestral' ? 4 : 
+                         (freq === 'trimestral' || freq === '4_cuotas' || freq === 'cuatro_cuotas') ? 3 : 
+                         freq === 'bimestral' ? 2 : 1;
+
   const montoBase = parseFloat((primaAnual / numCuotas).toFixed(2));
+  
+  let baseDate = new Date();
+  if (fechaInicioStr) {
+    const parsed = new Date(fechaInicioStr + 'T12:00:00');
+    if (!isNaN(parsed.getTime())) baseDate = parsed;
+  }
   
   for (let i = 1; i <= numCuotas; i++) {
     const monto = (i === numCuotas)
       ? parseFloat((primaAnual - (montoBase * (numCuotas - 1))).toFixed(2))
       : montoBase;
       
-    const mesesMas = 1 + (i - 1) * mesesIntervalo;
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + mesesMas);
-    const fechaVencimiento = nextMonth.toISOString().split('T')[0];
+    const dueDate = new Date(baseDate.getTime());
+    if (i > 1 && mesesIntervalo > 0) {
+      dueDate.setMonth(dueDate.getMonth() + ((i - 1) * mesesIntervalo));
+    }
+    const fechaVencimiento = dueDate.toISOString().split('T')[0];
 
     await db.query(
       `INSERT INTO pagos (poliza_id, monto, estado_pago, referencia, fecha_vencimiento, cuota_numero, cuota_total)
@@ -635,6 +656,116 @@ router.put('/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al modificar póliza.' });
+  }
+});
+
+// Renovar póliza y regenerar cuotas de pago (Asesor / Admin)
+router.post('/:id/renew', authenticateToken, async (req, res) => {
+  if (req.user.rango !== 'admin' && req.user.rango !== 'asesor') {
+    return res.status(403).json({ error: 'No autorizado para renovar pólizas.' });
+  }
+
+  const { id } = req.params;
+  const { fecha_renovacion, frecuencia_pago, prima_anual, suma_asegurada, deducible, observaciones } = req.body;
+
+  try {
+    const polId = parseInt(id);
+    let poliza = null;
+    let advisorId = null;
+
+    if (req.user.rango === 'asesor') {
+      const aseRes = await db.query('SELECT id FROM asesores WHERE usuario_id = $1', [req.user.id]);
+      if (aseRes.rows.length === 0) return res.status(403).json({ error: 'Asesor no encontrado.' });
+      advisorId = aseRes.rows[0].id;
+    }
+
+    const polRes = await db.query('SELECT * FROM polizas WHERE id = $1', [polId]);
+    if (polRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Póliza no encontrada.' });
+    }
+    poliza = polRes.rows[0];
+
+    if (req.user.rango === 'asesor' && poliza.asesor_id && poliza.asesor_id !== advisorId) {
+      return res.status(403).json({ error: 'No autorizado para renovar una póliza asignada a otro asesor.' });
+    }
+
+    const renewalDate = fecha_renovacion || new Date().toISOString().split('T')[0];
+    const freqAnt = poliza.frecuencia_pago || 'contado';
+    const freqNueva = frecuencia_pago || freqAnt;
+    const finalPrima = prima_anual !== undefined && !isNaN(parseFloat(prima_anual)) ? parseFloat(prima_anual) : parseFloat(poliza.prima_anual || 0);
+    const finalSuma = suma_asegurada !== undefined && !isNaN(parseFloat(suma_asegurada)) ? parseFloat(suma_asegurada) : parseFloat(poliza.suma_asegurada || 0);
+    const finalDeducible = deducible !== undefined && !isNaN(parseFloat(deducible)) ? parseFloat(deducible) : parseFloat(poliza.deducible || 0);
+
+    // 1. Actualizar póliza
+    if (db.isFallback()) {
+      const fData = db.getFallbackData();
+      const pIdx = fData.polizas.findIndex(p => p.id === polId);
+      if (pIdx !== -1) {
+        fData.polizas[pIdx].tipo_negocio = 'renovacion';
+        fData.polizas[pIdx].estado = 'vigente';
+        fData.polizas[pIdx].pago_estado = 'pendiente';
+        fData.polizas[pIdx].fecha_renovacion = renewalDate;
+        fData.polizas[pIdx].frecuencia_pago = freqNueva;
+        fData.polizas[pIdx].prima_anual = finalPrima;
+        fData.polizas[pIdx].suma_asegurada = finalSuma;
+        fData.polizas[pIdx].deducible = finalDeducible;
+      }
+      db.saveFallback();
+    } else {
+      const updateSql = `
+        UPDATE polizas
+        SET tipo_negocio = 'renovacion',
+            estado = 'vigente',
+            pago_estado = 'pendiente',
+            fecha_renovacion = $1,
+            frecuencia_pago = $2,
+            prima_anual = $3,
+            suma_asegurada = $4,
+            deducible = $5
+        WHERE id = $6
+        RETURNING *
+      `;
+      await db.query(updateSql, [renewalDate, freqNueva, finalPrima, finalSuma, finalDeducible, polId]);
+    }
+
+    // 2. Registrar en renovaciones_polizas
+    const insRenSql = `
+      INSERT INTO renovaciones_polizas (
+        poliza_id, cliente_id, asesor_id, fecha_renovacion, frecuencia_anterior, frecuencia_nueva, prima_anual, suma_asegurada, observaciones
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+    const renRes = await db.query(insRenSql, [
+      polId,
+      parseInt(poliza.cliente_id),
+      advisorId || poliza.asesor_id || null,
+      renewalDate,
+      freqAnt,
+      freqNueva,
+      finalPrima,
+      finalSuma,
+      observaciones || null
+    ]);
+
+    // 3. Generar nuevo cronograma de pagos a partir de la fecha de renovación preservando los pagos pagados
+    await generarPagosFraccionados(polId, finalPrima, freqNueva, renewalDate, true);
+
+    // 4. Registrar en logs de actividad
+    await registrarAccion(
+      req.user.id,
+      req.user.correo,
+      'RENOVACION_POLIZA',
+      `Póliza ${poliza.codigo_poliza} renovada con fecha ${renewalDate}. Frecuencia: ${freqAnt} ➔ ${freqNueva}, Prima: $${finalPrima}`
+    );
+
+    res.json({
+      message: `Póliza ${poliza.codigo_poliza} renovada exitosamente. Nuevas fechas de pago generadas desde ${renewalDate}.`,
+      renovacion: renRes.rows && renRes.rows.length > 0 ? renRes.rows[0] : null
+    });
+
+  } catch (err) {
+    console.error('Error al renovar póliza:', err);
+    res.status(500).json({ error: 'Error del servidor al renovar la póliza.' });
   }
 });
 
