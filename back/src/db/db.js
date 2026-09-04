@@ -161,47 +161,8 @@ function initFallback() {
         ];
       }
 
-      if (!fallbackData.polizas || fallbackData.polizas.length === 0) {
-        fallbackData.polizas = [
-          {
-            id: 1,
-            codigo_poliza: 'POL-882731',
-            cliente_id: 1,
-            asesor_id: 1,
-            compania_id: 1,
-            plan: 'ACCESS',
-            area: 'Salud',
-            suma_asegurada: 50000,
-            deducible: 0,
-            prima_anual: 612,
-            estado: 'vigente',
-            pago_estado: 'en_revision',
-            frecuencia_pago: 'mensual',
-            tipo_negocio: 'nuevo',
-            tipo_cobertura: 'individual',
-            bono_pronto_pago: false,
-            emision_online: false,
-            created_at: new Date().toISOString()
-          }
-        ];
-      }
-
-      if (!fallbackData.pagos || fallbackData.pagos.length === 0) {
-        fallbackData.pagos = [
-          { id: 1, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'pagado', referencia: '789456', fecha_vencimiento: '2026-09-25', cuota_numero: 1, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
-          { id: 2, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '457892', fecha_vencimiento: '2026-10-25', cuota_numero: 2, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
-          { id: 3, poliza_id: 1, monto: 51, monto_reportado: 51000, moneda_pago: 'VES', fecha_pago: '2026-08-25', estado_pago: 'en_revision', referencia: '123456', fecha_vencimiento: '2026-11-25', cuota_numero: 3, cuota_total: 12, observaciones: 'Pago reportado en Bs. 51.000', created_at: new Date().toISOString() },
-          { id: 4, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2026-12-25', cuota_numero: 4, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 5, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-01-25', cuota_numero: 5, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 6, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-02-25', cuota_numero: 6, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 7, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-03-25', cuota_numero: 7, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 8, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-04-25', cuota_numero: 8, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 9, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-05-25', cuota_numero: 9, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 10, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-06-25', cuota_numero: 10, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 11, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-07-25', cuota_numero: 11, cuota_total: 12, created_at: new Date().toISOString() },
-          { id: 12, poliza_id: 1, monto: 51, monto_reportado: null, moneda_pago: 'USD', fecha_pago: null, estado_pago: 'pendiente', referencia: null, fecha_vencimiento: '2027-08-25', cuota_numero: 12, cuota_total: 12, created_at: new Date().toISOString() }
-        ];
-      }
+      if (!fallbackData.polizas) fallbackData.polizas = [];
+      if (!fallbackData.pagos) fallbackData.pagos = [];
 
       if (!fallbackData.tarifas || fallbackData.tarifas.length === 0) {
         fallbackData.tarifas = tarifasSemilla.map((t, index) => {
