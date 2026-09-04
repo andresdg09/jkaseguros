@@ -1,4 +1,9 @@
 import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PAGE_W = 595;
 const MARGIN = 40;
@@ -18,6 +23,42 @@ const COLORS = {
   success: '#10b981',
   amber: '#f59e0b'
 };
+
+// Logos de aseguradoras: se muestran junto al nombre en la tarjeta del
+// comparativo (ver dibujarTarjetaAseguradora). Archivos en back/public/logos-aseguradoras/.
+const LOGOS_DIR = path.join(__dirname, '..', '..', 'public', 'logos-aseguradoras');
+const LOGOS_ASEGURADORAS = {
+  'seguros venezuela': 'seguros-venezuela.png',
+  'internacional de seguros': 'internacional-de-seguros.png',
+  'mapfre': 'mapfre.png',
+  'mapfre seguros': 'mapfre.png',
+  'mercantil seguros': 'mercantil-seguros.png',
+  'seguros caracas': 'seguros-caracas.png'
+};
+
+/**
+ * Normaliza un nombre de aseguradora (minúsculas, sin acentos, sin espacios
+ * sobrantes) para buscarlo en LOGOS_ASEGURADORAS sin importar variaciones de
+ * capitalización o tildes que vengan del tarifario.
+ */
+function normalizarNombreAseguradora(str) {
+  return String(str || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Devuelve la ruta del archivo de logo para una aseguradora, o null si no hay
+ * uno mapeado (o el archivo no existe en disco) — en ese caso la tarjeta se
+ * dibuja sin logo, igual que antes.
+ */
+function obtenerLogoAseguradora(nombre) {
+  const filename = LOGOS_ASEGURADORAS[normalizarNombreAseguradora(nombre)];
+  if (!filename) return null;
+  const fullPath = path.join(LOGOS_DIR, filename);
+  return fs.existsSync(fullPath) ? fullPath : null;
+}
 
 // Datos del corredor de seguros, mostrados en el encabezado (bajo el título de
 // cada página) y en el pie de página de todas las páginas del PDF.
@@ -323,13 +364,29 @@ function dibujarTarjetaAseguradora(doc, x, y, width, comp, scale = 1, forcedHeig
 
   let cy = y + CARD_TOP_PAD * s;
 
-  // --- Encabezado: nombre oscuro + plan azul + línea divisoria ---
+  // --- Encabezado: logo (si existe) + nombre oscuro + plan azul + línea divisoria ---
   // Nombre y plan vienen de datos del tarifario (largo variable): se recortan
   // con "…" si no caben, en vez de desbordarse sobre el resto de la tarjeta.
+  const logoPath = obtenerLogoAseguradora(comp.nombre);
+  const logoSize = 24 * s;
+  let textX = padX;
+  let textW = contentW;
+  if (logoPath) {
+    try {
+      doc.image(logoPath, padX, cy + 1 * s, { fit: [logoSize, logoSize], align: 'center', valign: 'center' });
+      textX = padX + logoSize + 6 * s;
+      textW = contentW - logoSize - 6 * s;
+    } catch (e) {
+      // Si el archivo no se puede decodificar como imagen, se sigue sin logo
+      // en vez de romper la generación del PDF.
+      textX = padX;
+      textW = contentW;
+    }
+  }
   doc.fillColor(COLORS.dark).font('Helvetica-Bold').fontSize(10.5 * s);
-  doc.text(ajustarTexto(doc, comp.nombre, contentW), padX, cy, { width: contentW, lineBreak: false });
+  doc.text(ajustarTexto(doc, comp.nombre, textW), textX, cy, { width: textW, lineBreak: false });
   doc.fillColor(COLORS.secondary).font('Helvetica-Bold').fontSize(7.5 * s);
-  doc.text(ajustarTexto(doc, `PLAN: ${(comp.plan || 'N/D').toUpperCase()}`, contentW), padX, cy + 14 * s, { width: contentW, lineBreak: false });
+  doc.text(ajustarTexto(doc, `PLAN: ${(comp.plan || 'N/D').toUpperCase()}`, textW), textX, cy + 14 * s, { width: textW, lineBreak: false });
   doc.strokeColor(COLORS.border).lineWidth(1).moveTo(padX, cy + CARD_HEADER_H * s - 5 * s).lineTo(padX + contentW, cy + CARD_HEADER_H * s - 5 * s).stroke();
   cy += (CARD_HEADER_H + CARD_GAP) * s;
 
